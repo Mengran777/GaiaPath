@@ -1,3 +1,17 @@
+/* Correct Tailwind CSS directives */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Mapbox GL JS CSS (Add this line) */
+@import "mapbox-gl/dist/mapbox-gl.css";
+
+/* Your existing root variables */
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
 @import "tailwindcss";
 /* Correct Tailwind CSS directives */
 @tailwind base;
