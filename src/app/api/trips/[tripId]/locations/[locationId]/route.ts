@@ -30,16 +30,14 @@ async function findLocationAndVerifyOwnership(
  * Path: /api/trips/{tripId}/locations/{locationId}
  */
 export async function PUT(
-  request: NextRequest, // ✅ 使用 NextRequest 而不是 Request
-  context: { params: { tripId: string; locationId: string } }
+  request: NextRequest,
+  { params }: { params: Record<string, string> }
 ) {
+  const { tripId, locationId } = params;
   const authResult = authenticateRequest(request);
   if (!authResult) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-
-  // Access params from the context object
-  const { tripId, locationId } = context.params;
 
   try {
     const body = await request.json();
@@ -89,15 +87,13 @@ export async function PUT(
  */
 export async function DELETE(
   request: NextRequest,
-  context: { params: { tripId: string; locationId: string } }
+  { params }: { params: Record<string, string> }
 ) {
+  const { tripId, locationId } = params;
   const authResult = authenticateRequest(request);
   if (!authResult) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-
-  // Access params from the context object
-  const { tripId, locationId } = context.params;
 
   try {
     // Verify ownership of the location before deleting
