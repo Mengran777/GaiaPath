@@ -31,14 +31,17 @@ async function findLocationAndVerifyOwnership(
  */
 export async function PUT(
   request: Request,
-  { params }: { params: { tripId: string; locationId: string } }
+  // FIX: Corrected type signature for the second argument.
+  // It should be an object with a 'params' property.
+  context: { params: { tripId: string; locationId: string } }
 ) {
   const authResult = authenticateRequest(request);
   if (!authResult) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { tripId, locationId } = params;
+  // Access params from the context object
+  const { tripId, locationId } = context.params;
 
   try {
     const body = await request.json();
@@ -88,14 +91,16 @@ export async function PUT(
  */
 export async function DELETE(
   request: Request,
-  { params }: { params: { tripId: string; locationId: string } }
+  // FIX: Corrected type signature for the second argument.
+  context: { params: { tripId: string; locationId: string } }
 ) {
   const authResult = authenticateRequest(request);
   if (!authResult) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { tripId, locationId } = params;
+  // Access params from the context object
+  const { tripId, locationId } = context.params;
 
   try {
     // Verify ownership of the location before deleting
