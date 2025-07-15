@@ -1,29 +1,27 @@
-// src/app/api/trips/[tripId]/locations/route.ts
-
-import { NextResponse } from "next/server";
-import prisma from "@/lib/db"; // Import the Prisma client
-import { authenticateRequest } from "@/lib/auth"; // Import the authentication helper function
+import { NextRequest, NextResponse } from "next/server";
+import prisma from "@/lib/db"; // 导入 Prisma 客户端
+import { authenticateRequest } from "@/lib/auth"; // 导入认证辅助函数
 
 /**
- * Handles POST requests to add a new location to a specific trip.
- * Path: /api/trips/{tripId}/locations
+ * 处理 POST 请求，为特定行程添加新位置。
+ * 路径：/api/trips/{tripId}/locations
  */
 export async function POST(
-  request: Request,
-  { params }: { params: { tripId: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ tripId: string }> }
 ) {
   const authResult = authenticateRequest(request);
   if (!authResult) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { tripId } = params; // Extract tripId from dynamic route parameters
+  const { tripId } = await params; // 使用 await 解构 tripId
 
   try {
     const body = await request.json();
     const { name, latitude, longitude, notes, order } = body;
 
-    // Basic validation for required location fields
+    // 基本验证必需的位置信息字段
     if (!name || latitude === undefined || longitude === undefined) {
       return NextResponse.json(
         {
@@ -33,10 +31,10 @@ export async function POST(
       );
     }
 
-    // First, verify that the trip exists and belongs to the authenticated user
+    // 首先，验证行程是否存在并且属于已认证的用户
     const existingTrip = await prisma.trip.findUnique({
       where: { id: tripId, userId: authResult.userId },
-      select: { id: true }, // Select only ID to confirm existence and ownership
+      select: { id: true }, // 仅选择 ID 以确认存在性和所有权
     });
 
     if (!existingTrip) {
@@ -46,19 +44,19 @@ export async function POST(
       );
     }
 
-    // Create the new location associated with the trip
+    // 创建与行程关联的新位置
     const newLocation = await prisma.location.create({
       data: {
         name,
         latitude,
         longitude,
-        notes: notes || "", // Use empty string if notes are not provided
-        order: order !== undefined ? order : 0, // Use provided order or default to 0
-        tripId: tripId, // Link the location to the trip
+        notes: notes || "", // 如果未提供备注，则使用空字符串
+        order: order !== undefined ? order : 0, // 使用提供的顺序或默认为 0
+        tripId: tripId, // 将位置与行程关联
       },
     });
 
-    // Return the newly created location
+    // 返回新创建的位置
     return NextResponse.json(newLocation, { status: 201 });
   } catch (error) {
     console.error("Error adding location to trip:", error);
