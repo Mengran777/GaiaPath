@@ -1,6 +1,6 @@
 // src/app/api/trips/[tripId]/locations/[locationId]/route.ts
 
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db"; // Import the Prisma client
 import { authenticateRequest } from "@/lib/auth"; // Import the authentication helper function
 
@@ -30,9 +30,7 @@ async function findLocationAndVerifyOwnership(
  * Path: /api/trips/{tripId}/locations/{locationId}
  */
 export async function PUT(
-  request: Request,
-  // FIX: Corrected type signature for the second argument.
-  // It should be an object with a 'params' property.
+  request: NextRequest, // ✅ 使用 NextRequest 而不是 Request
   context: { params: { tripId: string; locationId: string } }
 ) {
   const authResult = authenticateRequest(request);
@@ -90,8 +88,7 @@ export async function PUT(
  * Path: /api/trips/{tripId}/locations/{locationId}
  */
 export async function DELETE(
-  request: Request,
-  // FIX: Corrected type signature for the second argument.
+  request: NextRequest,
   context: { params: { tripId: string; locationId: string } }
 ) {
   const authResult = authenticateRequest(request);
