@@ -1,12 +1,11 @@
 // src/app/api/trips/[tripId]/locations/[locationId]/route.ts
 
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/lib/db"; // Import the Prisma client
-import { authenticateRequest } from "@/lib/auth"; // Import the authentication helper function
+import prisma from "@/lib/db";
+import { authenticateRequest } from "@/lib/auth";
 
 /**
  * Helper function to find a location and verify ownership.
- * Ensures the location exists and belongs to the specified trip and user.
  */
 async function findLocationAndVerifyOwnership(
   locationId: string,
@@ -18,7 +17,7 @@ async function findLocationAndVerifyOwnership(
       id: locationId,
       tripId: tripId,
       trip: {
-        userId: userId, // Ensure the trip also belongs to the user
+        userId: userId,
       },
     },
   });
@@ -26,24 +25,23 @@ async function findLocationAndVerifyOwnership(
 }
 
 /**
- * Handles PUT requests to update a specific location within a trip.
- * Path: /api/trips/{tripId}/locations/{locationId}
+ * PUT: Update a specific location within a trip
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Record<string, string> }
+  context: { params: Record<string, string> } // ✅ 类型修复
 ) {
-  const { tripId, locationId } = params;
   const authResult = authenticateRequest(request);
   if (!authResult) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const { tripId, locationId } = context.params;
+
   try {
     const body = await request.json();
     const { name, latitude, longitude, notes, order } = body;
 
-    // Verify ownership of the location
     const existingLocation = await findLocationAndVerifyOwnership(
       locationId,
       tripId,
@@ -57,16 +55,13 @@ export async function PUT(
       );
     }
 
-    // Update the location in the database
     const updatedLocation = await prisma.location.update({
-      where: {
-        id: locationId,
-      },
+      where: { id: locationId },
       data: {
         name: name || undefined,
         latitude: latitude !== undefined ? parseFloat(latitude) : undefined,
         longitude: longitude !== undefined ? parseFloat(longitude) : undefined,
-        notes: notes !== undefined ? notes : undefined,
+        notes: notes ?? undefined,
         order: order !== undefined ? parseInt(order) : undefined,
       },
     });
@@ -82,21 +77,20 @@ export async function PUT(
 }
 
 /**
- * Handles DELETE requests to delete a specific location within a trip.
- * Path: /api/trips/{tripId}/locations/{locationId}
+ * DELETE: Remove a specific location from a trip
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Record<string, string> }
+  context: { params: Record<string, string> } // ✅ 类型修复
 ) {
-  const { tripId, locationId } = params;
   const authResult = authenticateRequest(request);
   if (!authResult) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const { tripId, locationId } = context.params;
+
   try {
-    // Verify ownership of the location before deleting
     const existingLocation = await findLocationAndVerifyOwnership(
       locationId,
       tripId,
@@ -110,12 +104,7 @@ export async function DELETE(
       );
     }
 
-    // Delete the location from the database
-    await prisma.location.delete({
-      where: {
-        id: locationId,
-      },
-    });
+    await prisma.location.delete({ where: { id: locationId } });
 
     return NextResponse.json(
       { message: "Location deleted successfully" },
