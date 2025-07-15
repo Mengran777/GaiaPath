@@ -10,14 +10,14 @@ import { authenticateRequest } from "@/lib/auth"; // 导入认证辅助函数
  */
 export async function GET(
   request: NextRequest,
-  context: { params: { tripId: string } }
+  context: { params: Promise<{ tripId: string }> }
 ) {
   const authResult = authenticateRequest(request);
   if (!authResult) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { tripId } = context.params; // 从 context 中获取 tripId
+  const { tripId } = await context.params; // 等待解析 params
 
   try {
     // 查找特定用户的行程及其位置
@@ -58,14 +58,14 @@ export async function GET(
  */
 export async function PUT(
   request: NextRequest,
-  context: { params: { tripId: string } }
+  context: { params: Promise<{ tripId: string }> }
 ) {
   const authResult = authenticateRequest(request);
   if (!authResult) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { tripId } = context.params; // 从 context 中获取 tripId
+  const { tripId } = await context.params; // 等待解析 params
 
   try {
     const body = await request.json();
@@ -114,14 +114,14 @@ export async function PUT(
  */
 export async function DELETE(
   request: NextRequest,
-  context: { params: { tripId: string } }
+  context: { params: Promise<{ tripId: string }> }
 ) {
   const authResult = authenticateRequest(request);
   if (!authResult) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { tripId } = context.params; // 从 context 中获取 tripId
+  const { tripId } = await context.params; // 等待解析 params
 
   try {
     const deleteResult = await prisma.trip.deleteMany({
