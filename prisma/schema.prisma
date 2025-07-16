@@ -1,0 +1,60 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// "postgresql"
+datasource db {
+  provider = "postgresql"
+  url      = env("POSTGRES_URL")
+}
+
+// 用户模型
+model User {
+  id        String    @id @default(uuid())
+  username  String    @unique
+  email     String    @unique
+  password  String    // 实际应用中应存储哈希后的密码
+  trips     Trip[]    // 用户可以有多个行程
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+// 行程模型
+model Trip {
+  id        String    @id @default(uuid())
+  name      String
+  startDate DateTime  @map("start_date") @db.Date // 存储日期，不含时间
+  endDate   DateTime  @map("end_date") @db.Date   // 存储日期，不含时间
+  
+  userId    String    // 外键，关联到 User
+  user      User      @relation(fields: [userId], references: [id])
+
+  locations Location[] // 行程可以有多个地点
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@map("trips") // 数据库表名为 'trips'
+}
+
+// 地点模型 (行程中的具体地点)
+model Location {
+  id        String   @id @default(uuid())
+  name      String
+  latitude  Float
+  longitude Float
+  notes     String?  // 备注可选
+  order     Int      @default(0) // 地点在行程中的顺序
+
+  tripId    String   // 外键，关联到 Trip
+  trip      Trip     @relation(fields: [tripId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("locations") // 数据库表名为 'locations'
+}
