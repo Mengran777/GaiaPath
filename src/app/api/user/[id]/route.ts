@@ -1,40 +1,24 @@
-// src/app/api/user/[id]/route.ts
-import { NextResponse } from "next/server";
-import prisma from "@/lib/db"; // 导入 Prisma 客户端
+import { NextRequest, NextResponse } from "next/server";
+import prisma from "@/lib/db";
 
-/**
- * Handles GET requests for fetching user details by ID.
- * Path: /api/user/[id]
- */
-export async function GET(
-  request: Request,
-  // Keep the destructuring for clarity. The issue is with accessing properties *after* params is passed.
-  // The type for `params` is still { id: string }, but its runtime behavior is now Promise-like.
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: NextRequest) {
   try {
-    // ⭐ THE FIX: AWAITING `params` ITSELF before accessing its properties.
-    // This is the most direct interpretation of the error message.
-    // Next.js is explicitly telling us to treat `params` as something that needs to be awaited.
-    const awaitedParams = await Promise.resolve(params); // Wrap in Promise.resolve to handle both sync and async
-    const userId: string = awaitedParams.id; // Now access `id` from the awaited object
+    const url = new URL(request.url);
+    const id = url.pathname.split("/").pop(); // 从路径中获取 [id]
 
-    if (!userId) {
+    if (!id) {
       return NextResponse.json(
         { error: "User ID is required" },
         { status: 400 }
       );
     }
 
-    // 查找用户
     const user = await prisma.user.findUnique({
-      where: { id: userId }, // Use the extracted userId
-      // 只选择你需要返回的字段，避免暴露敏感信息如密码哈希
+      where: { id },
       select: {
         id: true,
         username: true,
         email: true,
-        // ...其他你希望在客户端显示的用户信息
       },
     });
 
@@ -42,7 +26,7 @@ export async function GET(
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    return NextResponse.json(user, { status: 200 });
+    return NextResponse.json(user);
   } catch (error) {
     console.error("Error fetching user details:", error);
     return NextResponse.json(
