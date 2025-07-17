@@ -1,10 +1,9 @@
-"use client"; // This directive marks the file as a Client Component
+// src/app/App.tsx
+"use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation"; // 导入 useRouter 以便安全地进行客户端导航
 
-// Direct imports for all components, bypassing barrel files
-// 导入路径已根据 App.tsx 的新位置 (src/app) 进行调整
-import Header from "../components/Header/Header";
 import PageContainer from "../components/Layout/PageContainer";
 import SmartSearch from "../components/Sidebar/SmartSearch";
 import PreferenceForm from "../components/Sidebar/PreferenceForm";
@@ -13,73 +12,125 @@ import ItineraryPanel from "../components/MainPanel/ItineraryPanel";
 import MapView from "../components/MainPanel/MapView";
 import FloatingActions from "../components/Controls/FloatingActions";
 
-// Note: Individual UI components (Input, Select, Slider, Tag, TypeCard) are now imported directly
-// within the components that use them (e.g., SmartSearch, PreferenceForm).
-// The App component itself does not directly use these UI components, so no imports are needed here.
-
-// --- TOP-LEVEL DEBUGGING LOGS ---
-// These logs run as soon as the module is loaded, before any React rendering.
-console.log("--- App.tsx Top-Level Import Debugging ---");
-console.log("Type of Header:", typeof Header, Header);
-console.log("Type of PageContainer:", typeof PageContainer, PageContainer);
-console.log("Type of SmartSearch:", typeof SmartSearch, SmartSearch);
-console.log("Type of PreferenceForm:", typeof PreferenceForm, PreferenceForm);
-console.log("Type of GenerateButton:", typeof GenerateButton, GenerateButton);
-console.log("Type of ItineraryPanel:", typeof ItineraryPanel, ItineraryPanel);
-console.log("Type of MapView:", typeof MapView, MapView);
-console.log(
-  "Type of FloatingActions:",
-  typeof FloatingActions,
-  FloatingActions
-);
-console.log("----------------------------------------");
-// --- END TOP-LEVEL DEBUGGING LOGS ---
-
 const App: React.FC = () => {
-  // State for user preferences
+  const router = useRouter(); // 初始化 useRouter
+
   const [preferences, setPreferences] = useState({
     destination: "",
     travelStartDate: "",
     travelEndDate: "",
     budget: 15000,
     travelers: "2",
-    travelType: ["history", "nature"], // Default selected types
+    travelType: ["history", "nature"],
     accommodation: "comfort",
-    transportation: ["train"], // Default selected transportation
+    transportation: ["train"],
     activityIntensity: "moderate",
     specialNeeds: [],
   });
-  // State for smart search input query
+
   const [smartSearchQuery, setSmartSearchQuery] = useState(
     "Tell me what kind of trip you want... e.g., Beach hiking July Europe"
   );
 
-  // State for AI-generated itinerary
   const [itinerary, setItinerary] = useState<any[]>([]);
-  // State for loading indicator
   const [isLoading, setIsLoading] = useState(false);
 
-  // Handler for preference changes
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  // 新增状态：存储用户名
+  const [currentUsername, setCurrentUsername] = useState<string | null>(null);
+
+  // 获取 Cookie 的辅助函数保持不变
+  const getCookie = (name: string): string | null => {
+    if (typeof document === "undefined") {
+      return null;
+    }
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) {
+      const cookieValue = parts.pop()?.split(";").shift() || null;
+      try {
+        return cookieValue ? decodeURIComponent(cookieValue) : null;
+      } catch (e) {
+        console.error(`App: Error decoding cookie ${name}:`, e);
+        return null;
+      }
+    }
+    return null;
+  };
+
+  // Effect 1: 从 Cookie 读取 userId
+  useEffect(() => {
+    const storedUserId = getCookie("userId");
+
+    if (storedUserId) {
+      setCurrentUserId(storedUserId);
+      console.log(
+        "App: User ID successfully read from 'userId' cookie:",
+        storedUserId
+      );
+    } else {
+      console.log("App: 'userId' cookie not found or is empty.");
+    }
+  }, []);
+
+  // Effect 2: 当 userId 存在时，获取用户名
+  useEffect(() => {
+    if (currentUserId) {
+      const fetchUsername = async () => {
+        try {
+          // 调用一个 API 路由来根据 ID 获取用户详细信息
+          // 你需要创建一个 /api/user/[id]/route.ts 或 /api/user/me 路由
+          const response = await fetch(`/api/user/${currentUserId}`); // 假设这个路由存在
+          if (!response.ok) {
+            // 如果 API 返回错误，例如用户不存在或未授权
+            console.error("Failed to fetch user data:", response.statusText);
+            setCurrentUsername(null);
+            // 考虑在这里执行登出操作，如果用户ID无效
+            handleLogout();
+            return;
+          }
+          const userData = await response.json();
+          if (userData && userData.username) {
+            setCurrentUsername(userData.username);
+            console.log("App: Username fetched:", userData.username);
+          }
+        } catch (error) {
+          console.error("Error fetching username:", error);
+          setCurrentUsername(null);
+        }
+      };
+
+      fetchUsername();
+    } else {
+      setCurrentUsername(null); // 如果没有 userId，则清空用户名
+    }
+  }, [currentUserId]); // 依赖 currentUserId 变化而触发
+
+  const handleLogout = () => {
+    document.cookie =
+      "authToken=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax; Secure;";
+    document.cookie =
+      "userId=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax; Secure;";
+    setCurrentUserId(null);
+    setCurrentUsername(null); // 清空用户名状态
+    router.push("/auth/login");
+  };
+
   const handlePreferenceChange = (key: string, value: any) => {
     setPreferences((prev) => ({ ...prev, [key]: value }));
   };
 
-  // Handler for smart search
   const handleSmartSearch = (query: string) => {
-    console.log("Smart search query:", query);
-    // Here you would trigger an API call to get destination suggestions
-    // For now, simulate a suggestion
+    console.log("Smart search:", query);
     setPreferences((prev) => ({ ...prev, destination: query }));
   };
 
-  // Function to simulate itinerary generation
   const handleGenerateItinerary = () => {
     setIsLoading(true);
-    console.log("Generating itinerary with current preferences:", preferences);
+    console.log("Generating itinerary with:", preferences);
 
     setTimeout(() => {
-      // Mock AI-generated itinerary data
-      const mockItinerary = [
+      setItinerary([
         {
           day: 1,
           title: "Rome - The Eternal City",
@@ -88,7 +139,7 @@ const App: React.FC = () => {
             {
               title: "Colosseum & Roman Forum",
               description:
-                "Witness two millennia of history, feel the glory of the Roman Empire. Recommended to book tickets in advance to avoid queues.",
+                "Witness two millennia of history, feel the glory of the Roman Empire.",
               time: "09:00-12:00",
               rating: 4.8,
               price: "180",
@@ -97,8 +148,7 @@ const App: React.FC = () => {
             },
             {
               title: "Trevi Fountain & Spanish Steps",
-              description:
-                "Toss a coin into the Trevi Fountain and enjoy an afternoon at the Spanish Steps.",
+              description: "Toss a coin and enjoy the Spanish Steps.",
               time: "14:00-17:00",
               rating: 4.6,
               price: "Free",
@@ -114,8 +164,7 @@ const App: React.FC = () => {
           activities: [
             {
               title: "Vatican Museums & Sistine Chapel",
-              description:
-                "Admire Michelangelo's ceiling frescoes, a treasure trove of world art.",
+              description: "Admire Michelangelo's ceiling frescoes.",
               time: "08:00-12:00",
               rating: 4.9,
               price: "220",
@@ -124,8 +173,7 @@ const App: React.FC = () => {
             },
             {
               title: "St. Peter's Basilica",
-              description:
-                "Climb to the top for panoramic views of Rome and experience the awe of religious art.",
+              description: "Climb to the top for panoramic views.",
               time: "14:00-16:00",
               rating: 4.7,
               price: "120",
@@ -141,8 +189,7 @@ const App: React.FC = () => {
           activities: [
             {
               title: "Uffizi Gallery",
-              description:
-                "A collection of works by Da Vinci, Michelangelo, and more, a treasure house of Renaissance art.",
+              description: "Renaissance masterpieces await.",
               time: "09:00-13:00",
               rating: 4.8,
               price: "280",
@@ -151,13 +198,12 @@ const App: React.FC = () => {
             },
           ],
         },
-      ];
-      setItinerary(mockItinerary);
+      ]);
       setIsLoading(false);
-    }, 2000); // Simulate 2 seconds delay
+    }, 2000);
   };
 
-  // Keyboard shortcuts (remains in App.tsx as it's global)
+  // 全局键盘快捷键
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey) {
@@ -168,10 +214,10 @@ const App: React.FC = () => {
             break;
           case "f":
             e.preventDefault();
-            const searchInput = document.querySelector(
+            const input = document.querySelector(
               ".search-input"
             ) as HTMLInputElement;
-            if (searchInput) searchInput.focus();
+            input?.focus();
             break;
         }
       }
@@ -180,15 +226,13 @@ const App: React.FC = () => {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  // Touch device support (remains in App.tsx as it's global)
+  // 启用触摸支持
   useEffect(() => {
-    if ("ontouchstart" in window) {
+    if (typeof window !== "undefined" && "ontouchstart" in window) {
       document.addEventListener("touchstart", () => {}, { passive: true });
-      // Note: Specific card touch effects are now handled within ItineraryCard and TypeCard
     }
   }, []);
 
-  // Content for the sidebar
   const sidebarContent = (
     <div className="flex flex-col h-full">
       <SmartSearch
@@ -205,7 +249,6 @@ const App: React.FC = () => {
     </div>
   );
 
-  // Content for the main panel (itinerary and map displayed simultaneously)
   const mainPanelContent = (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-full">
       <ItineraryPanel itinerary={itinerary} />
@@ -215,7 +258,16 @@ const App: React.FC = () => {
 
   return (
     <div className="App">
-      <PageContainer sidebar={sidebarContent} mainContent={mainPanelContent} />
+      <PageContainer
+        sidebar={sidebarContent}
+        mainContent={mainPanelContent}
+        currentUserId={currentUsername}
+        onLogout={handleLogout}
+        // pathname 可以在客户端组件中安全地访问 window.location.pathname
+        pathname={
+          typeof window !== "undefined" ? window.location.pathname : "/"
+        }
+      />
       <FloatingActions />
     </div>
   );
