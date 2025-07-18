@@ -77,7 +77,7 @@ export async function POST(request: Request) {
     response.cookies.set({
       name: "authToken",
       value: token,
-      httpOnly: true,
+      httpOnly: false,
       path: "/",
       maxAge: ONE_HOUR, // Set this to match your JWT's expiration (e.g., 1 hour)
       sameSite: "lax",

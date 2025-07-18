@@ -2,8 +2,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation"; // 导入 useRouter 以便安全地进行客户端导航
-
+import { useRouter } from "next/navigation";
 import PageContainer from "../components/Layout/PageContainer";
 import SmartSearch from "../components/Sidebar/SmartSearch";
 import PreferenceForm from "../components/Sidebar/PreferenceForm";
@@ -11,9 +10,10 @@ import GenerateButton from "../components/Sidebar/GenerateButton";
 import ItineraryPanel from "../components/MainPanel/ItineraryPanel";
 import MapView from "../components/MainPanel/MapView";
 import FloatingActions from "../components/Controls/FloatingActions";
+import { GeneratedItinerary, DayItinerary } from "./types/itinerary"; // 导入新定义的类型
 
 const App: React.FC = () => {
-  const router = useRouter(); // 初始化 useRouter
+  const router = useRouter();
 
   const [preferences, setPreferences] = useState({
     destination: "",
@@ -32,22 +32,30 @@ const App: React.FC = () => {
     "Tell me what kind of trip you want... e.g., Beach hiking July Europe"
   );
 
-  const [itinerary, setItinerary] = useState<any[]>([]);
+  // 将 itinerary 的类型改为 GeneratedItinerary 或 DayItinerary[]
+  const [itinerary, setItinerary] = useState<DayItinerary[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  // 新增状态：存储用户名
   const [currentUsername, setCurrentUsername] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null); // 类型为 string | null
 
-  // 获取 Cookie 的辅助函数保持不变
+  // ⭐ ADD THIS LOG IMMEDIATELY AFTER STATE DECLARATIONS ⭐
+  console.log("App component render: typeof setError is", typeof setError);
+  console.log("App component render: error state value is", error);
+
   const getCookie = (name: string): string | null => {
     if (typeof document === "undefined") {
       return null;
     }
     const value = `; ${document.cookie}`;
+    console.log("Full document.cookie:", document.cookie); // 打印原始 cookie 字符串
+
     const parts = value.split(`; ${name}=`);
+    console.log(`Parts for ${name}:`, parts); // 打印分割后的 parts 数组
     if (parts.length === 2) {
       const cookieValue = parts.pop()?.split(";").shift() || null;
+      console.log(`Extracted cookieValue for ${name}:`, cookieValue); //
       try {
         return cookieValue ? decodeURIComponent(cookieValue) : null;
       } catch (e) {
@@ -58,10 +66,8 @@ const App: React.FC = () => {
     return null;
   };
 
-  // Effect 1: 从 Cookie 读取 userId
   useEffect(() => {
     const storedUserId = getCookie("userId");
-
     if (storedUserId) {
       setCurrentUserId(storedUserId);
       console.log(
@@ -73,19 +79,14 @@ const App: React.FC = () => {
     }
   }, []);
 
-  // Effect 2: 当 userId 存在时，获取用户名
   useEffect(() => {
     if (currentUserId) {
       const fetchUsername = async () => {
         try {
-          // 调用一个 API 路由来根据 ID 获取用户详细信息
-          // 你需要创建一个 /api/user/[id]/route.ts 或 /api/user/me 路由
-          const response = await fetch(`/api/user/${currentUserId}`); // 假设这个路由存在
+          const response = await fetch(`/api/user/${currentUserId}`);
           if (!response.ok) {
-            // 如果 API 返回错误，例如用户不存在或未授权
             console.error("Failed to fetch user data:", response.statusText);
             setCurrentUsername(null);
-            // 考虑在这里执行登出操作，如果用户ID无效
             handleLogout();
             return;
           }
@@ -99,12 +100,11 @@ const App: React.FC = () => {
           setCurrentUsername(null);
         }
       };
-
       fetchUsername();
     } else {
-      setCurrentUsername(null); // 如果没有 userId，则清空用户名
+      setCurrentUsername(null);
     }
-  }, [currentUserId]); // 依赖 currentUserId 变化而触发
+  }, [currentUserId]);
 
   const handleLogout = () => {
     document.cookie =
@@ -112,7 +112,7 @@ const App: React.FC = () => {
     document.cookie =
       "userId=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax; Secure;";
     setCurrentUserId(null);
-    setCurrentUsername(null); // 清空用户名状态
+    setCurrentUsername(null);
     router.push("/auth/login");
   };
 
@@ -125,92 +125,57 @@ const App: React.FC = () => {
     setPreferences((prev) => ({ ...prev, destination: query }));
   };
 
-  const handleGenerateItinerary = () => {
+  const handleGenerateItinerary = async () => {
     setIsLoading(true);
-    console.log("Generating itinerary with:", preferences);
+    setError(null);
+    setItinerary([]); // Clear previous itinerary - already good
 
-    setTimeout(() => {
-      setItinerary([
-        {
-          day: 1,
-          title: "Rome - The Eternal City",
-          date: "August 15, 2025",
-          activities: [
-            {
-              title: "Colosseum & Roman Forum",
-              description:
-                "Witness two millennia of history, feel the glory of the Roman Empire.",
-              time: "09:00-12:00",
-              rating: 4.8,
-              price: "180",
-              imageUrl:
-                "https://placehold.co/400x200/FF5733/FFFFFF?text=Colosseum",
-            },
-            {
-              title: "Trevi Fountain & Spanish Steps",
-              description: "Toss a coin and enjoy the Spanish Steps.",
-              time: "14:00-17:00",
-              rating: 4.6,
-              price: "Free",
-              imageUrl:
-                "https://placehold.co/400x200/33FF57/FFFFFF?text=Trevi+Fountain",
-            },
-          ],
+    try {
+      const response = await fetch("/api/generate-itinerary", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${getCookie("authToken")}`,
         },
-        {
-          day: 2,
-          title: "Vatican City State",
-          date: "August 16, 2025",
-          activities: [
-            {
-              title: "Vatican Museums & Sistine Chapel",
-              description: "Admire Michelangelo's ceiling frescoes.",
-              time: "08:00-12:00",
-              rating: 4.9,
-              price: "220",
-              imageUrl:
-                "https://placehold.co/400x200/3357FF/FFFFFF?text=Vatican+Museum",
-            },
-            {
-              title: "St. Peter's Basilica",
-              description: "Climb to the top for panoramic views.",
-              time: "14:00-16:00",
-              rating: 4.7,
-              price: "120",
-              imageUrl:
-                "https://placehold.co/400x200/FF33A1/FFFFFF?text=St+Peters",
-            },
-          ],
-        },
-        {
-          day: 3,
-          title: "Florence - Cradle of the Renaissance",
-          date: "August 17, 2025",
-          activities: [
-            {
-              title: "Uffizi Gallery",
-              description: "Renaissance masterpieces await.",
-              time: "09:00-13:00",
-              rating: 4.8,
-              price: "280",
-              imageUrl:
-                "https://placehold.co/400x200/A133FF/FFFFFF?text=Uffizi",
-            },
-          ],
-        },
-      ]);
+        body: JSON.stringify({
+          ...preferences,
+          userId: currentUserId,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to generate itinerary.");
+      }
+
+      const data = await response.json(); // Don't explicitly type here yet
+
+      // ⭐ NEW: Add a robust check before setting the state ⭐
+      if (Array.isArray(data)) {
+        setItinerary(data); // If data is an array, set it directly
+        console.log("Itinerary generated successfully:", data);
+      } else {
+        // If the AI didn't return an array, log and set to empty array
+        console.error("AI response data is not an array:", data);
+        setItinerary([]);
+        setError("AI generated an unexpected itinerary format.");
+      }
+    } catch (error: any) {
+      console.error("Error generating itinerary:", error.message);
+      setError(error.message); // Set the error state
+      setItinerary([]); // Keep itinerary empty on error
+    } finally {
       setIsLoading(false);
-    }, 2000);
+    }
   };
 
-  // 全局键盘快捷键
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey) {
         switch (e.key) {
           case "s":
             e.preventDefault();
-            alert("Save feature under development...");
+            alert("保存功能开发中...");
             break;
           case "f":
             e.preventDefault();
@@ -226,7 +191,6 @@ const App: React.FC = () => {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  // 启用触摸支持
   useEffect(() => {
     if (typeof window !== "undefined" && "ontouchstart" in window) {
       document.addEventListener("touchstart", () => {}, { passive: true });
@@ -263,7 +227,6 @@ const App: React.FC = () => {
         mainContent={mainPanelContent}
         currentUserId={currentUsername}
         onLogout={handleLogout}
-        // pathname 可以在客户端组件中安全地访问 window.location.pathname
         pathname={
           typeof window !== "undefined" ? window.location.pathname : "/"
         }

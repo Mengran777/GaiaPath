@@ -28,8 +28,8 @@ model Trip {
   id        String    @id @default(uuid())
   name      String
   startDate DateTime  @map("start_date") @db.Date // 存储日期，不含时间
-  endDate   DateTime  @map("end_date") @db.Date   // 存储日期，不含时间
-  
+  endDate   DateTime  @map("end_date") @db.Date    // 存储日期，不含时间
+
   userId    String    // 外键，关联到 User
   user      User      @relation(fields: [userId], references: [id])
 
@@ -43,18 +43,23 @@ model Trip {
 
 // 地点模型 (行程中的具体地点)
 model Location {
-  id        String   @id @default(uuid())
-  name      String
-  latitude  Float
-  longitude Float
-  notes     String?  // 备注可选
-  order     Int      @default(0) // 地点在行程中的顺序
+  id          String   @id @default(uuid())
+  name        String
+  description String?  // 新增：活动描述，可选
+  latitude    Float
+  longitude   Float
+  notes       String?  // 备注可选
+  order       Int      @default(0) // 地点在行程中的顺序
+  time        String?  // 新增：活动时间段，可选
+  rating      Float?   // 新增：评分，可选
+  price       String?  // 新增：价格 (可以是 "Free" 或数字字符串)，可选
+  imageUrl    String?  // 新增：图片 URL，可选
 
-  tripId    String   // 外键，关联到 Trip
-  trip      Trip     @relation(fields: [tripId], references: [id])
+  tripId      String   // 外键，关联到 Trip
+  trip        Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade) // 添加 onDelete: Cascade
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@map("locations") // 数据库表名为 'locations'
 }

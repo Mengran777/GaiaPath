@@ -24,6 +24,12 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({ itinerary }) => {
 
   // Simulate weather update
   useEffect(() => {
+    // ⭐ Add a defensive check here ⭐
+    if (!itinerary || itinerary.length === 0) {
+      setWeatherData({}); // Clear weather data if no itinerary
+      return; // Exit if itinerary is not ready
+    }
+
     const updateWeather = () => {
       const weatherOptions = [
         "Sunny",
@@ -47,10 +53,15 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({ itinerary }) => {
     updateWeather();
     const interval = setInterval(updateWeather, 30000);
     return () => clearInterval(interval);
-  }, [itinerary]);
+  }, [itinerary]); // Dependency array includes 'itinerary'
 
   // Intersection Observer for fade-in animation
   useEffect(() => {
+    // ⭐ Add a defensive check here as well ⭐
+    if (!itinerary || itinerary.length === 0) {
+      return; // Exit if itinerary is not ready
+    }
+
     const observerOptions = {
       threshold: 0.1,
       rootMargin: "0px 0px -50px 0px",
@@ -90,13 +101,14 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({ itinerary }) => {
         dayElements.forEach((el) => observer.unobserve(el));
       }
     };
-  }, [itinerary]);
+  }, [itinerary]); // Dependency array includes 'itinerary'
 
   return (
     <Section
       title="Recommended Itinerary"
       className="flex-1 overflow-y-auto pr-2 -mr-2 custom-scrollbar"
     >
+      {/* This check is already good for the main rendering */}
       {itinerary.length === 0 ? (
         <p className="text-gray-500 text-center py-8">
           Please enter preferences on the left and generate an itinerary.
@@ -110,7 +122,7 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({ itinerary }) => {
             >
               <div
                 className="absolute -left-5 top-0 w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-purple-600
-                              text-white font-bold flex items-center justify-center shadow-md"
+                                  text-white font-bold flex items-center justify-center shadow-md"
               >
                 {dayItem.day}
               </div>
@@ -123,6 +135,7 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({ itinerary }) => {
                 </p>
               </div>
               <div className="space-y-4">
+                {/* It's good that you're mapping dayItem.activities, which should be an array */}
                 {dayItem.activities.map((activity, index) => (
                   <ItineraryCard key={index} {...activity} />
                 ))}
