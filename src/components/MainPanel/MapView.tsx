@@ -9,8 +9,8 @@ import {
   FullscreenControl,
   ScaleControl,
   Popup,
-  Source,
-  Layer,
+  // Source,
+  // Layer,
 } from "react-map-gl/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
 import mapboxgl from "mapbox-gl"; // Import mapboxgl for programmatic control
@@ -25,15 +25,16 @@ interface Location {
 
 interface MapViewProps {
   locations: Location[];
-  route: GeoJSON.Feature<GeoJSON.LineString, GeoJSON.GeoJsonProperties> | null;
   highlightedLocation: Location | null; // This is correctly passed
 }
+
+// route: GeoJSON.Feature<GeoJSON.LineString, GeoJSON.GeoJsonProperties> | null;
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
 
 const MapView: React.FC<MapViewProps> = ({
   locations,
-  route,
+  // route,
   highlightedLocation,
 }) => {
   const mapRef = useRef<mapboxgl.Map | null>(null);
@@ -66,6 +67,22 @@ const MapView: React.FC<MapViewProps> = ({
       }
     }
   }, [highlightedLocation, mapRef.current]); // Depend on mapRef.current too, to ensure map is loaded
+
+  useEffect(() => {
+    if (!highlightedLocation) return;
+    if (!mapRef.current) return;
+
+    const { latitude, longitude } = highlightedLocation;
+    if (latitude !== 0 && longitude !== 0) {
+      mapRef.current.flyTo({
+        center: [longitude, latitude],
+        zoom: 14,
+        duration: 1500,
+        essential: true,
+      });
+      setSelectedLocation(highlightedLocation);
+    }
+  }, [highlightedLocation]);
 
   // Effect to fit map bounds to all locations when `locations` changes
   // We need to be careful here not to immediately override `highlightedLocation` flyTo.
@@ -138,19 +155,19 @@ const MapView: React.FC<MapViewProps> = ({
     }
   }, []);
 
-  const lineLayerStyle = {
-    id: "route-line",
-    type: "line",
-    paint: {
-      "line-color": "#007cbf",
-      "line-width": 4,
-      "line-opacity": 0.75,
-    },
-    layout: {
-      "line-join": "round",
-      "line-cap": "round",
-    },
-  } as const;
+  // const lineLayerStyle = {
+  //   id: "route-line",
+  //   type: "line",
+  //   paint: {
+  //     "line-color": "#007cbf",
+  //     "line-width": 4,
+  //     "line-opacity": 0.75,
+  //   },
+  //   layout: {
+  //     "line-join": "round",
+  //     "line-cap": "round",
+  //   },
+  // } as const;
 
   return (
     <div className="relative w-full h-full rounded-2xl overflow-hidden shadow-xl">
@@ -168,11 +185,11 @@ const MapView: React.FC<MapViewProps> = ({
           <FullscreenControl position="top-right" />
           <ScaleControl />
 
-          {route && (
+          {/* {route && (
             <Source id="my-route-data" type="geojson" data={route}>
               <Layer {...lineLayerStyle} />
             </Source>
-          )}
+          )} */}
 
           {locations.map((location, index) =>
             typeof location.latitude === "number" &&
