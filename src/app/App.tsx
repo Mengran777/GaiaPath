@@ -315,7 +315,6 @@ const App: React.FC = () => {
           {/* ⭐ MODIFIED: Pass highlightedLocation to MapView ⭐ */}
           <MapView
             locations={allLocations}
-            // route={routeGeoJSON}
             highlightedLocation={highlightedLocation} // ⭐ NEW PROP ⭐
           />
         </div>
