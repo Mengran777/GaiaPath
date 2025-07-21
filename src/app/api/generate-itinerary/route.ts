@@ -1,26 +1,95 @@
 // src/app/api/generate-itinerary/route.ts
 
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/lib/db"; // Import Prisma client
-import { authenticateRequest } from "@/lib/auth"; // Import authentication helper function
-// 导入 GoogleGenerativeAI
+import prisma from "@/lib/db";
+import { authenticateRequest } from "@/lib/auth";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-// 确保从环境变量获取 API 密钥，而不是硬编码
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const GOOGLE_CUSTOM_SEARCH_API_KEY = process.env.GOOGLE_CUSTOM_SEARCH_API_KEY; // ⭐ 新增环境变量 ⭐
+const GOOGLE_CUSTOM_SEARCH_ENGINE_ID =
+  process.env.GOOGLE_CUSTOM_SEARCH_ENGINE_ID; // ⭐ 新增环境变量 ⭐
 
 if (!GEMINI_API_KEY) {
-  // 在实际应用中，这里应该有更健壮的错误处理或启动检查
   console.error("GEMINI_API_KEY is not set in environment variables.");
-  // 生产环境可以考虑直接抛出错误或退出
+}
+// ⭐ 检查新的环境变量 ⭐
+if (!GOOGLE_CUSTOM_SEARCH_API_KEY || !GOOGLE_CUSTOM_SEARCH_ENGINE_ID) {
+  console.error(
+    "GOOGLE_CUSTOM_SEARCH_API_KEY or GOOGLE_CUSTOM_SEARCH_ENGINE_ID is not set."
+  );
 }
 
-const genAI = new GoogleGenerativeAI(GEMINI_API_KEY || ""); // 初始化 Gemini AI 客户端
+const genAI = new GoogleGenerativeAI(GEMINI_API_KEY || "");
 
-/**
- * Handles POST requests to generate an itinerary using AI.
- * Path: /api/generate-itinerary
- */
+// ⭐ 修改这个函数，直接调用 Google Custom Search API ⭐
+async function fetchRealImageUrl(query: string): Promise<string | undefined> {
+  if (!GOOGLE_CUSTOM_SEARCH_API_KEY || !GOOGLE_CUSTOM_SEARCH_ENGINE_ID) {
+    console.warn(
+      "Custom Search API keys not configured. Falling back to placeholder image."
+    );
+    return `https://placehold.co/400x200/CCCCCC/FFFFFF?text=${encodeURIComponent(
+      query || "No Image"
+    )}`;
+  }
+
+  const API_KEY = GOOGLE_CUSTOM_SEARCH_API_KEY;
+  const CX = GOOGLE_CUSTOM_SEARCH_ENGINE_ID;
+  const SEARCH_URL = `https://www.googleapis.com/customsearch/v1?q=${encodeURIComponent(
+    query
+  )}&cx=${CX}&key=${API_KEY}&searchType=image&num=1`; // num=1 只返回一张图片
+
+  try {
+    const response = await fetch(SEARCH_URL);
+    if (!response.ok) {
+      // 如果响应不成功（例如 400, 403, 500 错误），抛出错误
+      const errorText = await response.text();
+      throw new Error(
+        `Google Custom Search API error: ${response.status} - ${errorText}`
+      );
+    }
+    const data = await response.json();
+
+    // 检查是否有图片结果
+    if (data.items && data.items.length > 0) {
+      // 返回第一张图片的链接
+      return data.items[0].link;
+    }
+  } catch (error) {
+    console.error(`Error fetching real image for "${query}":`, error);
+  }
+  // 如果发生错误或没有找到图片，返回一个占位图
+  return `https://placehold.co/400x200/CCCCCC/FFFFFF?text=${encodeURIComponent(
+    query || "No Image"
+  )}`;
+}
+
+// 类型定义（与你当前的 src/app/types/itinerary.ts 保持一致）
+interface Activity {
+  title: string;
+  description: string;
+  time?: string;
+  rating?: number;
+  price?: string;
+  imageUrl?: string;
+  latitude?: number;
+  longitude?: number;
+}
+
+interface DayItinerary {
+  day: number;
+  title: string;
+  date: string;
+  activities: Activity[];
+}
+
+interface GeneratedItinerary {
+  name: string;
+  startDate: string;
+  endDate: string;
+  itineraryDays: DayItinerary[];
+}
+
 export async function POST(request: NextRequest) {
   const authResult = authenticateRequest(request);
   if (!authResult) {
@@ -28,13 +97,9 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    // ⭐ 关键修复：直接获取整个 JSON body 对象 ⭐
-    const body = await request.json(); // Get user preferences from the frontend
+    const body = await request.json();
+    console.log("Backend received raw request body:", body);
 
-    console.log("Backend received raw request body:", body); // 这行现在可以正常工作了
-
-    // Destructure the preferences directly from the 'body' object
-    // 前端发送的字段都在这里直接解构
     const {
       destination,
       travelStartDate,
@@ -46,24 +111,22 @@ export async function POST(request: NextRequest) {
       transportation,
       activityIntensity,
       specialNeeds,
-      userId, // Ensure userId is also destructured
+      userId,
     } = body;
 
-    // Add detailed logging for each preference field
     console.log("Backend preferences extracted:");
-    console.log("  destination:", destination);
-    console.log("  travelStartDate:", travelStartDate);
-    console.log("  travelEndDate:", travelEndDate);
-    console.log("  budget:", budget);
-    console.log("  travelers:", travelers);
-    console.log("  travelType:", travelType);
-    console.log("  accommodation:", accommodation);
-    console.log("  transportation:", transportation);
-    console.log("  activityIntensity:", activityIntensity);
-    console.log("  specialNeeds:", specialNeeds);
-    console.log("  userId:", userId);
+    console.log("   destination:", destination);
+    console.log("   travelStartDate:", travelStartDate);
+    console.log("   travelEndDate:", travelEndDate);
+    console.log("   budget:", budget);
+    console.log("   travelers:", travelers);
+    console.log("   travelType:", travelType);
+    console.log("   accommodation:", accommodation);
+    console.log("   transportation:", transportation);
+    console.log("   activityIntensity:", activityIntensity);
+    console.log("   specialNeeds:", specialNeeds);
+    console.log("   userId:", userId);
 
-    // 调整验证逻辑，检查解构后的变量
     const missingFields = [];
     if (!destination) missingFields.push("destination");
     if (!travelStartDate) missingFields.push("travelStartDate");
@@ -86,21 +149,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // ⭐ 移除此行，因为它在 `body` 被正确获取后已不再需要且 `preferences` 变量不存在 ⭐
-    // if (!preferences) {
-    //   return NextResponse.json(
-    //     { error: "Missing preferences in request body." },
-    //     { status: 400 }
-    //   );
-    // }
-
     // 1. Construct AI Prompt
-    // 调整 AI 提示词，直接使用解构后的变量
     const prompt = `
       你是一个专业的旅行规划助手。
       根据以下用户偏好，为他们生成一个详细的旅行行程。
-      请确保行程内容丰富、符合主题，并提供每个活动的具体信息，包括地点、时间、描述、预估评分、预估价格和相关图片URL，以及**精确的经纬度**。
-      图片URL可以使用 placeholder.co 服务生成，例如：https://placehold.co/400x200/FF5733/FFFFFF?text=ActivityName。
+      请确保行程内容丰富、符合主题，并提供每个活动的具体信息，包括地点、时间、描述、预估评分、预估价格，以及**精确的经纬度**。
+      **不要在 JSON 中包含 imageUrl 字段，这个将由后端单独的图片搜索工具来填充。**
       请为整个行程提供一个合适的总名称 (name)，以及行程的开始日期 (startDate) 和结束日期 (endDate)，这些应该作为顶级字段。
       行程应至少包含 3 天，每天 2-3 个活动。
 
@@ -144,7 +198,6 @@ export async function POST(request: NextRequest) {
                 "time": "时间段，例如：09:00-12:00",
                 "rating": 4.8,
                 "price": "价格或'Free'，例如：€18",
-                "imageUrl": "https://placehold.co/400x200/FF5733/FFFFFF?text=Colosseum",
                 "latitude": 41.8902,
                 "longitude": 12.4922
               },
@@ -154,7 +207,6 @@ export async function POST(request: NextRequest) {
                 "time": "时间段2",
                 "rating": 4.5,
                 "price": "€5",
-                "imageUrl": "https://placehold.co/400x200/33FF57/FFFFFF?text=Trevi+Fountain",
                 "latitude": 41.9009,
                 "longitude": 12.4833
               }
@@ -171,7 +223,6 @@ export async function POST(request: NextRequest) {
                 "time": "08:00-12:00",
                 "rating": 4.9,
                 "price": "€22",
-                "imageUrl": "https://placehold.co/400x200/3357FF/FFFFFF?text=Vatican+Museum",
                 "latitude": 41.9064,
                 "longitude": 12.4537
               }
@@ -185,23 +236,20 @@ export async function POST(request: NextRequest) {
     // 2. Call Gemini API
     const model = genAI.getGenerativeModel({
       model: "gemini-1.5-flash-latest",
-    }); // 使用新的、更适合生产环境的模型
+    });
 
     const result = await model.generateContent(prompt);
     const responseText = result.response.text();
 
-    console.log("AI Raw Response:", responseText); // 调试用：打印AI原始响应
+    console.log("AI Raw Response:", responseText);
 
-    let generatedItineraryData: any; // 声明为 any，稍后进行类型断言
+    let generatedItineraryData: GeneratedItinerary;
 
     try {
-      // 尝试从包含 ```json``` 块的文本中提取 JSON
       const jsonMatch = responseText.match(/```json\n([\s\S]*?)\n```/);
       let jsonString = jsonMatch ? jsonMatch[1] : responseText;
-
       generatedItineraryData = JSON.parse(jsonString);
 
-      // 验证顶层结构
       if (
         !generatedItineraryData.name ||
         !generatedItineraryData.startDate ||
@@ -210,17 +258,29 @@ export async function POST(request: NextRequest) {
       ) {
         throw new Error("AI response structure is not as expected.");
       }
+
+      for (const day of generatedItineraryData.itineraryDays) {
+        for (const activity of day.activities) {
+          const imageUrl = await fetchRealImageUrl(activity.title);
+          if (imageUrl) {
+            activity.imageUrl = imageUrl;
+          }
+          activity.latitude =
+            typeof activity.latitude === "number" ? activity.latitude : 0;
+          activity.longitude =
+            typeof activity.longitude === "number" ? activity.longitude : 0;
+        }
+      }
     } catch (parseError: any) {
-      // 捕获错误时明确类型
       console.error(
-        "Failed to parse AI generated JSON:",
+        "Failed to parse AI generated JSON or process images:",
         parseError,
         responseText
       );
       return NextResponse.json(
         {
           error: `AI generated invalid JSON format or unexpected structure: ${parseError.message}`,
-        }, // 包含解析错误信息
+        },
         { status: 500 }
       );
     }
@@ -237,19 +297,19 @@ export async function POST(request: NextRequest) {
         endDate: tripEndDate,
         userId: authResult.userId,
         locations: {
-          create: generatedItineraryData.itineraryDays.flatMap((day: any) =>
-            day.activities.map((activity: any, index: number) => ({
-              name: activity.title,
-              description: activity.description,
-              latitude: activity.latitude || 0, // 确保有经纬度，如果 AI 没给就用 0
-              longitude: activity.longitude || 0,
-              notes: activity.notes || "",
-              order: day.day * 1000 + index,
-              time: activity.time,
-              rating: activity.rating,
-              price: activity.price,
-              imageUrl: activity.imageUrl,
-            }))
+          create: generatedItineraryData.itineraryDays.flatMap(
+            (day: DayItinerary) =>
+              day.activities.map((activity: Activity, index: number) => ({
+                name: activity.title,
+                description: activity.description,
+                latitude: activity.latitude || 0,
+                longitude: activity.longitude || 0,
+                order: day.day * 1000 + index,
+                time: activity.time || "",
+                rating: activity.rating || 0,
+                price: activity.price || "",
+                imageUrl: activity.imageUrl || null, // 保存实际图片URL
+              }))
           ),
         },
       },
@@ -258,13 +318,23 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // 5. Return AI-generated itinerary to the frontend
     return NextResponse.json(generatedItineraryData.itineraryDays, {
       status: 200,
     });
   } catch (error: any) {
     console.error("Error in AI itinerary generation API:", error);
+    if (error.message.includes("503 Service Unavailable")) {
+      return NextResponse.json(
+        {
+          error:
+            "Internal Server Error during AI generation: The model is overloaded. Please try again later.",
+        },
+        { status: 503 }
+      );
+    }
     return NextResponse.json(
-      { error: `Internal Server Error during AI generation: ${error.message}` },
+      { error: `Internal Server Error: ${error.message}` },
       { status: 500 }
     );
   }

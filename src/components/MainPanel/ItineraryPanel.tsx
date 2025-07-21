@@ -1,41 +1,48 @@
+// src/components/MainPanel/ItineraryPanel.tsx
+
 import React, { useState, useEffect, useRef } from "react";
 import ItineraryCard from "./ItineraryCard";
-import Section from "../Layout/Section"; // Import from Layout
+import Section from "../Layout/Section";
+import { DayItinerary, Activity } from "../../app/types/itinerary"; // Ensure Activity is imported
 
-interface ItineraryPanelProps {
-  itinerary: {
-    day: number;
-    title: string;
-    date: string;
-    activities: {
-      title: string;
-      description: string;
-      time?: string;
-      rating?: number;
-      price?: string;
-      imageUrl?: string;
-    }[];
-  }[];
+// Define Location type - It's best practice to define this in a shared types file
+// like src/app/types/itinerary.ts and import it.
+// For now, we'll define it here to resolve the error.
+interface Location {
+  name: string;
+  latitude: number;
+  longitude: number;
+  description?: string;
+  imageUrl?: string;
 }
 
-const ItineraryPanel: React.FC<ItineraryPanelProps> = ({ itinerary }) => {
+// ⭐ CORRECTED: Single, unified ItineraryPanelProps interface ⭐
+interface ItineraryPanelProps {
+  itinerary: DayItinerary[];
+  onActivityClick: (location: Location) => void;
+}
+
+const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
+  itinerary,
+  onActivityClick,
+}) => {
+  // Destructure onActivityClick here
   const [weatherData, setWeatherData] = useState<{ [key: string]: string }>({});
   const panelRef = useRef<HTMLDivElement>(null);
 
-  // Simulate weather update
+  // Simulate weather update (your existing code)
   useEffect(() => {
-    // ⭐ Add a defensive check here ⭐
     if (!itinerary || itinerary.length === 0) {
-      setWeatherData({}); // Clear weather data if no itinerary
-      return; // Exit if itinerary is not ready
+      setWeatherData({});
+      return;
     }
 
     const updateWeather = () => {
       const weatherOptions = [
-        "Sunny",
-        "Partly Cloudy",
-        "Light Rain",
-        "Overcast",
+        "晴朗", // Sunny
+        "局部多云", // Partly Cloudy
+        "小雨", // Light Rain
+        "阴天", // Overcast
       ];
       const tempOptions = ["25°C", "26°C", "27°C", "28°C", "29°C", "30°C"];
       const newWeatherData: { [key: string]: string } = {};
@@ -53,13 +60,12 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({ itinerary }) => {
     updateWeather();
     const interval = setInterval(updateWeather, 30000);
     return () => clearInterval(interval);
-  }, [itinerary]); // Dependency array includes 'itinerary'
+  }, [itinerary]);
 
-  // Intersection Observer for fade-in animation
+  // Intersection Observer for fade-in animation (your existing code)
   useEffect(() => {
-    // ⭐ Add a defensive check here as well ⭐
     if (!itinerary || itinerary.length === 0) {
-      return; // Exit if itinerary is not ready
+      return;
     }
 
     const observerOptions = {
@@ -73,14 +79,17 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({ itinerary }) => {
           (entry.target as HTMLElement).style.opacity = "1";
           (entry.target as HTMLElement).style.transform = "translateY(0)";
         } else {
-          // Optional: reset when out of view for re-animation on scroll back
-          (entry.target as HTMLElement).style.opacity = "0";
-          (entry.target as HTMLElement).style.transform = "translateY(30px)";
+          // Only animate out if not loading and not just initialized
+          if (panelRef.current?.dataset.initialized === "true") {
+            (entry.target as HTMLElement).style.opacity = "0";
+            (entry.target as HTMLElement).style.transform = "translateY(30px)";
+          }
         }
       });
     }, observerOptions);
 
     if (panelRef.current) {
+      panelRef.current.dataset.initialized = "false"; // Mark as not initialized yet
       const dayElements = panelRef.current.querySelectorAll(
         ".itinerary-day-animated"
       );
@@ -91,6 +100,11 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({ itinerary }) => {
           "opacity 0.6s ease-out, transform 0.6s ease-out";
         observer.observe(el);
       });
+      // After a short delay, mark as initialized to allow fade-out on scroll
+      const timer = setTimeout(() => {
+        if (panelRef.current) panelRef.current.dataset.initialized = "true";
+      }, 100); // Small delay to allow initial render before marking as initialized
+      return () => clearTimeout(timer); // Clear timeout on unmount
     }
 
     return () => {
@@ -101,17 +115,16 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({ itinerary }) => {
         dayElements.forEach((el) => observer.unobserve(el));
       }
     };
-  }, [itinerary]); // Dependency array includes 'itinerary'
+  }, [itinerary]);
 
   return (
     <Section
-      title="Recommended Itinerary"
+      title="您的定制行程" // Changed title to Chinese
       className="flex-1 overflow-y-auto pr-2 -mr-2 custom-scrollbar"
     >
-      {/* This check is already good for the main rendering */}
       {itinerary.length === 0 ? (
         <p className="text-gray-500 text-center py-8">
-          Please enter preferences on the left and generate an itinerary.
+          请在左侧输入偏好并生成行程。
         </p>
       ) : (
         <div ref={panelRef}>
@@ -128,16 +141,20 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({ itinerary }) => {
               </div>
               <div className="mb-4">
                 <h3 className="text-xl font-bold text-gray-800">
+                  {/* ⭐ MODIFIED: Use dayItem.theme for consistency with DayItinerary type ⭐ */}
                   {dayItem.title}
                 </h3>
                 <p className="text-gray-600 text-sm mt-1">
-                  {dayItem.date} · {weatherData[dayItem.date] || "Loading..."}
+                  {dayItem.date} · {weatherData[dayItem.date] || "加载中..."}
                 </p>
               </div>
               <div className="space-y-4">
-                {/* It's good that you're mapping dayItem.activities, which should be an array */}
                 {dayItem.activities.map((activity, index) => (
-                  <ItineraryCard key={index} {...activity} />
+                  <ItineraryCard
+                    key={index}
+                    {...activity}
+                    onActivityClick={onActivityClick}
+                  />
                 ))}
               </div>
             </div>

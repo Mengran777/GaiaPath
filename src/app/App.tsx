@@ -1,7 +1,7 @@
 // src/app/App.tsx
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import PageContainer from "../components/Layout/PageContainer";
 import SmartSearch from "../components/Sidebar/SmartSearch";
@@ -11,6 +11,14 @@ import ItineraryPanel from "../components/MainPanel/ItineraryPanel";
 import MapView from "../components/MainPanel/MapView";
 import FloatingActions from "../components/Controls/FloatingActions";
 import { GeneratedItinerary, DayItinerary } from "./types/itinerary"; // 导入新定义的类型
+
+interface Location {
+  name: string;
+  latitude: number;
+  longitude: number;
+  description?: string;
+  imageUrl?: string;
+}
 
 const App: React.FC = () => {
   const router = useRouter();
@@ -32,13 +40,15 @@ const App: React.FC = () => {
     "Tell me what kind of trip you want... e.g., Beach hiking July Europe"
   );
 
-  // 将 itinerary 的类型改为 GeneratedItinerary 或 DayItinerary[]
   const [itinerary, setItinerary] = useState<DayItinerary[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [currentUsername, setCurrentUsername] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null); // 类型为 string | null
+  // ⭐ 新增状态：选中地点 ⭐
+  const [highlightedLocation, setHighlightedLocation] =
+    useState<Location | null>(null);
 
   // ⭐ ADD THIS LOG IMMEDIATELY AFTER STATE DECLARATIONS ⭐
   console.log("App component render: typeof setError is", typeof setError);
@@ -129,6 +139,7 @@ const App: React.FC = () => {
     setIsLoading(true);
     setError(null);
     setItinerary([]); // Clear previous itinerary - already good
+    setHighlightedLocation(null); // ⭐ IMPORTANT: Clear highlighted location when generating new itinerary ⭐
 
     try {
       const response = await fetch("/api/generate-itinerary", {
@@ -197,6 +208,60 @@ const App: React.FC = () => {
     }
   }, []);
 
+  const allLocations = useMemo(() => {
+    // ⭐ 使用 useMemo 优化 ⭐
+    return itinerary
+      .flatMap((day) =>
+        day.activities.map((activity) => ({
+          name: activity.title,
+          latitude: activity.latitude || 0,
+          longitude: activity.longitude || 0,
+          description: activity.description,
+          imageUrl: activity.imageUrl,
+        }))
+      )
+      .filter((loc) => loc.latitude !== 0 && loc.longitude !== 0);
+  }, [itinerary]); // 依赖 itinerary
+
+  // const routeGeoJSON = useMemo(() => {
+  //   // ⭐ 使用 useMemo 优化 ⭐
+  //   if (allLocations.length < 2) {
+  //     return null;
+  //   }
+
+  //   // 过滤掉无效坐标，并映射为 [longitude, latitude] 格式
+  //   const coordinates = allLocations
+  //     .filter(
+  //       (loc) =>
+  //         typeof loc.latitude === "number" &&
+  //         typeof loc.longitude === "number" &&
+  //         loc.latitude !== 0 &&
+  //         loc.longitude !== 0
+  //     )
+  //     .map((loc) => [loc.longitude, loc.latitude]);
+
+  //   if (coordinates.length < 2) {
+  //     // 再次检查，确保过滤后仍有足够坐标
+  //     return null;
+  //   }
+
+  //   return {
+  //     type: "Feature",
+  //     properties: {},
+  //     geometry: {
+  //       type: "LineString",
+  //       coordinates: coordinates,
+  //     },
+  //   } as const;
+  // }, [allLocations]); // 当 allLocations 变化时重新计算
+
+  // ⭐ 新增函数：处理卡片点击事件 ⭐
+  const handleCardClick = useCallback((location: Location) => {
+    setHighlightedLocation(location);
+    // 可以在这里添加滚动到地图视图的逻辑，如果地图不在当前屏幕内的话
+    // For now, let MapView handle the flyTo
+  }, []);
+
   const sidebarContent = (
     <div className="flex flex-col h-full">
       <SmartSearch
@@ -214,9 +279,47 @@ const App: React.FC = () => {
   );
 
   const mainPanelContent = (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-full">
-      <ItineraryPanel itinerary={itinerary} />
-      <MapView />
+    <div className="flex flex-col lg:flex-row gap-6 h-full">
+      {/* 行程列表面板 */}
+      <div className="lg:w-1/2 flex-shrink-0 bg-white rounded-lg shadow-md p-6 overflow-y-auto">
+        {/* ⭐ ADDED: ItineraryPanel rendering logic ⭐ */}
+        {itinerary.length === 0 && !isLoading && !error && (
+          <p className="text-gray-500 text-center py-8">
+            请在左侧输入偏好并生成行程。
+          </p>
+        )}
+        {isLoading && (
+          <div className="flex justify-center items-center h-full">
+            <p className="text-blue-500 text-lg">正在生成行程，请稍候...</p>
+          </div>
+        )}
+        {error && (
+          <p className="text-red-500 text-center py-8">错误: {error}</p>
+        )}
+        {!isLoading && !error && itinerary.length > 0 && (
+          // ⭐ 传递 handleCardClick 给 ItineraryPanel ⭐
+          <ItineraryPanel
+            itinerary={itinerary}
+            onActivityClick={handleCardClick}
+          />
+        )}
+      </div>
+
+      {/* 地图视图面板 */}
+      <div className="lg:w-1/2 flex-shrink-0 bg-gray-100 rounded-lg shadow-md p-6 flex flex-col">
+        <h3 className="text-xl font-semibold mb-4 text-gray-800">景点地图</h3>
+        <div
+          className="w-full flex-grow relative"
+          style={{ minHeight: "300px" }}
+        >
+          {/* ⭐ MODIFIED: Pass highlightedLocation to MapView ⭐ */}
+          <MapView
+            locations={allLocations}
+            // route={routeGeoJSON}
+            highlightedLocation={highlightedLocation} // ⭐ NEW PROP ⭐
+          />
+        </div>
+      </div>
     </div>
   );
 
