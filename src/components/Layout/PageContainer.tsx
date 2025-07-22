@@ -1,3 +1,4 @@
+// src/components/Layout/PageContainer.tsx
 "use client"; // This is a client component
 
 import React from "react";
@@ -6,31 +7,36 @@ import Header from "../Header/Header"; // Import Header
 interface PageContainerProps {
   sidebar: React.ReactNode;
   mainContent: React.ReactNode;
-  onLogout: () => void; // FIX: Add onLogout prop
-  currentUserId: string | null; // FIX: Add currentUserId prop
-  pathname: string; // FIX: Add pathname prop
+  onLogout: () => void;
+  currentUserId: string | null;
+  pathname: string;
 }
 
 const PageContainer: React.FC<PageContainerProps> = ({
   sidebar,
   mainContent,
-  onLogout, // FIX: Destructure onLogout
-  currentUserId, // FIX: Destructure currentUserId
-  pathname, // FIX: Destructure pathname
+  onLogout,
+  currentUserId,
+  pathname,
 }) => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#667eea] to-[#764ba2] font-sans text-gray-900 antialiased flex flex-col">
-      {/* FIX: Pass onLogout, currentUserId, and pathname to Header */}
       <Header
         onLogout={onLogout}
         currentUserId={currentUserId}
         pathname={pathname}
       />
-      <main className="flex-1 container mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <aside className="lg:col-span-1 flex-shrink-0 flex flex-col">
-          {sidebar}
+      {/* Enhanced responsive layout */}
+      <main className="flex-1 container mx-auto px-4 py-6 flex flex-col lg:flex-row gap-6">
+        {/* Sidebar */}
+        <aside className="w-full lg:w-1/3 xl:w-1/4 flex-shrink-0 flex flex-col">
+          <div className="bg-white rounded-lg shadow-md p-6 h-full flex flex-col">
+            {sidebar}
+          </div>
         </aside>
-        <section className="lg:col-span-2 min-w-0 flex flex-col gap-6">
+
+        {/* Main Content */}
+        <section className="w-full lg:w-2/3 xl:w-3/4 min-w-0 flex flex-col gap-6">
           {mainContent}
         </section>
       </main>

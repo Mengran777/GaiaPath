@@ -1,35 +1,17 @@
-/* Correct Tailwind CSS directives */
+/* Correct Tailwind CSS directives - ONLY ONCE */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Mapbox GL JS CSS (Add this line) */
+/* Mapbox GL JS CSS */
 @import "mapbox-gl/dist/mapbox-gl.css";
 
-/* Your existing root variables */
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@import "tailwindcss";
-/* Correct Tailwind CSS directives */
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* @import "tailwindcss"; */
 
 /* Your existing root variables */
 :root {
   --background: #ffffff;
   --foreground: #171717;
-}
-
-/* Your existing theme inline (if used by a specific library) */
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
 }
 
 /* Your existing dark mode media query */
@@ -45,37 +27,46 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  /* Ensure full height for layout */
+  min-height: 100vh;
 }
 
-/* Custom CSS for scrollbar and fade-in animation */
+/* Custom CSS for scrollbar */
 .custom-scrollbar::-webkit-scrollbar {
-  width: 8px;
+  width: 8px; /* Width of the vertical scrollbar */
+  height: 8px; /* Height of the horizontal scrollbar */
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
-  background: rgba(241, 241, 241, 0.5);
+  background: rgba(241, 241, 241, 0.5); /* Semi-transparent track */
   border-radius: 4px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
   background: linear-gradient(
     45deg,
-    rgba(102, 126, 234, 0.3),
-    rgba(118, 75, 162, 0.3)
+    rgba(102, 126, 234, 0.6),
+    /* Slightly more opaque for better visibility */ rgba(118, 75, 162, 0.6)
   );
   border-radius: 4px;
-  transition: all 0.3s ease;
+  transition: background 0.3s ease; /* Smooth transition for hover effect */
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(
     45deg,
-    rgba(102, 126, 234, 0.6),
-    rgba(118, 75, 162, 0.6)
+    rgba(102, 126, 234, 0.8),
+    /* Even more opaque on hover */ rgba(118, 75, 162, 0.8)
   );
 }
 
+/* For Firefox */
+.custom-scrollbar {
+  scrollbar-width: thin; /* "auto" or "thin" */
+  scrollbar-color: rgba(102, 126, 234, 0.6) rgba(241, 241, 241, 0.5); /* thumb color track color */
+}
+
+/* Initial state for fade-in animation, transition property is important */
 .itinerary-day-animated {
-  /* Initial state for animation handled by JS, but transition property is important */
   transition: opacity 0.6s ease-out, transform 0.6s ease-out;
 }
