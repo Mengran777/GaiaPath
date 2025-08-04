@@ -12,7 +12,7 @@ export default function RootLayout({
   return (
     <html lang="zh-CN">
       <body className="min-h-screen bg-gradient-to-br from-indigo-400 to-purple-500 text-gray-800">
-        <div className="container">{children}</div>
+        {children}
       </body>
     </html>
   );

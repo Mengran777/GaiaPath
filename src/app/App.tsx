@@ -263,59 +263,65 @@ const App: React.FC = () => {
   }, []);
 
   const sidebarContent = (
-    <div className="flex flex-col h-full">
+    // 关键: 不再需要 h-full，因为父容器会管理高度。
+    // 我们只需要定义内部的 flex 布局。
+    <div className="flex flex-col">
       <SmartSearch
         query={smartSearchQuery}
         setQuery={setSmartSearchQuery}
         onSearch={handleSmartSearch}
         onSuggestionClick={(s) => setSmartSearchQuery(s)}
       />
-      <PreferenceForm
-        preferences={preferences}
-        onPreferenceChange={handlePreferenceChange}
-      />
+      <div className="flex-1 mt-4 custom-scrollbar">
+        <PreferenceForm
+          preferences={preferences}
+          onPreferenceChange={handlePreferenceChange}
+        />
+      </div>
       <GenerateButton onClick={handleGenerateItinerary} isLoading={isLoading} />
     </div>
   );
 
   const mainPanelContent = (
-    <div className="flex flex-col lg:flex-row gap-6 h-full">
-      {/* 行程列表面板 */}
-      <div className="lg:w-1/2 flex-shrink-0 bg-white rounded-lg shadow-md p-6 overflow-y-auto">
-        {/* ⭐ ADDED: ItineraryPanel rendering logic ⭐ */}
-        {itinerary.length === 0 && !isLoading && !error && (
-          <p className="text-gray-500 text-center py-8">
-            请在左侧输入偏好并生成行程。
-          </p>
-        )}
-        {isLoading && (
-          <div className="flex justify-center items-center h-full">
-            <p className="text-blue-500 text-lg">正在生成行程，请稍候...</p>
-          </div>
-        )}
-        {error && (
-          <p className="text-red-500 text-center py-8">错误: {error}</p>
-        )}
-        {!isLoading && !error && itinerary.length > 0 && (
-          // ⭐ 传递 handleCardClick 给 ItineraryPanel ⭐
-          <ItineraryPanel
-            itinerary={itinerary}
-            onActivityClick={handleCardClick}
-          />
-        )}
+    // 关键: 不再需要 h-full，父容器会管理。
+    <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 xl:gap-12 h-full">
+      {/* 行程列表面板容器 */}
+      {/* 关键: flex-1 让它占据一半的水平空间和所有可用的垂直空间 */}
+      <div className="lg:w-1/2 flex-1 flex flex-col h-full">
+        {/* 关键: bg-white... 容器必须是 flex-1 并可滚动 */}
+        <div className="bg-white rounded-lg shadow-md p-6 flex-1 overflow-y-auto">
+          {/* ⭐ ADDED: ItineraryPanel rendering logic ⭐ */}
+          {itinerary.length === 0 && !isLoading && !error && (
+            <p className="text-gray-500 text-center py-8">
+              请在左侧输入偏好并生成行程。
+            </p>
+          )}
+          {isLoading && (
+            <div className="flex justify-center items-center h-full">
+              <p className="text-blue-500 text-lg">正在生成行程，请稍候...</p>
+            </div>
+          )}
+          {error && (
+            <p className="text-red-500 text-center py-8">错误: {error}</p>
+          )}
+          {!isLoading && !error && itinerary.length > 0 && (
+            // ⭐ 传递 handleCardClick 给 ItineraryPanel ⭐
+            <ItineraryPanel
+              itinerary={itinerary}
+              onActivityClick={handleCardClick}
+            />
+          )}
+        </div>
       </div>
 
-      {/* 地图视图面板 */}
-      <div className="lg:w-1/2 flex-shrink-0 bg-gray-100 rounded-lg shadow-md p-6 flex flex-col">
+      {/* 地图视图面板容器 */}
+      {/* 关键: flex-1 让它占据另一半的水平空间和所有可用的垂直空间 */}
+      <div className="lg:w-1/2 flex-1 bg-gray-100 rounded-lg shadow-md p-6 flex flex-col h-full">
         <h3 className="text-xl font-semibold mb-4 text-gray-800">景点地图</h3>
-        <div
-          className="w-full flex-grow relative"
-          style={{ minHeight: "300px" }}
-        >
-          {/* ⭐ MODIFIED: Pass highlightedLocation to MapView ⭐ */}
+        <div className="w-full flex-1 relative" style={{ minHeight: "300px" }}>
           <MapView
             locations={allLocations}
-            highlightedLocation={highlightedLocation} // ⭐ NEW PROP ⭐
+            highlightedLocation={highlightedLocation}
           />
         </div>
       </div>
