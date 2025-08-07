@@ -151,87 +151,105 @@ export async function POST(request: NextRequest) {
 
     // 1. Construct AI Prompt
     const prompt = `
-      你是一个专业的旅行规划助手。
-      根据以下用户偏好，为他们生成一个详细的旅行行程。
-      请确保行程内容丰富、符合主题，并提供每个活动的具体信息，包括地点、时间、描述、预估评分、预估价格，以及**精确的经纬度**。
-      **不要在 JSON 中包含 imageUrl 字段，这个将由后端单独的图片搜索工具来填充。**
-      请为整个行程提供一个合适的总名称 (name)，以及行程的开始日期 (startDate) 和结束日期 (endDate)，这些应该作为顶级字段。
-      行程应至少包含 3 天，每天 2-3 个活动。
+You are a professional travel planning assistant with expertise in creating detailed, personalized itineraries.
+Based on the following user preferences, generate a comprehensive travel itinerary that is rich in content, thematically coherent, and provides specific information for each activity including location, timing, description, estimated rating, estimated price, and **accurate latitude/longitude coordinates**.
 
-      用户偏好：
-      目的地: ${destination || "不限"}
-      开始日期: ${travelStartDate || "不限"}
-      结束日期: ${travelEndDate || "不限"}
-      预算: ¥${budget ? budget.toLocaleString() : "不限"}
-      旅行人数: ${travelers || "不限"}
-      旅行类型: ${
-        travelType && travelType.length > 0 ? travelType.join(", ") : "不限"
-      }
-      住宿偏好: ${accommodation || "不限"}
-      交通偏好: ${
-        transportation && transportation.length > 0
-          ? transportation.join(", ")
-          : "不限"
-      }
-      活动强度: ${activityIntensity || "不限"}
-      特殊需求: ${
-        specialNeeds && specialNeeds.length > 0 ? specialNeeds.join(", ") : "无"
-      }
+**IMPORTANT: Do NOT include the imageUrl field in the JSON response, as this will be populated separately by the backend image search tool.**
 
-      请以以下严格的 JSON 格式返回行程数据。请确保经纬度是真实的地点坐标，而不是 0。
-      请只返回 JSON，不要包含任何额外的文本或解释。
+Please provide an appropriate overall name for the entire itinerary, along with the trip's start date and end date as top-level fields.
+The itinerary should include at least 3 days with 2-3 activities per day.
 
-      \`\`\`json
-      {
-        "name": "旅行名称，例如：罗马与佛罗伦萨文艺复兴之旅",
-        "startDate": "YYYY-MM-DD",
-        "endDate": "YYYY-MM-DD",
-        "itineraryDays": [
-          {
-            "day": 1,
-            "title": "当天的概要或主要地点，例如：罗马探索日",
-            "date": "YYYY-MM-DD",
-            "activities": [
-              {
-                "title": "活动名称，例如：罗马斗兽场",
-                "description": "活动描述，例如：参观古罗马的标志性建筑。",
-                "time": "时间段，例如：09:00-12:00",
-                "rating": 4.8,
-                "price": "价格或'Free'，例如：€18",
-                "latitude": 41.8902,
-                "longitude": 12.4922
-              },
-              {
-                "title": "活动名称2",
-                "description": "活动描述2",
-                "time": "时间段2",
-                "rating": 4.5,
-                "price": "€5",
-                "latitude": 41.9009,
-                "longitude": 12.4833
-              }
-            ]
-          },
-          {
-            "day": 2,
-            "title": "梵蒂冈城深度游",
-            "date": "YYYY-MM-DD",
-            "activities": [
-              {
-                "title": "梵蒂冈博物馆与西斯廷教堂",
-                "description": "欣赏米开朗基罗的壁画。",
-                "time": "08:00-12:00",
-                "rating": 4.9,
-                "price": "€22",
-                "latitude": 41.9064,
-                "longitude": 12.4537
-              }
-            ]
-          }
-        ]
-      }
-      \`\`\`
-    `;
+**User Preferences:**
+Destination: ${destination || "Flexible"}
+Start Date: ${travelStartDate || "Flexible"}
+End Date: ${travelEndDate || "Flexible"}
+Budget: ${budget ? `$${budget.toLocaleString()}` : "Flexible"}
+Number of Travelers: ${travelers || "Flexible"}
+Travel Type: ${
+      travelType && travelType.length > 0 ? travelType.join(", ") : "Flexible"
+    }
+Accommodation Preference: ${accommodation || "Flexible"}
+Transportation Preference: ${
+      transportation && transportation.length > 0
+        ? transportation.join(", ")
+        : "Flexible"
+    }
+Activity Intensity: ${activityIntensity || "Flexible"}
+Special Requirements: ${
+      specialNeeds && specialNeeds.length > 0 ? specialNeeds.join(", ") : "None"
+    }
+
+**REQUIREMENTS:**
+1. CRITICAL: Ensure all coordinates are real, precise, and verifiable GPS coordinates for the named location. Do NOT return zeros or generic city coordinates.
+2. Include realistic pricing in local currency where applicable
+3. Provide accurate time estimates for each activity
+4. Ensure activities are logistically feasible and well-sequenced
+5. Consider travel time between locations when scheduling
+6. Match activities to the specified travel type and intensity level
+7. Account for budget constraints when suggesting activities
+
+Return the itinerary data in the following strict JSON format. 
+**Return ONLY the JSON without any additional text or explanations.**
+
+\`\`\`json
+{
+  "name": "Trip name, e.g.: Renaissance Discovery: Rome & Florence",
+  "startDate": "YYYY-MM-DD",
+  "endDate": "YYYY-MM-DD",
+  "itineraryDays": [
+    {
+      "day": 1,
+      "title": "Daily theme or main location, e.g.: Ancient Rome Exploration",
+      "date": "YYYY-MM-DD",
+      "activities": [
+        {
+          "title": "Activity name, e.g.: Colosseum",
+          "description": "Detailed activity description including what visitors will experience, historical context, or unique features.",
+          "time": "Time slot, e.g.: 09:00-12:00",
+          "rating": 4.8,
+          "price": "Price or 'Free', e.g.: €18 or Free",
+          "latitude": 41.8902,
+          "longitude": 12.4922
+        },
+        {
+          "title": "Second activity name",
+          "description": "Second activity description with relevant details and visitor information.",
+          "time": "Time slot for second activity",
+          "rating": 4.5,
+          "price": "€5",
+          "latitude": 41.9009,
+          "longitude": 12.4833
+        }
+      ]
+    },
+    {
+      "day": 2,
+      "title": "Vatican City Deep Dive",
+      "date": "YYYY-MM-DD",
+      "activities": [
+        {
+          "title": "Vatican Museums & Sistine Chapel",
+          "description": "Experience Michelangelo's masterpieces and the world's most extensive art collection in the papal palace complex.",
+          "time": "08:00-12:00",
+          "rating": 4.9,
+          "price": "€22",
+          "latitude": 41.9064,
+          "longitude": 12.4537
+        }
+      ]
+    }
+  ]
+}
+\`\`\`
+**Additional Guidelines:**
+- Focus on must-see attractions while balancing popular sites with hidden gems
+- Consider seasonal factors and local events if dates are specified
+- Ensure accessibility requirements are met if specified in special needs
+- Optimize for the specified travel type (cultural, adventure, relaxation, etc.)
+- Include practical information like opening hours considerations in time slots
+- Suggest realistic pricing based on current market rates
+- Ensure geographical coherence to minimize travel time between activities
+`;
 
     // 2. Call Gemini API
     const model = genAI.getGenerativeModel({

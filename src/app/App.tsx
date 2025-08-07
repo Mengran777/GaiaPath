@@ -29,9 +29,9 @@ const App: React.FC = () => {
     travelEndDate: "",
     budget: 15000,
     travelers: "2",
-    travelType: ["history", "nature"],
+    travelType: [],
     accommodation: "comfort",
-    transportation: ["train"],
+    transportation: [],
     activityIntensity: "moderate",
     specialNeeds: [],
   });

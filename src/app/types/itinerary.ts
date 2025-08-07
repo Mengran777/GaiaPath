@@ -15,7 +15,6 @@ export interface DayItinerary {
   day: number;
   title: string;
   date: string; // 格式通常为 "YYYY-MM-DD"
-  theme: string;
   activities: Activity[];
 }
 
