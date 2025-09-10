@@ -1,21 +1,9 @@
-// // postcss.config.js
-
-// module.exports = {
-//   plugins: {
-//     "@tailwindcss/postcss": {},
-//     "postcss-preset-env": {
-//       features: {
-//         "nesting-rules": true,
-//       },
-//     },
-//     autoprefixer: {},
-//   },
-// };
-// postcss.config.mjs
+// postcss.config.mjs (Correct for Tailwind CSS v4 Alpha/Next, which your error indicates you're using)
 const config = {
   plugins: {
-    "@tailwindcss/postcss": {}, // Crucially, use the new plugin name for Tailwind CSS v4
-    autoprefixer: {}, // Explicitly include autoprefixer
+    // ⭐ Use the plugin name that the error message specified ⭐
+    tailwindcss: {},
+    autoprefixer: {},
   },
 };
 export default config;

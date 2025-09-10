@@ -1,9 +1,6 @@
-import React from "react";
+import React from 'react';
 
-const Input: React.FC<React.InputHTMLAttributes<HTMLInputElement>> = ({
-  className = "",
-  ...props
-}) => {
+const Input: React.FC<React.InputHTMLAttributes<HTMLInputElement>> = ({ className = '', ...props }) => {
   return (
     <input
       className={`w-full p-3 border-2 border-gray-200 rounded-xl font-medium text-gray-800

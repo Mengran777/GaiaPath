@@ -1,19 +1,14 @@
-"use client"; // This directive marks the file as a Client Component
+// src/app/page.tsx
+// 重要的：移除 "use client" 指令！让它成为默认的 Server Component
 
-import React from "react";
-import App from "./App"; // Adjust the import path based on where your App.tsx is located
+import App from "./App"; // 导入你的 App 组件
 
 /**
- * This is the main page component for your Next.js application.
- * It serves as the entry point for the root route ('/').
- * It renders the core 'App' component which contains your travel assistant UI and logic.
+ * 这是你的 Next.js 应用程序的主页面组件。
+ * 在中间件处理认证和重定向后，这个组件将始终渲染 <App />。
  */
-const HomePage: React.FC = () => {
-  return (
-    // The App component contains all your main UI and application logic.
-    // Ensure your App.tsx is correctly set up and exported as default.
-    <App />
-  );
-};
-
-export default HomePage;
+export default function HomePage() {
+  // 这里的逻辑将在服务器端执行，不依赖客户端特有的 localStorage 或 window 对象
+  // 因为认证重定向已由中间件处理，所以这里无需担心用户未认证的情况
+  return <App />;
+}
