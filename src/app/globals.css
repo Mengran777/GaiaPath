@@ -6,15 +6,12 @@
 /* Mapbox GL JS CSS */
 @import "mapbox-gl/dist/mapbox-gl.css";
 
-/* @import "tailwindcss"; */
-
-/* Your existing root variables */
+/* Global CSS Variables and Styles */
 :root {
   --background: #ffffff;
   --foreground: #171717;
 }
 
-/* Your existing dark mode media query */
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
@@ -22,29 +19,13 @@
   }
 }
 
-/* 关键修改: 确保整个页面无滚动条并占据整个视口 */
 html,
 body {
-  /* 新增：设置高度为视口高度
-  height: 100vh;
-  /* 新增：禁止滚动 */
-  /* overflow: hidden; */
-}
-/* ------------------------------------------- */
-
-/* Your existing root variables */
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-/* Your existing body styles */
-body {
+  /* Next.js 14 推荐的 body 样式，不需要手动设置 height: 100vh; */
+  min-height: 100vh;
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
-  min-height: 100vh;
-  /* 移除: min-height: 100vh; 因为我们已经设置了 html, body 的 height: 100vh */
 }
 
 /* Custom CSS for scrollbar */

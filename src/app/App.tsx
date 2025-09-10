@@ -293,7 +293,7 @@ const App: React.FC = () => {
           {/* ⭐ ADDED: ItineraryPanel rendering logic ⭐ */}
           {itinerary.length === 0 && !isLoading && !error && (
             <p className="text-gray-500 text-center py-8">
-              请在左侧输入偏好并生成行程。
+              Enter your preferences on the left and generate your itinerary.
             </p>
           )}
           {isLoading && (

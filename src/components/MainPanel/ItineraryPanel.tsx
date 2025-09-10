@@ -119,12 +119,12 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
 
   return (
     <Section
-      title="您的定制行程" // Changed title to Chinese
+      title="Your customized itinerary"
       className="flex-1 overflow-y-auto pr-2 -mr-2 custom-scrollbar"
     >
       {itinerary.length === 0 ? (
         <p className="text-gray-500 text-center py-8">
-          请在左侧输入偏好并生成行程。
+          Enter your preferences on the left and generate your itinerary.
         </p>
       ) : (
         <div ref={panelRef}>
