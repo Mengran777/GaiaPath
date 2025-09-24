@@ -107,7 +107,6 @@ export async function POST(request: NextRequest) {
       budget,
       travelers,
       travelType,
-      accommodation,
       transportation,
       activityIntensity,
       specialNeeds,
@@ -121,7 +120,6 @@ export async function POST(request: NextRequest) {
     console.log("   budget:", budget);
     console.log("   travelers:", travelers);
     console.log("   travelType:", travelType);
-    console.log("   accommodation:", accommodation);
     console.log("   transportation:", transportation);
     console.log("   activityIntensity:", activityIntensity);
     console.log("   specialNeeds:", specialNeeds);
@@ -168,7 +166,6 @@ Number of Travelers: ${travelers || "Flexible"}
 Travel Type: ${
       travelType && travelType.length > 0 ? travelType.join(", ") : "Flexible"
     }
-Accommodation Preference: ${accommodation || "Flexible"}
 Transportation Preference: ${
       transportation && transportation.length > 0
         ? transportation.join(", ")

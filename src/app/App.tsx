@@ -30,7 +30,6 @@ const App: React.FC = () => {
     budget: 15000,
     travelers: "2",
     travelType: [],
-    accommodation: "comfort",
     transportation: [],
     activityIntensity: "moderate",
     specialNeeds: [],

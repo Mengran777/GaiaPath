@@ -1,59 +1,56 @@
 // src/app/api/auth/login/route.ts
 
 import { NextResponse } from "next/server";
-import prisma from "@/lib/db"; // Import the Prisma client
-import { comparePassword, generateToken } from "@/lib/auth"; // Import password comparison and token generation functions
+import prisma from "@/lib/db";
+import { comparePassword, generateToken } from "@/lib/auth";
 
 /**
- * Handles POST requests for user login.
- * Path: /api/auth/login
+ * 处理用户登录的 POST 请求
  */
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { email, password } = body;
 
-    // Basic input validation
+    // 基本输入验证
     if (!email || !password) {
       return NextResponse.json(
-        { error: "Missing required fields: email, password" },
+        { error: "缺少必填字段：email, password" },
         { status: 400 }
       );
     }
 
-    // Find the user by email in the database
+    // 邮箱格式验证
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return NextResponse.json({ error: "无效的邮箱格式" }, { status: 400 });
+    }
+
+    // 查找用户
     const user = await prisma.user.findUnique({
-      where: { email },
+      where: { email: email.toLowerCase() }, // 邮箱统一小写
     });
 
-    // If user not found, return unauthorized error
     if (!user) {
       return NextResponse.json(
-        { error: "Invalid credentials." },
+        { error: "用户名或密码错误" }, // 不透露具体是哪个字段错误
         { status: 401 }
       );
     }
 
-    // Compare the provided password with the stored hashed password
+    // 验证密码
     const isPasswordValid = await comparePassword(password, user.password);
-
-    // If passwords do not match, return unauthorized error
     if (!isPasswordValid) {
-      return NextResponse.json(
-        { error: "Invalid credentials." },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "用户名或密码错误" }, { status: 401 });
     }
 
-    // Generate a JWT token for the authenticated user
+    // 生成 JWT token
     const token = generateToken(user.id);
 
-    // --- ⭐ IMPORTANT CHANGE STARTS HERE ⭐ ---
-
-    // Create a response object
+    // 创建响应
     const response = NextResponse.json(
       {
-        message: "Login successful.",
+        message: "登录成功",
         user: {
           id: user.id,
           username: user.username,
@@ -63,47 +60,36 @@ export async function POST(request: Request) {
       { status: 200 }
     );
 
-    // Calculate token expiration for cookie (e.g., 1 hour from now)
-    // The 'generateToken' function ideally should return or allow setting expiry
-    // For simplicity, let's assume a default expiration if not handled by generateToken
-    const ONE_HOUR = 60 * 60; // seconds
+    const isProduction = process.env.NODE_ENV === "production";
+    const ONE_HOUR = 60 * 60; // 1小时（秒）
 
-    // Set the authToken as an HttpOnly Cookie
-    // HttpOnly: Prevents client-side scripts from accessing the cookie
-    // Path: All paths have access to this cookie
-    // Max-Age: Cookie expiration in seconds. Should match JWT expiration.
-    // SameSite: 'Lax' helps protect against CSRF attacks.
-    // Secure: true should be used in production (HTTPS).
+    // 设置安全的 authToken cookie
     response.cookies.set({
       name: "authToken",
       value: token,
-      httpOnly: false,
+      httpOnly: true, // 🔒 防止 XSS 攻击
       path: "/",
-      maxAge: ONE_HOUR, // Set this to match your JWT's expiration (e.g., 1 hour)
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production", // Use secure: true in production
+      maxAge: ONE_HOUR,
+      sameSite: "lax", // 🔒 防止 CSRF 攻击
+      secure: isProduction, // 🔒 生产环境使用 HTTPS
     });
 
-    // Set the userId as a regular cookie (not HttpOnly)
-    // This allows client-side JS to read userId if needed, but not the sensitive token.
+    // 设置用户 ID cookie（客户端可读）
     response.cookies.set({
       name: "userId",
       value: user.id,
-      httpOnly: false, // Can be read by client-side JavaScript
+      httpOnly: false,
       path: "/",
-      maxAge: ONE_HOUR, // Match token expiration
+      maxAge: ONE_HOUR,
       sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
+      secure: isProduction,
     });
 
-    // --- ⭐ IMPORTANT CHANGE ENDS HERE ⭐ ---
-
-    return response; // Return the response with cookies set
+    return response;
   } catch (error) {
-    console.error("Error during user login:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 }
-    );
+    console.error("用户登录时发生错误:", error);
+
+    // 不向客户端暴露内部错误详情
+    return NextResponse.json({ error: "服务器内部错误" }, { status: 500 });
   }
 }

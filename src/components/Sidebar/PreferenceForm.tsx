@@ -10,7 +10,6 @@ interface PreferenceFormProps {
     budget: number;
     travelers: string;
     travelType: string[];
-    accommodation: string;
     transportation: string[];
     activityIntensity: string;
     specialNeeds: string[];
@@ -154,28 +153,6 @@ const PreferenceForm: React.FC<PreferenceFormProps> = ({
               />
             ))}
           </div>
-        </div>
-
-        <div className="form-group">
-          <label
-            htmlFor="accommodation"
-            className="block text-sm font-semibold text-gray-700 mb-2"
-          >
-            Accommodation Preference
-          </label>
-          <Select
-            id="accommodation"
-            value={preferences.accommodation}
-            onChange={(e) =>
-              onPreferenceChange("accommodation", e.target.value)
-            }
-          >
-            <option value="economy">Economy Hotel</option>
-            <option value="comfort">Comfort Hotel</option>
-            <option value="luxury">Luxury Hotel</option>
-            <option value="homestay">Homestay/Apartment</option>
-            <option value="special">Specialty Accommodation</option>
-          </Select>
         </div>
 
         <div className="form-group">
