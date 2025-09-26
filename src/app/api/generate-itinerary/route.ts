@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
       specialNeeds,
       userId,
       // promptName = "default_itinerary_prompt.txt",
-      promptName = "itinerary_prompt_without_budget.txt",
+      promptName = "default_itinerary_prompt.txt",
     } = body;
 
     console.log("Backend preferences extracted:");
@@ -162,28 +162,35 @@ export async function POST(request: NextRequest) {
     const promptTemplate = await getPromptFromFile(promptName);
 
     // ⭐ 修改这里：使用 replace 方法替换占位符
+    // 修改为匹配新的占位符格式
     const prompt = promptTemplate
-      .replace("${destination}", destination || "Flexible")
-      .replace("${travelStartDate}", travelStartDate || "Flexible")
-      .replace("${travelEndDate}", travelEndDate || "Flexible")
-      .replace("${travelers}", travelers || "Flexible")
-      .replace(
-        "${travelType}",
+      .replaceAll("{{destination}}", destination || "Flexible")
+      .replaceAll("{{travelStartDate}}", travelStartDate || "Flexible")
+      .replaceAll("{{travelEndDate}}", travelEndDate || "Flexible")
+      .replaceAll("{{travelers}}", travelers || "Flexible")
+      .replaceAll(
+        "{{travelType}}",
         travelType && travelType.length > 0 ? travelType.join(", ") : "Flexible"
       )
-      .replace(
-        "${transportation}",
+      .replaceAll(
+        "{{transportation}}",
         transportation && transportation.length > 0
           ? transportation.join(", ")
           : "Flexible"
       )
-      .replace("${activityIntensity}", activityIntensity || "Flexible")
-      .replace(
-        "${specialNeeds}",
+      .replaceAll("{{activityIntensity}}", activityIntensity || "Flexible")
+      .replaceAll(
+        "{{specialNeeds}}",
         specialNeeds && specialNeeds.length > 0
           ? specialNeeds.join(", ")
           : "None"
       );
+
+    console.log("=== PROMPT DEBUG ===");
+    console.log("Destination value:", destination);
+    console.log("Final prompt being sent to AI:");
+    console.log(prompt);
+    console.log("=== END PROMPT DEBUG ===");
 
     // 2. Call Gemini API
     const model = genAI.getGenerativeModel({
