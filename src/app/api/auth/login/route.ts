@@ -23,7 +23,10 @@ export async function POST(request: Request) {
     // 邮箱格式验证
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      return NextResponse.json({ error: "无效的邮箱格式" }, { status: 400 });
+      return NextResponse.json(
+        { error: "无效的邮箱格式" },
+        { status: 400 }
+      );
     }
 
     // 查找用户
@@ -41,7 +44,10 @@ export async function POST(request: Request) {
     // 验证密码
     const isPasswordValid = await comparePassword(password, user.password);
     if (!isPasswordValid) {
-      return NextResponse.json({ error: "用户名或密码错误" }, { status: 401 });
+      return NextResponse.json(
+        { error: "用户名或密码错误" },
+        { status: 401 }
+      );
     }
 
     // 生成 JWT token
@@ -88,8 +94,11 @@ export async function POST(request: Request) {
     return response;
   } catch (error) {
     console.error("用户登录时发生错误:", error);
-
+    
     // 不向客户端暴露内部错误详情
-    return NextResponse.json({ error: "服务器内部错误" }, { status: 500 });
+    return NextResponse.json(
+      { error: "服务器内部错误" },
+      { status: 500 }
+    );
   }
 }

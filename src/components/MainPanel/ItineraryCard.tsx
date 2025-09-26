@@ -131,7 +131,7 @@ const ItineraryCard: React.FC<ItineraryCardProps> = ({
               )}
               {price && (
                 <div className="flex items-center gap-1">
-                  <span className="text-green-600">¥</span> {price}
+                  <span className="text-green-600">£</span> {price}
                 </div>
               )}
             </div>

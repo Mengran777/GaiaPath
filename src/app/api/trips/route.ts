@@ -1,9 +1,8 @@
-// src/app/api/trips/route.ts
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import prisma from "@/lib/db";
 import { authenticateRequest } from "@/lib/auth";
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   const auth = authenticateRequest(request);
   if (!auth)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -17,7 +16,7 @@ export async function GET(request: Request) {
   return NextResponse.json(trips);
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   const auth = authenticateRequest(request);
   if (!auth)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

@@ -39,10 +39,10 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
 
     const updateWeather = () => {
       const weatherOptions = [
-        "晴朗", // Sunny
-        "局部多云", // Partly Cloudy
-        "小雨", // Light Rain
-        "阴天", // Overcast
+        "Sunny", // Sunny
+        "Partly Cloudy", // Partly Cloudy
+        "Light Rain", // Light Rain
+        "Overcast", // Overcast
       ];
       const tempOptions = ["25°C", "26°C", "27°C", "28°C", "29°C", "30°C"];
       const newWeatherData: { [key: string]: string } = {};
@@ -145,7 +145,7 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
                   {dayItem.title}
                 </h3>
                 <p className="text-gray-600 text-sm mt-1">
-                  {dayItem.date} · {weatherData[dayItem.date] || "加载中..."}
+                  {dayItem.date} · {weatherData[dayItem.date] || "Loading..."}
                 </p>
               </div>
               <div className="space-y-4">

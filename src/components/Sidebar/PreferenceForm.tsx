@@ -7,7 +7,7 @@ interface PreferenceFormProps {
     destination: string;
     travelStartDate: string;
     travelEndDate: string;
-    budget: number;
+    // budget: number;
     travelers: string;
     travelType: string[];
     transportation: string[];
@@ -47,11 +47,11 @@ const PreferenceForm: React.FC<PreferenceFormProps> = ({
     "WiFi Essential",
   ];
 
-  const getBudgetLabel = (budget: number) => {
-    const minBudget = Math.max(1000, budget - 5000);
-    const maxBudget = budget;
-    return `Budget Range: ¥${minBudget.toLocaleString()} - ¥${maxBudget.toLocaleString()}`;
-  };
+  // const getBudgetLabel = (budget: number) => {
+  //   const minBudget = Math.max(1000, budget - 5000);
+  //   const maxBudget = budget;
+  //   return `Budget Range: ¥${minBudget.toLocaleString()} - ¥${maxBudget.toLocaleString()}`;
+  // };
 
   return (
     <Section
@@ -97,7 +97,7 @@ const PreferenceForm: React.FC<PreferenceFormProps> = ({
           </div>
         </div>
 
-        <div className="form-group">
+        {/* <div className="form-group">
           <label
             htmlFor="budget"
             className="block text-sm font-semibold text-gray-700 mb-2"
@@ -112,7 +112,7 @@ const PreferenceForm: React.FC<PreferenceFormProps> = ({
             value={preferences.budget}
             onValueChange={(val) => onPreferenceChange("budget", val)}
           />
-        </div>
+        </div> */}
 
         <div className="form-group">
           <label

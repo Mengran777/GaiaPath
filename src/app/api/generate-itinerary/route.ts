@@ -4,6 +4,8 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
 import { authenticateRequest } from "@/lib/auth";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { promises as fs } from "fs";
+import path from "path";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GOOGLE_CUSTOM_SEARCH_API_KEY = process.env.GOOGLE_CUSTOM_SEARCH_API_KEY; // ⭐ 新增环境变量 ⭐
@@ -90,6 +92,12 @@ interface GeneratedItinerary {
   itineraryDays: DayItinerary[];
 }
 
+async function getPromptFromFile(filename: string): Promise<string> {
+  const filePath = path.join(process.cwd(), "src", "prompts", filename);
+  const fileContent = await fs.readFile(filePath, "utf-8");
+  return fileContent;
+}
+
 export async function POST(request: NextRequest) {
   const authResult = authenticateRequest(request);
   if (!authResult) {
@@ -104,20 +112,22 @@ export async function POST(request: NextRequest) {
       destination,
       travelStartDate,
       travelEndDate,
-      budget,
+      // budget,
       travelers,
       travelType,
       transportation,
       activityIntensity,
       specialNeeds,
       userId,
+      // promptName = "default_itinerary_prompt.txt",
+      promptName = "itinerary_prompt_without_budget.txt",
     } = body;
 
     console.log("Backend preferences extracted:");
     console.log("   destination:", destination);
     console.log("   travelStartDate:", travelStartDate);
     console.log("   travelEndDate:", travelEndDate);
-    console.log("   budget:", budget);
+    // console.log("   budget:", budget);
     console.log("   travelers:", travelers);
     console.log("   travelType:", travelType);
     console.log("   transportation:", transportation);
@@ -148,109 +158,36 @@ export async function POST(request: NextRequest) {
     }
 
     // 1. Construct AI Prompt
-    const prompt = `
-You are a professional travel planning assistant with expertise in creating detailed, personalized itineraries.
-Based on the following user preferences, generate a comprehensive travel itinerary that is rich in content, thematically coherent, and provides specific information for each activity including location, timing, description, estimated rating, estimated price, and **accurate latitude/longitude coordinates**.
+    // ⭐ 修改这里：从文件中读取 prompt 模板
+    const promptTemplate = await getPromptFromFile(promptName);
 
-**IMPORTANT: Do NOT include the imageUrl field in the JSON response, as this will be populated separately by the backend image search tool.**
-
-Please provide an appropriate overall name for the entire itinerary, along with the trip's start date and end date as top-level fields.
-The itinerary should include at least 3 days with 2-3 activities per day.
-
-**User Preferences:**
-Destination: ${destination || "Flexible"}
-Start Date: ${travelStartDate || "Flexible"}
-End Date: ${travelEndDate || "Flexible"}
-Budget: ${budget ? `$${budget.toLocaleString()}` : "Flexible"}
-Number of Travelers: ${travelers || "Flexible"}
-Travel Type: ${
-      travelType && travelType.length > 0 ? travelType.join(", ") : "Flexible"
-    }
-Transportation Preference: ${
-      transportation && transportation.length > 0
-        ? transportation.join(", ")
-        : "Flexible"
-    }
-Activity Intensity: ${activityIntensity || "Flexible"}
-Special Requirements: ${
-      specialNeeds && specialNeeds.length > 0 ? specialNeeds.join(", ") : "None"
-    }
-
-**REQUIREMENTS:**
-1. CRITICAL: Ensure all coordinates are real, precise, and verifiable GPS coordinates for the named location. Do NOT return zeros or generic city coordinates.
-2. Include realistic pricing in local currency where applicable
-3. Provide accurate time estimates for each activity
-4. Ensure activities are logistically feasible and well-sequenced
-5. Consider travel time between locations when scheduling
-6. Match activities to the specified travel type and intensity level
-7. Account for budget constraints when suggesting activities
-
-Return the itinerary data in the following strict JSON format. 
-**Return ONLY the JSON without any additional text or explanations.**
-
-\`\`\`json
-{
-  "name": "Trip name, e.g.: Renaissance Discovery: Rome & Florence",
-  "startDate": "YYYY-MM-DD",
-  "endDate": "YYYY-MM-DD",
-  "itineraryDays": [
-    {
-      "day": 1,
-      "title": "Daily theme or main location, e.g.: Ancient Rome Exploration",
-      "date": "YYYY-MM-DD",
-      "activities": [
-        {
-          "title": "Activity name, e.g.: Colosseum",
-          "description": "Detailed activity description including what visitors will experience, historical context, or unique features.",
-          "time": "Time slot, e.g.: 09:00-12:00",
-          "rating": 4.8,
-          "price": "Price or 'Free', e.g.: €18 or Free",
-          "latitude": 41.8902,
-          "longitude": 12.4922
-        },
-        {
-          "title": "Second activity name",
-          "description": "Second activity description with relevant details and visitor information.",
-          "time": "Time slot for second activity",
-          "rating": 4.5,
-          "price": "€5",
-          "latitude": 41.9009,
-          "longitude": 12.4833
-        }
-      ]
-    },
-    {
-      "day": 2,
-      "title": "Vatican City Deep Dive",
-      "date": "YYYY-MM-DD",
-      "activities": [
-        {
-          "title": "Vatican Museums & Sistine Chapel",
-          "description": "Experience Michelangelo's masterpieces and the world's most extensive art collection in the papal palace complex.",
-          "time": "08:00-12:00",
-          "rating": 4.9,
-          "price": "€22",
-          "latitude": 41.9064,
-          "longitude": 12.4537
-        }
-      ]
-    }
-  ]
-}
-\`\`\`
-**Additional Guidelines:**
-- Focus on must-see attractions while balancing popular sites with hidden gems
-- Consider seasonal factors and local events if dates are specified
-- Ensure accessibility requirements are met if specified in special needs
-- Optimize for the specified travel type (cultural, adventure, relaxation, etc.)
-- Include practical information like opening hours considerations in time slots
-- Suggest realistic pricing based on current market rates
-- Ensure geographical coherence to minimize travel time between activities
-`;
+    // ⭐ 修改这里：使用 replace 方法替换占位符
+    const prompt = promptTemplate
+      .replace("${destination}", destination || "Flexible")
+      .replace("${travelStartDate}", travelStartDate || "Flexible")
+      .replace("${travelEndDate}", travelEndDate || "Flexible")
+      .replace("${travelers}", travelers || "Flexible")
+      .replace(
+        "${travelType}",
+        travelType && travelType.length > 0 ? travelType.join(", ") : "Flexible"
+      )
+      .replace(
+        "${transportation}",
+        transportation && transportation.length > 0
+          ? transportation.join(", ")
+          : "Flexible"
+      )
+      .replace("${activityIntensity}", activityIntensity || "Flexible")
+      .replace(
+        "${specialNeeds}",
+        specialNeeds && specialNeeds.length > 0
+          ? specialNeeds.join(", ")
+          : "None"
+      );
 
     // 2. Call Gemini API
     const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash-latest",
+      model: "gemini-2.5-flash",
     });
 
     const result = await model.generateContent(prompt);
