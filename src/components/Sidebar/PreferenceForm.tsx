@@ -77,23 +77,33 @@ const PreferenceForm: React.FC<PreferenceFormProps> = ({
 
         <div className="form-group">
           <label className="block text-sm font-semibold text-gray-700 mb-2">
-            Travel Dates
+            Travel Dates & Times
           </label>
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              type="date"
-              value={preferences.travelStartDate}
-              onChange={(e) =>
-                onPreferenceChange("travelStartDate", e.target.value)
-              }
-            />
-            <Input
-              type="date"
-              value={preferences.travelEndDate}
-              onChange={(e) =>
-                onPreferenceChange("travelEndDate", e.target.value)
-              }
-            />
+          <div className="grid grid-cols-1 gap-4">
+            <div>
+              <label className="block text-xs text-gray-600 mb-1">
+                Start Date & Time
+              </label>
+              <Input
+                type="datetime-local"
+                value={preferences.travelStartDate}
+                onChange={(e) =>
+                  onPreferenceChange("travelStartDate", e.target.value)
+                }
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-600 mb-1">
+                End Date & Time
+              </label>
+              <Input
+                type="datetime-local"
+                value={preferences.travelEndDate}
+                onChange={(e) =>
+                  onPreferenceChange("travelEndDate", e.target.value)
+                }
+              />
+            </div>
           </div>
         </div>
 

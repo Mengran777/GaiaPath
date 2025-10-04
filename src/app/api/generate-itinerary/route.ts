@@ -246,8 +246,36 @@ export async function POST(request: NextRequest) {
 
     // 4. Save AI-generated itinerary to the database
     const tripName = generatedItineraryData.name;
-    const tripStartDate = new Date(generatedItineraryData.startDate);
-    const tripEndDate = new Date(generatedItineraryData.endDate);
+
+    // 解析日期时间 - 处理可能的格式问题
+    let tripStartDate: Date;
+    let tripEndDate: Date;
+
+    try {
+      // 尝试解析 AI 返回的日期
+      tripStartDate = new Date(generatedItineraryData.startDate);
+      tripEndDate = new Date(generatedItineraryData.endDate);
+
+      // 如果解析失败，使用用户输入的日期
+      if (isNaN(tripStartDate.getTime())) {
+        console.warn("AI returned invalid start date, using user input");
+        tripStartDate = new Date(travelStartDate);
+      }
+
+      if (isNaN(tripEndDate.getTime())) {
+        console.warn("AI returned invalid end date, using user input");
+        tripEndDate = new Date(travelEndDate);
+      }
+
+      console.log("Parsed trip dates:");
+      console.log("  Start:", tripStartDate.toISOString());
+      console.log("  End:", tripEndDate.toISOString());
+    } catch (dateError) {
+      console.error("Error parsing trip dates:", dateError);
+      // 回退到用户输入的日期
+      tripStartDate = new Date(travelStartDate);
+      tripEndDate = new Date(travelEndDate);
+    }
 
     const newTrip = await prisma.trip.create({
       data: {
@@ -267,7 +295,7 @@ export async function POST(request: NextRequest) {
                 time: activity.time || "",
                 rating: activity.rating || 0,
                 price: activity.price || "",
-                imageUrl: activity.imageUrl || null, // 保存实际图片URL
+                imageUrl: activity.imageUrl || null,
               }))
           ),
         },

@@ -25,9 +25,9 @@ const App: React.FC = () => {
 
   const [preferences, setPreferences] = useState({
     destination: "",
-    travelStartDate: "",
+    travelStartDate: "", // 将存储 "2025-09-27T14:30" 格式
     travelEndDate: "",
-    budget: 15000,
+    budget: "",
     travelers: "2",
     travelType: [],
     transportation: [],

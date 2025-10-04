@@ -6,22 +6,28 @@ Based on the following user preferences, generate a comprehensive travel itinera
 **CRITICAL: This itinerary MUST be for {{destination}}. ALL activities, attractions, and locations must be in {{destination}}. Do NOT generate content for any other city or destination.**
 
 Please provide an appropriate overall name for the entire itinerary, along with the trip's start date and end date as top-level fields.
-The itinerary should include at least 3 days with 2-3 activities per day.
 
 **User Preferences:**
 Destination: {{destination}}
-Start Date: {{travelStartDate}}
-End Date: {{travelEndDate}}
+Start Date & Time: {{travelStartDate}}
+End Date & Time: {{travelEndDate}}
 Number of Travelers: {{travelers}}
 Travel Type: {{travelType}}
 Transportation Preference: {{transportation}}
 Activity Intensity: {{activityIntensity}}
 Special Requirements: {{specialNeeds}}
 
-**REQUIREMENTS:**
+**CRITICAL TIME REQUIREMENTS:**
+1. The user arrives at {{destination}} on {{travelStartDate}}. If the arrival time is in the afternoon or evening, the first day should only include activities that fit the remaining time.
+2. The user departs on {{travelEndDate}}. If the departure is in the morning or early afternoon, the last day should only include activities before the departure time.
+3. Calculate the total available time carefully and plan activities accordingly.
+4. For partial days (arrival/departure), suggest 1-2 activities maximum that fit the available time window.
+5. For full days, suggest 2-3 activities as usual.
+
+**ADDITIONAL REQUIREMENTS:**
 1. CRITICAL: Ensure all coordinates are real, precise, and verifiable GPS coordinates for {{destination}}. Do NOT return zeros or generic city coordinates.
 2. Include realistic pricing in local currency for {{destination}}
-3. Provide accurate time estimates for each activity
+3. Provide accurate time estimates for each activity that respect the arrival and departure times
 4. Ensure activities are logistically feasible and well-sequenced within {{destination}}
 5. Consider travel time between locations when scheduling within {{destination}}
 6. Match activities to the specified travel type and intensity level
@@ -29,7 +35,6 @@ Special Requirements: {{specialNeeds}}
 
 Return the itinerary data in the following strict JSON format. 
 **Return ONLY the JSON without any additional text or explanations.**
-
 ```json
 {
   "name": "Trip name for {{destination}}",
@@ -38,23 +43,14 @@ Return the itinerary data in the following strict JSON format.
   "itineraryDays": [
     {
       "day": 1,
-      "title": "Day 1 activities in {{destination}}",
-      "date": "{{travelStartDate}}",
+      "title": "Arrival Day in {{destination}}",
+      "date": "YYYY-MM-DD",
       "activities": [
         {
-          "title": "Attraction name in {{destination}}",
-          "description": "Detailed activity description for this specific location in {{destination}}, including what visitors will experience, historical context, or unique features.",
-          "time": "09:00-12:00",
+          "title": "Activity that fits arrival time",
+          "description": "Activity suitable for the time available after arrival at {{travelStartDate}}",
+          "time": "HH:MM-HH:MM (based on actual arrival time)",
           "rating": 4.8,
-          "price": "Local currency amount for {{destination}}",
-          "latitude": 0.0000,
-          "longitude": 0.0000
-        },
-        {
-          "title": "Second attraction in {{destination}}",
-          "description": "Second activity description with relevant details specific to {{destination}}.",
-          "time": "14:00-17:00",
-          "rating": 4.5,
           "price": "Local currency amount",
           "latitude": 0.0000,
           "longitude": 0.0000
@@ -63,14 +59,23 @@ Return the itinerary data in the following strict JSON format.
     },
     {
       "day": 2,
-      "title": "Day 2 exploring {{destination}}",
+      "title": "Full Day exploring {{destination}}",
       "date": "YYYY-MM-DD",
       "activities": [
         {
-          "title": "Main attraction in {{destination}}",
-          "description": "Detailed description of this specific activity in {{destination}}",
-          "time": "08:00-12:00",
+          "title": "Morning activity",
+          "description": "Detailed description",
+          "time": "09:00-12:00",
           "rating": 4.9,
+          "price": "Local currency amount",
+          "latitude": 0.0000,
+          "longitude": 0.0000
+        },
+        {
+          "title": "Afternoon activity",
+          "description": "Detailed description",
+          "time": "14:00-17:00",
+          "rating": 4.7,
           "price": "Local currency amount",
           "latitude": 0.0000,
           "longitude": 0.0000
@@ -79,14 +84,14 @@ Return the itinerary data in the following strict JSON format.
     },
     {
       "day": 3,
-      "title": "Final day in {{destination}}",
+      "title": "Departure Day from {{destination}}",
       "date": "{{travelEndDate}}",
       "activities": [
         {
-          "title": "Farewell activity in {{destination}}",
-          "description": "Perfect concluding experience in {{destination}}",
-          "time": "10:00-13:00",
-          "rating": 4.7,
+          "title": "Activity before departure",
+          "description": "Activity that fits before departure at {{travelEndDate}}",
+          "time": "HH:MM-HH:MM (ends before departure time)",
+          "rating": 4.6,
           "price": "Local currency amount",
           "latitude": 0.0000,
           "longitude": 0.0000
@@ -98,6 +103,9 @@ Return the itinerary data in the following strict JSON format.
 ```
 
 **Additional Guidelines:**
+- CRITICAL: Respect the arrival and departure times. Do not schedule activities that conflict with these times.
+- For arrival day: If arriving after 2 PM, suggest only 1 evening activity. If arriving before noon, can include 2 activities.
+- For departure day: If departing before noon, suggest only 1 morning activity. If departing in evening, can include 2 activities.
 - Focus on must-see attractions in {{destination}} while balancing popular sites with hidden gems
 - Consider seasonal factors and local events in {{destination}} if dates are specified
 - Ensure accessibility requirements are met if specified in special needs
