@@ -117,12 +117,15 @@ const App: React.FC = () => {
 
   const handleLogout = () => {
     document.cookie =
-      "authToken=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax; Secure;";
+      "authToken=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax;";
     document.cookie =
-      "userId=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax; Secure;";
+      "userId=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax;";
+    document.cookie =
+      "isLoggedIn=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax;";
+
     setCurrentUserId(null);
     setCurrentUsername(null);
-    router.push("/auth/login");
+    window.location.href = "/auth/login";
   };
 
   const handlePreferenceChange = (key: string, value: any) => {

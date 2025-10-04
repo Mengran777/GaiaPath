@@ -85,10 +85,12 @@ export function getUserId(): string | null {
 /**
  * 清除认证信息（登出）
  */
+// auth-client.ts
 export function removeAuthToken(): void {
   try {
     removeCookie("authToken");
     removeCookie("userId");
+    removeCookie("isLoggedIn"); // 添加这行
     console.log("Auth Token and User ID removed from cookies.");
   } catch (error) {
     console.error("Error removing auth token from cookies:", error);
@@ -99,5 +101,5 @@ export function removeAuthToken(): void {
  * 检查用户是否已认证
  */
 export function isAuthenticated(): boolean {
-  return !!getAuthToken();
+  return getCookie("isLoggedIn") === "true";
 }

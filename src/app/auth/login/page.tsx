@@ -13,13 +13,6 @@ const LoginPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  // 如果已登录，重定向到首页
-  useEffect(() => {
-    if (isAuthenticated()) {
-      router.push("/");
-    }
-  }, [router]);
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -27,7 +20,7 @@ const LoginPage: React.FC = () => {
 
     // 前端基本验证
     if (!email || !password) {
-      setError("请填写所有字段");
+      setError("Please fill all boxes");
       setLoading(false);
       return;
     }
@@ -45,16 +38,18 @@ const LoginPage: React.FC = () => {
 
       if (response.ok) {
         // 注意：现在不需要调用 setAuthToken，因为服务器已经设置了 cookies
-        console.log("登录成功，用户信息:", data.user);
+        console.log("Login succeed, user info:", data.user);
 
         // 强制刷新页面以更新认证状态
         window.location.href = "/";
       } else {
-        setError(data.error || "登录失败，请检查邮箱和密码");
+        setError(
+          data.error || "Login failed, please check your email and password"
+        );
       }
     } catch (err) {
-      console.error("登录请求失败:", err);
-      setError("网络错误，请稍后重试");
+      console.error("Login request failed:", err);
+      setError("Internet server error, please try again");
     } finally {
       setLoading(false);
     }
@@ -76,7 +71,7 @@ const LoginPage: React.FC = () => {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="请输入您的邮箱"
+              placeholder="Please enter your email address"
               required
               disabled={loading}
               autoComplete="email"
@@ -95,7 +90,7 @@ const LoginPage: React.FC = () => {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="请输入您的密码"
+              placeholder="Please enter your password"
               required
               disabled={loading}
               autoComplete="current-password"
