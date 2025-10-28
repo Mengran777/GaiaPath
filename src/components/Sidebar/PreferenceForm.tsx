@@ -7,10 +7,9 @@ interface PreferenceFormProps {
     destination: string;
     travelStartDate: string;
     travelEndDate: string;
-    budget: number;
+    // budget: number;
     travelers: string;
     travelType: string[];
-    accommodation: string;
     transportation: string[];
     activityIntensity: string;
     specialNeeds: string[];
@@ -48,11 +47,11 @@ const PreferenceForm: React.FC<PreferenceFormProps> = ({
     "WiFi Essential",
   ];
 
-  const getBudgetLabel = (budget: number) => {
-    const minBudget = Math.max(1000, budget - 5000);
-    const maxBudget = budget;
-    return `Budget Range: ¥${minBudget.toLocaleString()} - ¥${maxBudget.toLocaleString()}`;
-  };
+  // const getBudgetLabel = (budget: number) => {
+  //   const minBudget = Math.max(1000, budget - 5000);
+  //   const maxBudget = budget;
+  //   return `Budget Range: ¥${minBudget.toLocaleString()} - ¥${maxBudget.toLocaleString()}`;
+  // };
 
   return (
     <Section
@@ -78,27 +77,37 @@ const PreferenceForm: React.FC<PreferenceFormProps> = ({
 
         <div className="form-group">
           <label className="block text-sm font-semibold text-gray-700 mb-2">
-            Travel Dates
+            Travel Dates & Times
           </label>
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              type="date"
-              value={preferences.travelStartDate}
-              onChange={(e) =>
-                onPreferenceChange("travelStartDate", e.target.value)
-              }
-            />
-            <Input
-              type="date"
-              value={preferences.travelEndDate}
-              onChange={(e) =>
-                onPreferenceChange("travelEndDate", e.target.value)
-              }
-            />
+          <div className="grid grid-cols-1 gap-4">
+            <div>
+              <label className="block text-xs text-gray-600 mb-1">
+                Start Date & Time
+              </label>
+              <Input
+                type="datetime-local"
+                value={preferences.travelStartDate}
+                onChange={(e) =>
+                  onPreferenceChange("travelStartDate", e.target.value)
+                }
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-600 mb-1">
+                End Date & Time
+              </label>
+              <Input
+                type="datetime-local"
+                value={preferences.travelEndDate}
+                onChange={(e) =>
+                  onPreferenceChange("travelEndDate", e.target.value)
+                }
+              />
+            </div>
           </div>
         </div>
 
-        <div className="form-group">
+        {/* <div className="form-group">
           <label
             htmlFor="budget"
             className="block text-sm font-semibold text-gray-700 mb-2"
@@ -113,7 +122,7 @@ const PreferenceForm: React.FC<PreferenceFormProps> = ({
             value={preferences.budget}
             onValueChange={(val) => onPreferenceChange("budget", val)}
           />
-        </div>
+        </div> */}
 
         <div className="form-group">
           <label
@@ -154,28 +163,6 @@ const PreferenceForm: React.FC<PreferenceFormProps> = ({
               />
             ))}
           </div>
-        </div>
-
-        <div className="form-group">
-          <label
-            htmlFor="accommodation"
-            className="block text-sm font-semibold text-gray-700 mb-2"
-          >
-            Accommodation Preference
-          </label>
-          <Select
-            id="accommodation"
-            value={preferences.accommodation}
-            onChange={(e) =>
-              onPreferenceChange("accommodation", e.target.value)
-            }
-          >
-            <option value="economy">Economy Hotel</option>
-            <option value="comfort">Comfort Hotel</option>
-            <option value="luxury">Luxury Hotel</option>
-            <option value="homestay">Homestay/Apartment</option>
-            <option value="special">Specialty Accommodation</option>
-          </Select>
         </div>
 
         <div className="form-group">

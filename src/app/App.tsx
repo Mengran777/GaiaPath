@@ -25,12 +25,11 @@ const App: React.FC = () => {
 
   const [preferences, setPreferences] = useState({
     destination: "",
-    travelStartDate: "",
+    travelStartDate: "", // 将存储 "2025-09-27T14:30" 格式
     travelEndDate: "",
-    budget: 15000,
+    budget: "",
     travelers: "2",
     travelType: [],
-    accommodation: "comfort",
     transportation: [],
     activityIntensity: "moderate",
     specialNeeds: [],
@@ -118,12 +117,15 @@ const App: React.FC = () => {
 
   const handleLogout = () => {
     document.cookie =
-      "authToken=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax; Secure;";
+      "authToken=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax;";
     document.cookie =
-      "userId=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax; Secure;";
+      "userId=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax;";
+    document.cookie =
+      "isLoggedIn=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax;";
+
     setCurrentUserId(null);
     setCurrentUsername(null);
-    router.push("/auth/login");
+    window.location.href = "/auth/login";
   };
 
   const handlePreferenceChange = (key: string, value: any) => {

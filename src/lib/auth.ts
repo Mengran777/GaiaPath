@@ -1,30 +1,27 @@
 // src/lib/auth.ts
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
-import { NextResponse } from "next/server";
 
-// Define the JWT secret key.
-// In a production environment, this should be a strong, randomly generated string
-// stored securely in environment variables (e.g., process.env.JWT_SECRET).
-const JWT_SECRET =
-  process.env.JWT_SECRET || "your_super_secret_jwt_key_please_change_this";
-const TOKEN_EXPIRATION = "1h"; // Token expiration time, e.g., 1 hour
+import { NextRequest } from "next/server";
 
-/**
- * Hashes a plain text password.
- * @param password The plain text password.
- * @returns The hashed password.
- */
-export async function hashPassword(password: string): Promise<string> {
-  const salt = await bcrypt.genSalt(10); // Generate a salt with 10 rounds
-  return bcrypt.hash(password, salt); // Hash the password with the generated salt
+// 环境变量配置
+const JWT_SECRET = process.env.JWT_SECRET;
+const TOKEN_EXPIRATION = process.env.TOKEN_EXPIRATION || "1h";
+
+if (!JWT_SECRET) {
+  throw new Error("JWT_SECRET environment variable is not set");
 }
 
 /**
- * Compares a plain text password with a hashed password.
- * @param password The plain text password.
- * @param hashedPassword The hashed password to compare against.
- * @returns True if the passwords match, false otherwise.
+ * 哈希密码
+ */
+export async function hashPassword(password: string): Promise<string> {
+  const salt = await bcrypt.genSalt(12);
+  return bcrypt.hash(password, salt);
+}
+
+/**
+ * 比较密码
  */
 export async function comparePassword(
   password: string,
@@ -34,59 +31,146 @@ export async function comparePassword(
 }
 
 /**
- * Generates a JSON Web Token (JWT) for a given user ID.
- * @param userId The ID of the user for whom the token is generated.
- * @returns The generated JWT string.
+ * 生成 JWT Token（简化版，避免 TypeScript 类型问题）
  */
 export function generateToken(userId: string): string {
-  // Sign the token with the user ID payload and the secret key, setting an expiration time.
-  return jwt.sign({ userId }, JWT_SECRET, { expiresIn: TOKEN_EXPIRATION });
+  try {
+    return jwt.sign({ userId }, JWT_SECRET as string, {
+      expiresIn: TOKEN_EXPIRATION,
+    });
+  } catch (error) {
+    console.error("Error generating JWT token:", error);
+    throw new Error("Failed to generate authentication token");
+  }
 }
 
 /**
- * Verifies a JWT token and extracts the user ID from its payload.
- * @param token The JWT string to verify.
- * @returns The user ID if the token is valid, otherwise null.
+ * 验证 JWT Token（简化版）
  */
 export function verifyToken(token: string): string | null {
   try {
-    // Verify the token using the secret key. The decoded payload is cast to an object with userId.
-    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
-    return decoded.userId; // Return the user ID from the decoded token
+    const decoded = jwt.verify(token, JWT_SECRET as string) as any;
+    return decoded.userId || null;
   } catch (error) {
-    // Log any errors during token verification (e.g., expired, invalid signature).
-    console.error("Token verification failed:", error);
-    return null; // Return null if verification fails
+    if (error instanceof jwt.JsonWebTokenError) {
+      console.error("JWT verification failed:", error.message);
+    } else if (error instanceof jwt.TokenExpiredError) {
+      console.error("JWT expired:", error.message);
+    } else {
+      console.error("Unknown JWT error:", error);
+    }
+    return null;
   }
 }
 
 /**
- * Authenticates an incoming request by verifying the Authorization header.
- * @param request The Next.js Request object.
- * @returns An object containing the userId if authentication is successful, otherwise null.
+ * 从 cookies 中获取 token
  */
-export function authenticateRequest(
-  request: Request
-): { userId: string } | null {
-  // Get the Authorization header from the request.
-  const authHeader = request.headers.get("Authorization");
-
-  // Check if the header exists and starts with 'Bearer '.
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return null; // If not, authentication fails.
-  }
-
-  // Extract the token part (after 'Bearer ').
-  const token = authHeader.split(" ")[1];
-
-  // Verify the token to get the user ID.
-  const userId = verifyToken(token);
-
-  // If userId is not obtained (token invalid or expired), authentication fails.
-  if (!userId) {
+function getTokenFromCookies(request: NextRequest): string | null {
+  try {
+    const cookieValue = request.cookies.get("authToken")?.value;
+    return cookieValue || null;
+  } catch (error) {
+    console.error("Error reading token from cookies:", error);
     return null;
   }
+}
 
-  // If authentication is successful, return the userId.
-  return { userId };
+/**
+ * 从 Authorization header 中获取 token
+ */
+function getTokenFromHeader(request: NextRequest): string | null {
+  try {
+    const authHeader = request.headers.get("Authorization");
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return null;
+    }
+
+    return authHeader.split(" ")[1];
+  } catch (error) {
+    console.error("Error reading token from header:", error);
+    return null;
+  }
+}
+
+/**
+ * 认证请求（支持 cookies 和 Authorization header）
+ */
+export function authenticateRequest(
+  request: NextRequest
+): { userId: string } | null {
+  try {
+    // 优先从 cookies 获取 token，如果没有则从 header 获取
+    let token = getTokenFromCookies(request);
+
+    if (!token) {
+      token = getTokenFromHeader(request);
+    }
+
+    if (!token) {
+      return null;
+    }
+
+    const userId = verifyToken(token);
+
+    if (!userId) {
+      return null;
+    }
+
+    return { userId };
+  } catch (error) {
+    console.error("Error during request authentication:", error);
+    return null;
+  }
+}
+
+/**
+ * 验证密码强度
+ */
+export function validatePasswordStrength(password: string): string[] {
+  const errors: string[] = [];
+
+  if (password.length < 8) {
+    errors.push("密码长度至少为8个字符");
+  }
+
+  if (!/[a-z]/.test(password)) {
+    errors.push("密码必须包含至少一个小写字母");
+  }
+
+  if (!/[A-Z]/.test(password)) {
+    errors.push("密码必须包含至少一个大写字母");
+  }
+
+  if (!/\d/.test(password)) {
+    errors.push("密码必须包含至少一个数字");
+  }
+
+  return errors;
+}
+
+/**
+ * 验证邮箱格式
+ */
+export function validateEmail(email: string): boolean {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+}
+
+/**
+ * 验证用户名格式
+ */
+export function validateUsername(username: string): string[] {
+  const errors: string[] = [];
+
+  if (username.length < 3 || username.length > 20) {
+    errors.push("用户名长度必须在 3-20 个字符之间");
+  }
+
+  if (!/^[a-zA-Z0-9_\u4e00-\u9fa5]+$/.test(username)) {
+    errors.push("用户名只能包含字母、数字、下划线和中文");
+  }
+
+  return errors;
 }
