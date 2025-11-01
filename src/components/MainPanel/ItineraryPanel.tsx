@@ -1,13 +1,9 @@
-// src/components/MainPanel/ItineraryPanel.tsx
+// src/components/MainPanel/ItineraryPanel.tsx (MODIFIED)
 
 import React, { useState, useEffect, useRef } from "react";
 import ItineraryCard from "./ItineraryCard";
-import Section from "../Layout/Section";
-import { DayItinerary, Activity } from "../../app/types/itinerary"; // Ensure Activity is imported
+import { DayItinerary } from "../../types/itinerary";
 
-// Define Location type - It's best practice to define this in a shared types file
-// like src/app/types/itinerary.ts and import it.
-// For now, we'll define it here to resolve the error.
 interface Location {
   name: string;
   latitude: number;
@@ -16,21 +12,23 @@ interface Location {
   imageUrl?: string;
 }
 
-// ⭐ CORRECTED: Single, unified ItineraryPanelProps interface ⭐
 interface ItineraryPanelProps {
   itinerary: DayItinerary[];
   onActivityClick: (location: Location) => void;
+  onDayClick?: (dayNumber: number) => void; // ⭐ NEW: Day click handler
+  highlightedDay?: number | null; // ⭐ NEW: Currently highlighted day
 }
 
 const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
   itinerary,
   onActivityClick,
+  onDayClick,
+  highlightedDay = null,
 }) => {
-  // Destructure onActivityClick here
   const [weatherData, setWeatherData] = useState<{ [key: string]: string }>({});
   const panelRef = useRef<HTMLDivElement>(null);
 
-  // Simulate weather update (your existing code)
+  // Simulate weather update
   useEffect(() => {
     if (!itinerary || itinerary.length === 0) {
       setWeatherData({});
@@ -39,10 +37,10 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
 
     const updateWeather = () => {
       const weatherOptions = [
-        "Sunny", // Sunny
-        "Partly Cloudy", // Partly Cloudy
-        "Light Rain", // Light Rain
-        "Overcast", // Overcast
+        "Sunny",
+        "Partly Cloudy",
+        "Light Rain",
+        "Overcast",
       ];
       const tempOptions = ["25°C", "26°C", "27°C", "28°C", "29°C", "30°C"];
       const newWeatherData: { [key: string]: string } = {};
@@ -62,11 +60,9 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
     return () => clearInterval(interval);
   }, [itinerary]);
 
-  // Intersection Observer for fade-in animation (your existing code)
+  // Fade-in animation
   useEffect(() => {
-    if (!itinerary || itinerary.length === 0) {
-      return;
-    }
+    if (!itinerary || itinerary.length === 0) return;
 
     const observerOptions = {
       threshold: 0.1,
@@ -78,33 +74,19 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
         if (entry.isIntersecting) {
           (entry.target as HTMLElement).style.opacity = "1";
           (entry.target as HTMLElement).style.transform = "translateY(0)";
-        } else {
-          // Only animate out if not loading and not just initialized
-          if (panelRef.current?.dataset.initialized === "true") {
-            (entry.target as HTMLElement).style.opacity = "0";
-            (entry.target as HTMLElement).style.transform = "translateY(30px)";
-          }
         }
       });
     }, observerOptions);
 
     if (panelRef.current) {
-      panelRef.current.dataset.initialized = "false"; // Mark as not initialized yet
       const dayElements = panelRef.current.querySelectorAll(
         ".itinerary-day-animated"
       );
       dayElements.forEach((el) => {
         (el as HTMLElement).style.opacity = "0";
         (el as HTMLElement).style.transform = "translateY(30px)";
-        (el as HTMLElement).style.transition =
-          "opacity 0.6s ease-out, transform 0.6s ease-out";
         observer.observe(el);
       });
-      // After a short delay, mark as initialized to allow fade-out on scroll
-      const timer = setTimeout(() => {
-        if (panelRef.current) panelRef.current.dataset.initialized = "true";
-      }, 100); // Small delay to allow initial render before marking as initialized
-      return () => clearTimeout(timer); // Clear timeout on unmount
     }
 
     return () => {
@@ -117,37 +99,69 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
     };
   }, [itinerary]);
 
+  // ⭐ Handle day click
+  const handleDayClick = (dayNumber: number) => {
+    if (onDayClick) {
+      onDayClick(dayNumber);
+    }
+  };
+
   return (
-    <Section
-      title="Your customized itinerary"
-      className="flex-1 overflow-y-auto pr-2 -mr-2 custom-scrollbar"
-    >
+    <div>
+      {/* Header */}
+      <div className="mb-6 pb-4 border-b-2 border-gray-100">
+        <h2 className="text-3xl font-bold text-gray-800 mb-2">
+          Your Personalized Itinerary
+        </h2>
+        <p className="text-gray-600">
+          Click on any day to highlight locations on the map
+        </p>
+      </div>
+
       {itinerary.length === 0 ? (
         <p className="text-gray-500 text-center py-8">
-          Enter your preferences on the left and generate your itinerary.
+          No itinerary available.
         </p>
       ) : (
         <div ref={panelRef}>
           {itinerary.map((dayItem) => (
             <div
               key={dayItem.day}
-              className="itinerary-day-animated relative border-l-4 border-blue-400 pl-6 mb-8"
+              onClick={() => handleDayClick(dayItem.day)}
+              className={`
+                itinerary-day-animated relative border-l-4 pl-6 mb-8 cursor-pointer
+                transition-all duration-500 ease-in-out
+                ${
+                  highlightedDay === dayItem.day
+                    ? "border-purple-600 bg-purple-50/50 -ml-4 pl-10 rounded-r-2xl py-2"
+                    : "border-blue-400 hover:border-purple-400"
+                }
+              `}
             >
               <div
-                className="absolute -left-5 top-0 w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-purple-600
-                                  text-white font-bold flex items-center justify-center shadow-md"
+                className={`
+                  absolute -left-5 top-0 w-10 h-10 rounded-full 
+                  text-white font-bold flex items-center justify-center shadow-md
+                  transition-all duration-500
+                  ${
+                    highlightedDay === dayItem.day
+                      ? "bg-gradient-to-br from-purple-600 to-pink-600 scale-125"
+                      : "bg-gradient-to-br from-blue-600 to-purple-600"
+                  }
+                `}
               >
                 {dayItem.day}
               </div>
+
               <div className="mb-4">
                 <h3 className="text-xl font-bold text-gray-800">
-                  {/* ⭐ MODIFIED: Use dayItem.theme for consistency with DayItinerary type ⭐ */}
                   {dayItem.title}
                 </h3>
                 <p className="text-gray-600 text-sm mt-1">
                   {dayItem.date} · {weatherData[dayItem.date] || "Loading..."}
                 </p>
               </div>
+
               <div className="space-y-4">
                 {dayItem.activities.map((activity, index) => (
                   <ItineraryCard
@@ -161,7 +175,7 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
           ))}
         </div>
       )}
-    </Section>
+    </div>
   );
 };
 

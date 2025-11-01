@@ -1,8 +1,10 @@
-// src/components/Layout/PageContainer.tsx
+// src/components/Layout/PageContainer.tsx (MODIFIED)
 "use client";
 
 import React from "react";
 import Header from "../Header/Header";
+
+type AppStage = "initial" | "routes" | "details";
 
 interface PageContainerProps {
   sidebar: React.ReactNode;
@@ -10,6 +12,7 @@ interface PageContainerProps {
   onLogout: () => void;
   currentUserId: string | null;
   pathname: string;
+  stage: AppStage;
 }
 
 const PageContainer: React.FC<PageContainerProps> = ({
@@ -18,32 +21,66 @@ const PageContainer: React.FC<PageContainerProps> = ({
   onLogout,
   currentUserId,
   pathname,
+  stage,
 }) => {
   return (
-    // ⭐ 关键修改：使用 h-screen 和 flex-col 让整个页面占据一屏并垂直布局 ⭐
     <div className="h-screen bg-gradient-to-br from-[#667eea] to-[#764ba2] font-sans text-gray-900 antialiased flex flex-col">
-      {/* 头部是固定的 */}
+      {/* Header */}
       <Header
         onLogout={onLogout}
         currentUserId={currentUserId}
         pathname={pathname}
       />
 
-      {/* ⭐ 关键修改：主内容区域占据所有剩余空间并处理自己的滚动 ⭐ */}
-      <main className="flex-1 container mx-auto px-4 lg:px-8 py-6 flex flex-col lg:flex-row gap-6 overflow-hidden">
-        {/* Sidebar */}
-        <aside className="w-full lg:w-1/3 xl:w-1/4 flex-shrink-0 flex flex-col">
-          {/* ⭐ 关键修改：侧边栏容器本身是 h-full，内部flex-col ⭐ */}
-          <div className="bg-white rounded-lg shadow-md h-full flex flex-col">
-            {/* 侧边栏内容滚动容器，flex-1 填充，p-6 添加内边距 */}
-            <div className="flex-1 overflow-y-auto p-6">{sidebar}</div>
+      {/* Main Content Area */}
+      <main
+        className={`flex-1 container mx-auto px-4 lg:px-8 py-6 flex gap-6
+              ${stage === "initial" ? "overflow-y-auto" : "overflow-hidden"}
+              ${
+                stage === "initial"
+                  ? "items-start justify-center"
+                  : "items-stretch"
+              }`}
+      >
+        {/* Sidebar - Changes width based on stage */}
+        <aside
+          className={`
+            flex-shrink-0 transition-all duration-800 ease-in-out
+            ${stage === "initial" ? "w-full max-w-2xl" : ""}
+            ${stage === "routes" ? "w-full lg:w-[35%]" : ""}
+            ${stage === "details" ? "w-16" : ""}
+          `}
+        >
+          <div
+            className={`
+              bg-white rounded-2xl shadow-xl h-full flex flex-col
+              transition-all duration-800 ease-in-out
+              ${stage === "details" ? "p-4 items-center justify-start" : "p-6"}
+            `}
+          >
+            {stage === "details" ? (
+              // Minimized view in stage 3
+              <div className="writing-mode-vertical text-blue-600 font-bold text-sm">
+                {sidebar}
+              </div>
+            ) : (
+              // Full view in stages 1 & 2
+              <div className="flex-1 overflow-y-auto custom-scrollbar">
+                {sidebar}
+              </div>
+            )}
           </div>
         </aside>
 
-        {/* Main Content */}
-        {/* ⭐ 关键修改：Main Content 区域占据剩余空间并可滚动 ⭐ */}
-        <section className="w-full lg:w-2/3 xl:w-3/4 min-w-0 flex flex-col gap-6 h-full">
-          {/* Main Content 容器现在也有 h-full，这样子元素才能正确计算高度 */}
+        {/* Main Content - Changes based on stage */}
+        <section
+          className={`
+            min-w-0 transition-all duration-800 ease-in-out
+            ${stage === "initial" ? "hidden" : ""}
+            ${stage === "routes" ? "flex-1" : ""}
+            ${stage === "details" ? "flex-1" : ""}
+          `}
+        >
           {mainContent}
         </section>
       </main>
