@@ -1,4 +1,4 @@
-// src/app/App.tsx
+// src/app/App.tsx (MAJOR REWRITE)
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
@@ -7,10 +7,12 @@ import PageContainer from "../components/Layout/PageContainer";
 import SmartSearch from "../components/Sidebar/SmartSearch";
 import PreferenceForm from "../components/Sidebar/PreferenceForm";
 import GenerateButton from "../components/Sidebar/GenerateButton";
+import { RouteList } from "../components/RouteSelection";
 import ItineraryPanel from "../components/MainPanel/ItineraryPanel";
 import MapView from "../components/MainPanel/MapView";
 import FloatingActions from "../components/Controls/FloatingActions";
-import { GeneratedItinerary, DayItinerary } from "./types/itinerary"; // 导入新定义的类型
+import { DayItinerary } from "../types/itinerary";
+import { RouteOption } from "@/types/routes";
 
 interface Location {
   name: string;
@@ -20,12 +22,18 @@ interface Location {
   imageUrl?: string;
 }
 
+// ⭐ 定义三个阶段 ⭐
+type AppStage = "initial" | "routes" | "details";
+
 const App: React.FC = () => {
   const router = useRouter();
 
+  // ⭐ 核心状态：当前阶段 ⭐
+  const [stage, setStage] = useState<AppStage>("initial");
+
   const [preferences, setPreferences] = useState({
     destination: "",
-    travelStartDate: "", // 将存储 "2025-09-27T14:30" 格式
+    travelStartDate: "",
     travelEndDate: "",
     budget: "",
     travelers: "2",
@@ -36,35 +44,38 @@ const App: React.FC = () => {
   });
 
   const [smartSearchQuery, setSmartSearchQuery] = useState(
-    "Tell me what kind of trip you want... e.g., Beach hiking July Europe"
+    "Tell me what kind of trip you want..."
   );
+
+  // ⭐ 路线选项状态 ⭐
+  const [routeOptions, setRouteOptions] = useState<RouteOption[]>([]);
+  const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
+
+  // ⭐ 当前选中的路线和行程 ⭐
+  const selectedRoute = useMemo(() => {
+    return routeOptions.find((route) => route.id === selectedRouteId) || null;
+  }, [routeOptions, selectedRouteId]);
 
   const [itinerary, setItinerary] = useState<DayItinerary[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [currentUsername, setCurrentUsername] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null); // 类型为 string | null
-  // ⭐ 新增状态：选中地点 ⭐
+  const [error, setError] = useState<string | null>(null);
+
+  // ⭐ 高亮的日期（用于地图显示） ⭐
+  const [highlightedDay, setHighlightedDay] = useState<number | null>(null);
   const [highlightedLocation, setHighlightedLocation] =
     useState<Location | null>(null);
-
-  // ⭐ ADD THIS LOG IMMEDIATELY AFTER STATE DECLARATIONS ⭐
-  console.log("App component render: typeof setError is", typeof setError);
-  console.log("App component render: error state value is", error);
 
   const getCookie = (name: string): string | null => {
     if (typeof document === "undefined") {
       return null;
     }
     const value = `; ${document.cookie}`;
-    console.log("Full document.cookie:", document.cookie); // 打印原始 cookie 字符串
-
     const parts = value.split(`; ${name}=`);
-    console.log(`Parts for ${name}:`, parts); // 打印分割后的 parts 数组
     if (parts.length === 2) {
       const cookieValue = parts.pop()?.split(";").shift() || null;
-      console.log(`Extracted cookieValue for ${name}:`, cookieValue); //
       try {
         return cookieValue ? decodeURIComponent(cookieValue) : null;
       } catch (e) {
@@ -79,12 +90,6 @@ const App: React.FC = () => {
     const storedUserId = getCookie("userId");
     if (storedUserId) {
       setCurrentUserId(storedUserId);
-      console.log(
-        "App: User ID successfully read from 'userId' cookie:",
-        storedUserId
-      );
-    } else {
-      console.log("App: 'userId' cookie not found or is empty.");
     }
   }, []);
 
@@ -94,7 +99,6 @@ const App: React.FC = () => {
         try {
           const response = await fetch(`/api/user/${currentUserId}`);
           if (!response.ok) {
-            console.error("Failed to fetch user data:", response.statusText);
             setCurrentUsername(null);
             handleLogout();
             return;
@@ -102,7 +106,6 @@ const App: React.FC = () => {
           const userData = await response.json();
           if (userData && userData.username) {
             setCurrentUsername(userData.username);
-            console.log("App: Username fetched:", userData.username);
           }
         } catch (error) {
           console.error("Error fetching username:", error);
@@ -137,11 +140,15 @@ const App: React.FC = () => {
     setPreferences((prev) => ({ ...prev, destination: query }));
   };
 
+  // ⭐ 生成多条路线 ⭐
   const handleGenerateItinerary = async () => {
     setIsLoading(true);
     setError(null);
-    setItinerary([]); // Clear previous itinerary - already good
-    setHighlightedLocation(null); // ⭐ IMPORTANT: Clear highlighted location when generating new itinerary ⭐
+    setRouteOptions([]);
+    setSelectedRouteId(null);
+    setItinerary([]);
+    setHighlightedLocation(null);
+    setHighlightedDay(null);
 
     try {
       const response = await fetch("/api/generate-itinerary", {
@@ -158,29 +165,61 @@ const App: React.FC = () => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to generate itinerary.");
+        throw new Error(errorData.error || "Failed to generate routes.");
       }
 
-      const data = await response.json(); // Don't explicitly type here yet
-
-      // ⭐ NEW: Add a robust check before setting the state ⭐
+      const data = await response.json();
+      console.log("API 返回的数据：", data); // 添加这行
+      console.log("第一个路线的结构：", data[0]); // 添加这行
       if (Array.isArray(data)) {
-        setItinerary(data); // If data is an array, set it directly
-        console.log("Itinerary generated successfully:", data);
+        setRouteOptions(data);
+        setStage("routes");
+      } else if (Array.isArray(data.routes)) {
+        setRouteOptions(data.routes);
+        setStage("routes");
       } else {
-        // If the AI didn't return an array, log and set to empty array
-        console.error("AI response data is not an array:", data);
-        setItinerary([]);
-        setError("AI generated an unexpected itinerary format.");
+        console.error("AI response data is not in expected format:", data);
+        setError("AI generated an unexpected response format.");
       }
     } catch (error: any) {
-      console.error("Error generating itinerary:", error.message);
-      setError(error.message); // Set the error state
-      setItinerary([]); // Keep itinerary empty on error
+      console.error("Error generating routes:", error.message);
+      setError(error.message);
     } finally {
       setIsLoading(false);
     }
   };
+
+  // ⭐ 选择某条路线 ⭐
+  const handleSelectRoute = useCallback(
+    (routeId: string) => {
+      setSelectedRouteId(routeId);
+      const route = routeOptions.find((r) => r.id === routeId);
+      if (route) {
+        setItinerary(route.itinerary);
+        setStage("details"); // ⭐ 切换到详情阶段 ⭐
+      }
+    },
+    [routeOptions]
+  );
+
+  // ⭐ 从详情页返回路线选择 ⭐
+  const handleBackToRoutes = useCallback(() => {
+    setStage("routes");
+    setSelectedRouteId(null);
+    setItinerary([]);
+    setHighlightedDay(null);
+    setHighlightedLocation(null);
+  }, []);
+
+  // ⭐ 重新编辑偏好设置 ⭐
+  const handleBackToInitial = useCallback(() => {
+    setStage("initial");
+    setRouteOptions([]);
+    setSelectedRouteId(null);
+    setItinerary([]);
+    setHighlightedDay(null);
+    setHighlightedLocation(null);
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -204,14 +243,38 @@ const App: React.FC = () => {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  useEffect(() => {
-    if (typeof window !== "undefined" && "ontouchstart" in window) {
-      document.addEventListener("touchstart", () => {}, { passive: true });
-    }
+  // ⭐ 处理点击某天的行程 ⭐
+  const handleDayClick = useCallback((dayNumber: number) => {
+    setHighlightedDay(dayNumber);
+    // 可以在这里添加滚动到地图的逻辑
   }, []);
 
-  const allLocations = useMemo(() => {
-    // ⭐ 使用 useMemo 优化 ⭐
+  // ⭐ 处理点击活动卡片 ⭐
+  const handleCardClick = useCallback((location: Location) => {
+    setHighlightedLocation(location);
+  }, []);
+
+  // ⭐ 当前显示的地点列表（基于选中的天数） ⭐
+  const displayedLocations = useMemo(() => {
+    if (!itinerary || itinerary.length === 0) return [];
+
+    if (highlightedDay !== null) {
+      // 只显示选中天数的地点
+      const day = itinerary.find((d) => d.day === highlightedDay);
+      if (!day) return [];
+
+      return day.activities
+        .map((activity) => ({
+          name: activity.title,
+          latitude: activity.latitude || 0,
+          longitude: activity.longitude || 0,
+          description: activity.description,
+          imageUrl: activity.imageUrl,
+        }))
+        .filter((loc) => loc.latitude !== 0 && loc.longitude !== 0);
+    }
+
+    // 显示所有地点
     return itinerary
       .flatMap((day) =>
         day.activities.map((activity) => ({
@@ -223,111 +286,110 @@ const App: React.FC = () => {
         }))
       )
       .filter((loc) => loc.latitude !== 0 && loc.longitude !== 0);
-  }, [itinerary]); // 依赖 itinerary
+  }, [itinerary, highlightedDay]);
 
-  // const routeGeoJSON = useMemo(() => {
-  //   // ⭐ 使用 useMemo 优化 ⭐
-  //   if (allLocations.length < 2) {
-  //     return null;
-  //   }
-
-  //   // 过滤掉无效坐标，并映射为 [longitude, latitude] 格式
-  //   const coordinates = allLocations
-  //     .filter(
-  //       (loc) =>
-  //         typeof loc.latitude === "number" &&
-  //         typeof loc.longitude === "number" &&
-  //         loc.latitude !== 0 &&
-  //         loc.longitude !== 0
-  //     )
-  //     .map((loc) => [loc.longitude, loc.latitude]);
-
-  //   if (coordinates.length < 2) {
-  //     // 再次检查，确保过滤后仍有足够坐标
-  //     return null;
-  //   }
-
-  //   return {
-  //     type: "Feature",
-  //     properties: {},
-  //     geometry: {
-  //       type: "LineString",
-  //       coordinates: coordinates,
-  //     },
-  //   } as const;
-  // }, [allLocations]); // 当 allLocations 变化时重新计算
-
-  // ⭐ 新增函数：处理卡片点击事件 ⭐
-  const handleCardClick = useCallback((location: Location) => {
-    setHighlightedLocation(location);
-    // 可以在这里添加滚动到地图视图的逻辑，如果地图不在当前屏幕内的话
-    // For now, let MapView handle the flyTo
-  }, []);
-
+  // ⭐ Sidebar 内容（根据阶段变化） ⭐
   const sidebarContent = (
-    // 关键: 不再需要 h-full，因为父容器会管理高度。
-    // 我们只需要定义内部的 flex 布局。
-    <div className="flex flex-col">
-      <SmartSearch
-        query={smartSearchQuery}
-        setQuery={setSmartSearchQuery}
-        onSearch={handleSmartSearch}
-        onSuggestionClick={(s) => setSmartSearchQuery(s)}
-      />
-      <div className="flex-1 mt-4 custom-scrollbar">
-        <PreferenceForm
-          preferences={preferences}
-          onPreferenceChange={handlePreferenceChange}
-        />
-      </div>
-      <GenerateButton onClick={handleGenerateItinerary} isLoading={isLoading} />
+    <div className="flex flex-col h-full">
+      {stage === "details" ? (
+        // Stage 3: 只显示一个返回按钮
+        <button
+          onClick={handleBackToRoutes}
+          className="flex items-center gap-2 text-blue-600 font-semibold hover:text-blue-800 transition-colors"
+        >
+          ← Back to Routes
+        </button>
+      ) : (
+        // Stage 1 & 2: 显示完整表单
+        <>
+          <SmartSearch
+            query={smartSearchQuery}
+            setQuery={setSmartSearchQuery}
+            onSearch={handleSmartSearch}
+            onSuggestionClick={(s) => setSmartSearchQuery(s)}
+          />
+          <div className="flex-1 mt-4 overflow-y-auto custom-scrollbar">
+            <PreferenceForm
+              preferences={preferences}
+              onPreferenceChange={handlePreferenceChange}
+            />
+          </div>
+          <GenerateButton
+            onClick={handleGenerateItinerary}
+            isLoading={isLoading}
+          />
+          {stage === "routes" && (
+            <button
+              onClick={handleBackToInitial}
+              className="mt-4 w-full py-2 text-sm text-gray-600 hover:text-gray-800 transition-colors"
+            >
+              ✏️ Edit Preferences
+            </button>
+          )}
+        </>
+      )}
     </div>
   );
 
+  // ⭐ Main Panel 内容（根据阶段变化） ⭐
   const mainPanelContent = (
-    // 关键: 不再需要 h-full，父容器会管理。
-    <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 xl:gap-12 h-full">
-      {/* 行程列表面板容器 */}
-      {/* 关键: flex-1 让它占据一半的水平空间和所有可用的垂直空间 */}
-      <div className="lg:w-1/2 flex-1 flex flex-col h-full">
-        {/* 关键: bg-white... 容器必须是 flex-1 并可滚动 */}
-        <div className="bg-white rounded-lg shadow-md p-6 flex-1 overflow-y-auto">
-          {/* ⭐ ADDED: ItineraryPanel rendering logic ⭐ */}
-          {itinerary.length === 0 && !isLoading && !error && (
-            <p className="text-gray-500 text-center py-8">
-              Enter your preferences on the left and generate your itinerary.
+    <>
+      {stage === "initial" && (
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center text-white">
+            <div className="text-6xl mb-4">🌍</div>
+            <h2 className="text-3xl font-bold mb-2">
+              Welcome to Gaia Travel Assistant
+            </h2>
+            <p className="text-lg opacity-90">
+              Fill in your preferences and generate your perfect itinerary
             </p>
-          )}
-          {isLoading && (
-            <div className="flex justify-center items-center h-full">
-              <p className="text-blue-500 text-lg">正在生成行程，请稍候...</p>
-            </div>
-          )}
-          {error && (
-            <p className="text-red-500 text-center py-8">错误: {error}</p>
-          )}
-          {!isLoading && !error && itinerary.length > 0 && (
-            // ⭐ 传递 handleCardClick 给 ItineraryPanel ⭐
-            <ItineraryPanel
-              itinerary={itinerary}
-              onActivityClick={handleCardClick}
-            />
-          )}
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* 地图视图面板容器 */}
-      {/* 关键: flex-1 让它占据另一半的水平空间和所有可用的垂直空间 */}
-      <div className="lg:w-1/2 flex-1 bg-gray-100 rounded-lg shadow-md p-6 flex flex-col h-full">
-        <h3 className="text-xl font-semibold mb-4 text-gray-800">景点地图</h3>
-        <div className="w-full flex-1 relative" style={{ minHeight: "300px" }}>
-          <MapView
-            locations={allLocations}
-            highlightedLocation={highlightedLocation}
+      {stage === "routes" && (
+        <div className="h-full bg-white rounded-2xl shadow-xl p-6">
+          <RouteList
+            routes={routeOptions}
+            onSelectRoute={handleSelectRoute}
+            isLoading={isLoading}
           />
         </div>
-      </div>
-    </div>
+      )}
+
+      {stage === "details" && (
+        <div className="flex gap-0 h-full">
+          <div className="flex-1 bg-white rounded-l-2xl shadow-xl overflow-hidden">
+            <div className="h-full overflow-y-auto p-6 custom-scrollbar">
+              {error && (
+                <p className="text-red-500 text-center py-8">错误: {error}</p>
+              )}
+              {!error && itinerary.length > 0 && (
+                <ItineraryPanel
+                  itinerary={itinerary}
+                  onActivityClick={handleCardClick}
+                  onDayClick={handleDayClick}
+                  highlightedDay={highlightedDay}
+                />
+              )}
+            </div>
+          </div>
+
+          <div className="flex-1 bg-white rounded-r-2xl shadow-xl p-6">
+            <h3 className="text-xl font-semibold mb-4 text-gray-800">
+              📍 Route Map
+            </h3>
+            <div className="w-full h-[calc(100%-3rem)]">
+              <MapView
+                locations={displayedLocations}
+                highlightedLocation={highlightedLocation}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 
   return (
@@ -340,6 +402,7 @@ const App: React.FC = () => {
         pathname={
           typeof window !== "undefined" ? window.location.pathname : "/"
         }
+        stage={stage}
       />
       <FloatingActions />
     </div>
