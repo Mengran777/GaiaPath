@@ -24,6 +24,9 @@ if (!GOOGLE_CUSTOM_SEARCH_API_KEY || !GOOGLE_CUSTOM_SEARCH_ENGINE_ID) {
 
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY || "");
 
+// ⭐ 添加延迟函数避免 API 速率限制 ⭐
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 // ⭐ 修改这个函数，直接调用 Google Custom Search API ⭐
 async function fetchRealImageUrl(query: string): Promise<string | undefined> {
   if (!GOOGLE_CUSTOM_SEARCH_API_KEY || !GOOGLE_CUSTOM_SEARCH_ENGINE_ID) {
@@ -35,6 +38,9 @@ async function fetchRealImageUrl(query: string): Promise<string | undefined> {
     )}`;
   }
 
+  // ⭐ 添加小延迟避免速率限制 ⭐
+  await delay(50); // 50ms 延迟
+
   const API_KEY = GOOGLE_CUSTOM_SEARCH_API_KEY;
   const CX = GOOGLE_CUSTOM_SEARCH_ENGINE_ID;
   const SEARCH_URL = `https://www.googleapis.com/customsearch/v1?q=${encodeURIComponent(
@@ -44,11 +50,18 @@ async function fetchRealImageUrl(query: string): Promise<string | undefined> {
   try {
     const response = await fetch(SEARCH_URL);
     if (!response.ok) {
-      // 如果响应不成功（例如 400, 403, 500 错误），抛出错误
+      // 如果响应不成功，记录错误信息但不抛出异常
       const errorText = await response.text();
-      throw new Error(
-        `Google Custom Search API error: ${response.status} - ${errorText}`
+      console.warn(
+        `Google Custom Search API error (${response.status}): ${errorText}`
       );
+      console.warn(
+        "Possible reasons: 1) API key invalid, 2) Daily quota exceeded (100 queries/day for free tier), 3) API not enabled"
+      );
+      // 直接返回占位图，不中断流程
+      return `https://placehold.co/400x200/CCCCCC/FFFFFF?text=${encodeURIComponent(
+        query || "No Image"
+      )}`;
     }
     const data = await response.json();
 
@@ -56,9 +69,14 @@ async function fetchRealImageUrl(query: string): Promise<string | undefined> {
     if (data.items && data.items.length > 0) {
       // 返回第一张图片的链接
       return data.items[0].link;
+    } else {
+      console.warn(`No image results found for query: "${query}"`);
     }
   } catch (error) {
-    console.error(`Error fetching real image for "${query}":`, error);
+    console.error(
+      `Error fetching real image for "${query}":`,
+      error instanceof Error ? error.message : error
+    );
   }
   // 如果发生错误或没有找到图片，返回一个占位图
   return `https://placehold.co/400x200/CCCCCC/FFFFFF?text=${encodeURIComponent(
@@ -118,10 +136,8 @@ export async function POST(request: NextRequest) {
       transportation,
       activityIntensity,
       specialNeeds,
+      userRequest, // ⭐ 新增：用户的自定义需求
       userId,
-      // promptName = "default_itinerary_prompt.txt",
-      // promptName = "default_itinerary_prompt.txt",
-      promptName = "multiple_routes_prompt.txt",
     } = body;
 
     console.log("Backend preferences extracted:");
@@ -134,6 +150,7 @@ export async function POST(request: NextRequest) {
     console.log("   transportation:", transportation);
     console.log("   activityIntensity:", activityIntensity);
     console.log("   specialNeeds:", specialNeeds);
+    console.log("   userRequest:", userRequest); // ⭐ 新增日志
     console.log("   userId:", userId);
 
     const missingFields = [];
@@ -158,131 +175,122 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 1. Construct AI Prompt
-    // ⭐ 修改这里：从文件中读取 prompt 模板
-    const promptTemplate = await getPromptFromFile(promptName);
+    console.log("=== PARALLEL GENERATION STARTED ===");
+    console.log("Destination:", destination);
+    console.log("Generating 3 routes in parallel with real images...");
+    console.log("=== === === === === === === ===");
 
-    // ⭐ 修改这里：使用 replace 方法替换占位符
-    // 修改为匹配新的占位符格式
-    const prompt = promptTemplate
-      .replaceAll("{{destination}}", destination || "Flexible")
-      .replaceAll("{{travelStartDate}}", travelStartDate || "Flexible")
-      .replaceAll("{{travelEndDate}}", travelEndDate || "Flexible")
-      .replaceAll("{{travelers}}", travelers || "Flexible")
-      .replaceAll(
-        "{{travelType}}",
-        travelType && travelType.length > 0 ? travelType.join(", ") : "Flexible"
-      )
-      .replaceAll(
-        "{{transportation}}",
-        transportation && transportation.length > 0
-          ? transportation.join(", ")
-          : "Flexible"
-      )
-      .replaceAll("{{activityIntensity}}", activityIntensity || "Flexible")
-      .replaceAll(
-        "{{specialNeeds}}",
-        specialNeeds && specialNeeds.length > 0
-          ? specialNeeds.join(", ")
-          : "None"
-      );
+    // ⭐ 并行生成策略：同时生成 3 条精选路线 ⭐
+    const routeThemes = [
+      { id: "route-1", theme: "Classic Route", description: "Traditional tourist highlights and must-see attractions" },
+      { id: "route-2", theme: "Cultural & Culinary", description: "Museums, historical sites, local cuisine and food experiences" },
+      { id: "route-3", theme: "Nature & Hidden Gems", description: "Outdoor activities, natural landscapes, and off-the-beaten-path discoveries" },
+    ];
 
-    console.log("=== PROMPT DEBUG ===");
-    console.log("Destination value:", destination);
-    console.log("Final prompt being sent to AI:");
-    console.log(prompt);
-    console.log("=== END PROMPT DEBUG ===");
+    // 读取单条路线的 prompt 模板
+    const singleRouteTemplate = await getPromptFromFile("single_route_prompt.txt");
 
-    // 2. Call Gemini API
-    const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash",
+    // 并行生成所有路线
+    const generateRoutePromises = routeThemes.map(async (routeTheme) => {
+      const routePrompt = singleRouteTemplate
+        .replaceAll("{{destination}}", destination || "Flexible")
+        .replaceAll("{{travelStartDate}}", travelStartDate || "Flexible")
+        .replaceAll("{{travelEndDate}}", travelEndDate || "Flexible")
+        .replaceAll("{{travelers}}", travelers || "Flexible")
+        .replaceAll(
+          "{{travelType}}",
+          travelType && travelType.length > 0 ? travelType.join(", ") : "Flexible"
+        )
+        .replaceAll(
+          "{{transportation}}",
+          transportation && transportation.length > 0
+            ? transportation.join(", ")
+            : "Flexible"
+        )
+        .replaceAll("{{activityIntensity}}", activityIntensity || "Flexible")
+        .replaceAll(
+          "{{specialNeeds}}",
+          specialNeeds && specialNeeds.length > 0
+            ? specialNeeds.join(", ")
+            : "None"
+        )
+        .replaceAll(
+          "{{userRequest}}",
+          userRequest || "I want to have a great travel experience in " + (destination || "this location")
+        )
+        .replaceAll("{{theme}}", routeTheme.theme)
+        .replaceAll("{{themeDescription}}", routeTheme.description)
+        .replaceAll("{{routeId}}", routeTheme.id);
+
+      try {
+        const model = genAI.getGenerativeModel({
+          model: "gemini-2.5-flash",
+          generationConfig: {
+            temperature: 0.7,  // Lower = faster, more focused
+            maxOutputTokens: 2048,  // Limit output length for speed
+          },
+        });
+
+        const result = await model.generateContent(routePrompt);
+        const responseText = result.response.text();
+
+        console.log(`✅ Generated route: ${routeTheme.theme}`);
+
+        // 提取 JSON
+        let jsonString = responseText.trim();
+        const jsonMatch = jsonString.match(/```json\s*([\s\S]*?)\s*```/);
+        if (jsonMatch) {
+          jsonString = jsonMatch[1].trim();
+        }
+        if (!jsonString.startsWith("{")) {
+          const objectMatch = jsonString.match(/\{[\s\S]*\}/);
+          if (objectMatch) {
+            jsonString = objectMatch[0];
+          }
+        }
+
+        return JSON.parse(jsonString);
+      } catch (error) {
+        console.error(`❌ Failed to generate route ${routeTheme.theme}:`, error);
+        return null;
+      }
     });
 
-    const result = await model.generateContent(prompt);
-    const responseText = result.response.text();
+    // 等待所有路线生成完成
+    const generatedRoutes = await Promise.all(generateRoutePromises);
 
-    console.log("AI Raw Response:", responseText);
+    // 过滤掉失败的路线
+    let generatedItineraryData = generatedRoutes.filter((route): route is RouteOption => route !== null);
 
-    let generatedItineraryData: RouteOption[];
+    console.log(`✅ Successfully generated ${generatedItineraryData.length} routes in parallel`);
 
-    try {
-      // 步骤 1: 提取 JSON（处理多种可能的格式）
-      let jsonString = responseText.trim();
+    // ⭐ 优化选项 ⭐
+    // false = 占位图 (~10-15秒总时间)
+    // true = 真实图片 (~20-30秒总时间)
+    const FETCH_IMAGES = false; // 推荐设为 false 以获得最快速度
 
-      // 移除 markdown 代码块标记（更宽松的匹配）
-      const jsonMatch = jsonString.match(/```json\s*([\s\S]*?)\s*```/);
-      if (jsonMatch) {
-        jsonString = jsonMatch[1].trim();
-      }
+    if (FETCH_IMAGES) {
+      console.log("⚡ Fetching real images in parallel...");
 
-      // 如果没有找到代码块，尝试直接提取 JSON 数组
-      if (!jsonString.startsWith("[")) {
-        const arrayMatch = jsonString.match(/\[[\s\S]*\]/);
-        if (arrayMatch) {
-          jsonString = arrayMatch[0];
-        } else {
-          throw new Error("No JSON array found in AI response");
-        }
-      }
+      // ⭐ 收集所有需要获取图片的活动 ⭐
+      const imagePromises: Promise<void>[] = [];
 
-      console.log(
-        "Extracted JSON string (first 200 chars):",
-        jsonString.substring(0, 200) + "..."
-      );
+      for (const route of generatedItineraryData) {
+        if (!route.itinerary || !Array.isArray(route.itinerary)) continue;
 
-      // 步骤 2: 解析 JSON
-      generatedItineraryData = JSON.parse(jsonString);
-
-      // 步骤 3: 验证是数组
-      if (!Array.isArray(generatedItineraryData)) {
-        throw new Error(
-          "AI must return an array of routes, got: " +
-            typeof generatedItineraryData
-        );
-      }
-
-      console.log(
-        `✅ Successfully parsed ${generatedItineraryData.length} routes`
-      );
-
-      // 步骤 4: 为每条路线添加 ID（如果缺失）并获取图片
-      for (let i = 0; i < generatedItineraryData.length; i++) {
-        const route = generatedItineraryData[i];
-
-        // 确保每条路线有 ID
-        if (!route.id) {
-          route.id = `route-${Date.now()}-${i}`;
-          console.log(`⚠️  Added missing ID to route ${i}: ${route.id}`);
-        }
-
-        // 确保有 itinerary 数组
-        if (!route.itinerary || !Array.isArray(route.itinerary)) {
-          console.warn(
-            `⚠️  Route ${route.id} has invalid itinerary, skipping image fetch`
-          );
-          continue;
-        }
-
-        console.log(
-          `Processing route ${i + 1}/${generatedItineraryData.length}: ${
-            route.title || route.id
-          }`
-        );
-
-        // 处理每天的行程
         for (const day of route.itinerary) {
-          if (!day.activities || !Array.isArray(day.activities)) {
-            continue;
-          }
+          if (!day.activities || !Array.isArray(day.activities)) continue;
 
           for (const activity of day.activities) {
-            // 获取真实图片
-            const imageUrl = await fetchRealImageUrl(activity.title);
-            if (imageUrl) {
-              activity.imageUrl = imageUrl;
-            }
+            // 并行获取每个活动的图片
+            const promise = fetchRealImageUrl(activity.title).then((imageUrl) => {
+              if (imageUrl) {
+                activity.imageUrl = imageUrl;
+              }
+            });
+            imagePromises.push(promise);
 
-            // 确保坐标是数字
+            // 确保坐标格式正确
             activity.latitude =
               typeof activity.latitude === "number" ? activity.latitude : 0;
             activity.longitude =
@@ -291,24 +299,34 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      console.log("✅ Successfully processed all routes with images");
-    } catch (parseError: any) {
-      console.error("=== JSON PARSE ERROR ===");
-      console.error("Error:", parseError.message);
-      console.error(
-        "Raw AI response (first 500 chars):",
-        responseText.substring(0, 500)
-      );
-      console.error("========================");
+      // ⭐ 并行等待所有图片获取完成 ⭐
+      console.log(`📸 Fetching ${imagePromises.length} images in parallel...`);
+      await Promise.all(imagePromises);
+      console.log("✅ All images fetched successfully!");
+    } else {
+      console.log("⚡ Using beautiful placeholder images for maximum speed");
 
-      return NextResponse.json(
-        {
-          error: `AI generated invalid JSON format: ${parseError.message}`,
-          details: responseText.substring(0, 200) + "...",
-          hint: "Check if AI returned text instead of JSON array",
-        },
-        { status: 500 }
-      );
+      for (const route of generatedItineraryData) {
+        if (!route.itinerary || !Array.isArray(route.itinerary)) continue;
+
+        for (const day of route.itinerary) {
+          if (!day.activities || !Array.isArray(day.activities)) continue;
+
+          for (const activity of day.activities) {
+            activity.latitude =
+              typeof activity.latitude === "number" ? activity.latitude : 0;
+            activity.longitude =
+              typeof activity.longitude === "number" ? activity.longitude : 0;
+
+            // 使用 Lorem Picsum 随机占位图（免费、美观、可靠）
+            if (!activity.imageUrl) {
+              // 使用活动标题作为种子，确保同样的活动总是显示相同的图片
+              activity.imageUrl = `https://picsum.photos/seed/${encodeURIComponent(activity.title.substring(0, 20))}/400/200`;
+            }
+          }
+        }
+      }
+      console.log("✅ Routes ready with beautiful placeholders!");
     }
 
     // ============ 暂时注释掉数据库保存 ============

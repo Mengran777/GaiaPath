@@ -18,14 +18,14 @@ const SmartSearch: React.FC<SmartSearchProps> = ({
   setQuery,
 }) => {
   const suggestions = [
-    "🏛️ History & Culture",
-    "🍝 Food Experience",
-    "🏞️ Nature Scenery",
-    "⛰️ Hiking Adventures",
-    "💖 Romantic Getaway",
-    "🎨 Art & Museums",
-    "🏖️ Beach Relaxation",
-    "👨‍👩‍👧‍👦 Family Trip",
+    "📸 Instagram-worthy spots",
+    "🌅 Sunrise & sunset viewpoints",
+    "🎭 Local festivals & events",
+    "🏰 Medieval castles & fortresses",
+    "🌃 Nightlife & entertainment",
+    "🛍️ Shopping & local markets",
+    "☕ Coffee culture tour",
+    "🎬 Film locations & movie scenes",
   ];
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -53,7 +53,7 @@ Examples:
 • Looking for a romantic getaway in Paris with art museums and fine dining"
           value={query}
           onChange={handleInputChange}
-          onKeyPress={(e) => {
+          onKeyDown={(e) => {
             if (e.key === "Enter" && e.ctrlKey) handleSearchClick();
           }}
           rows={6}

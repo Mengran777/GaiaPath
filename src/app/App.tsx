@@ -137,7 +137,8 @@ const App: React.FC = () => {
 
   const handleSmartSearch = (query: string) => {
     console.log("Smart search:", query);
-    setPreferences((prev) => ({ ...prev, destination: query }));
+    // 不再将 query 设置为 destination，而是保持在 smartSearchQuery 中
+    setSmartSearchQuery(query);
   };
 
   // ⭐ 生成多条路线 ⭐
@@ -159,6 +160,7 @@ const App: React.FC = () => {
         },
         body: JSON.stringify({
           ...preferences,
+          userRequest: smartSearchQuery, // ⭐ 新增：发送用户的自定义需求
           userId: currentUserId,
         }),
       });
@@ -359,9 +361,9 @@ const App: React.FC = () => {
       )}
 
       {stage === "details" && (
-        <div className="flex gap-0 h-full">
-          <div className="flex-1 bg-white rounded-l-2xl shadow-xl overflow-hidden">
-            <div className="h-full overflow-y-auto p-6 custom-scrollbar">
+        <div className="flex gap-4 h-full">
+          <div className="flex-1 bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col">
+            <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
               {error && (
                 <p className="text-red-500 text-center py-8">错误: {error}</p>
               )}
@@ -376,11 +378,13 @@ const App: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex-1 bg-white rounded-r-2xl shadow-xl p-6">
-            <h3 className="text-xl font-semibold mb-4 text-gray-800">
-              📍 Route Map
-            </h3>
-            <div className="w-full h-[calc(100%-3rem)]">
+          <div className="flex-1 bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col min-h-0">
+            <div className="p-6 pb-4 border-b border-gray-200 flex-shrink-0">
+              <h3 className="text-xl font-semibold text-gray-800">
+                📍 Route Map
+              </h3>
+            </div>
+            <div className="flex-1 p-6 pt-4 min-h-0">
               <MapView
                 locations={displayedLocations}
                 highlightedLocation={highlightedLocation}

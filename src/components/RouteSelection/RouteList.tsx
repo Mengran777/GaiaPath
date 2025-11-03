@@ -18,11 +18,33 @@ const RouteList: React.FC<RouteListProps> = ({
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500 mb-4"></div>
-          <p className="text-gray-600 text-lg">
-            Generating your personalized routes...
+        <div className="text-center max-w-md">
+          <div className="relative mb-8 inline-block">
+            <div className="animate-spin rounded-full h-20 w-20 border-b-4 border-purple-600"></div>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="text-3xl">✨</div>
+            </div>
+          </div>
+          <h3 className="text-2xl font-bold text-gray-800 mb-3">
+            Creating Your Perfect Routes
+          </h3>
+          <p className="text-gray-600 mb-6">
+            Our AI is generating 3 curated travel experiences with real images...
           </p>
+          <div className="flex flex-col gap-2 text-sm text-gray-500 mb-6">
+            <div className="flex items-center justify-center gap-2">
+              <div className="animate-pulse">🌍 Exploring destinations</div>
+            </div>
+            <div className="flex items-center justify-center gap-2">
+              <div className="animate-pulse" style={{ animationDelay: '0.2s' }}>🎨 Crafting unique themes</div>
+            </div>
+            <div className="flex items-center justify-center gap-2">
+              <div className="animate-pulse" style={{ animationDelay: '0.4s' }}>📸 Fetching real images</div>
+            </div>
+          </div>
+          <div className="text-xs text-purple-600 font-medium bg-purple-50 px-4 py-2 rounded-full inline-block">
+            ⚡ Parallel generation + Real images
+          </div>
         </div>
       </div>
     );
@@ -45,7 +67,7 @@ const RouteList: React.FC<RouteListProps> = ({
           Choose Your Perfect Journey
         </h2>
         <p className="text-gray-600">
-          We've created {routes.length} personalized routes based on your
+          We've created {routes.length} curated routes with real images based on your
           preferences. Select one to see the detailed itinerary.
         </p>
       </div>

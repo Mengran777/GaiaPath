@@ -5,7 +5,17 @@ Based on the following user preferences, generate 5-6 DIFFERENT themed travel ro
 
 **IMPORTANT: Do NOT include the imageUrl field in the JSON response, as this will be populated separately by the backend image search tool.**
 
-**User Preferences:**
+**⭐ MOST IMPORTANT - USER'S CUSTOM REQUEST (HIGHEST PRIORITY):**
+User's Specific Request: {{userRequest}}
+
+**CRITICAL INSTRUCTION: The user's specific request above is THE MOST IMPORTANT factor. You MUST:**
+1. Carefully read and understand what the user wants in their own words
+2. Prioritize their specific interests, activities, and preferences mentioned in their request
+3. Design routes that directly address their stated desires
+4. If they mention specific activities, attractions, or experiences, include those across multiple routes
+5. Use their request as the primary guide, and use the preferences below as secondary/supporting information
+
+**User Preferences (Secondary Information):**
 Destination: {{destination}}
 Start Date: {{travelStartDate}}
 End Date: {{travelEndDate}}
