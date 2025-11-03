@@ -1,5 +1,5 @@
 // src/app/api/generate-itinerary/route.ts
-
+import { RouteOption } from "@/types/routes";
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
 import { authenticateRequest } from "@/lib/auth";
@@ -120,7 +120,8 @@ export async function POST(request: NextRequest) {
       specialNeeds,
       userId,
       // promptName = "default_itinerary_prompt.txt",
-      promptName = "default_itinerary_prompt.txt",
+      // promptName = "default_itinerary_prompt.txt",
+      promptName = "multiple_routes_prompt.txt",
     } = body;
 
     console.log("Backend preferences extracted:");
@@ -202,48 +203,117 @@ export async function POST(request: NextRequest) {
 
     console.log("AI Raw Response:", responseText);
 
-    let generatedItineraryData: GeneratedItinerary;
+    let generatedItineraryData: RouteOption[];
 
     try {
-      const jsonMatch = responseText.match(/```json\n([\s\S]*?)\n```/);
-      let jsonString = jsonMatch ? jsonMatch[1] : responseText;
-      generatedItineraryData = JSON.parse(jsonString);
+      // 步骤 1: 提取 JSON（处理多种可能的格式）
+      let jsonString = responseText.trim();
 
-      if (
-        !generatedItineraryData.name ||
-        !generatedItineraryData.startDate ||
-        !generatedItineraryData.endDate ||
-        !Array.isArray(generatedItineraryData.itineraryDays)
-      ) {
-        throw new Error("AI response structure is not as expected.");
+      // 移除 markdown 代码块标记（更宽松的匹配）
+      const jsonMatch = jsonString.match(/```json\s*([\s\S]*?)\s*```/);
+      if (jsonMatch) {
+        jsonString = jsonMatch[1].trim();
       }
 
-      for (const day of generatedItineraryData.itineraryDays) {
-        for (const activity of day.activities) {
-          const imageUrl = await fetchRealImageUrl(activity.title);
-          if (imageUrl) {
-            activity.imageUrl = imageUrl;
-          }
-          activity.latitude =
-            typeof activity.latitude === "number" ? activity.latitude : 0;
-          activity.longitude =
-            typeof activity.longitude === "number" ? activity.longitude : 0;
+      // 如果没有找到代码块，尝试直接提取 JSON 数组
+      if (!jsonString.startsWith("[")) {
+        const arrayMatch = jsonString.match(/\[[\s\S]*\]/);
+        if (arrayMatch) {
+          jsonString = arrayMatch[0];
+        } else {
+          throw new Error("No JSON array found in AI response");
         }
       }
-    } catch (parseError: any) {
-      console.error(
-        "Failed to parse AI generated JSON or process images:",
-        parseError,
-        responseText
+
+      console.log(
+        "Extracted JSON string (first 200 chars):",
+        jsonString.substring(0, 200) + "..."
       );
+
+      // 步骤 2: 解析 JSON
+      generatedItineraryData = JSON.parse(jsonString);
+
+      // 步骤 3: 验证是数组
+      if (!Array.isArray(generatedItineraryData)) {
+        throw new Error(
+          "AI must return an array of routes, got: " +
+            typeof generatedItineraryData
+        );
+      }
+
+      console.log(
+        `✅ Successfully parsed ${generatedItineraryData.length} routes`
+      );
+
+      // 步骤 4: 为每条路线添加 ID（如果缺失）并获取图片
+      for (let i = 0; i < generatedItineraryData.length; i++) {
+        const route = generatedItineraryData[i];
+
+        // 确保每条路线有 ID
+        if (!route.id) {
+          route.id = `route-${Date.now()}-${i}`;
+          console.log(`⚠️  Added missing ID to route ${i}: ${route.id}`);
+        }
+
+        // 确保有 itinerary 数组
+        if (!route.itinerary || !Array.isArray(route.itinerary)) {
+          console.warn(
+            `⚠️  Route ${route.id} has invalid itinerary, skipping image fetch`
+          );
+          continue;
+        }
+
+        console.log(
+          `Processing route ${i + 1}/${generatedItineraryData.length}: ${
+            route.title || route.id
+          }`
+        );
+
+        // 处理每天的行程
+        for (const day of route.itinerary) {
+          if (!day.activities || !Array.isArray(day.activities)) {
+            continue;
+          }
+
+          for (const activity of day.activities) {
+            // 获取真实图片
+            const imageUrl = await fetchRealImageUrl(activity.title);
+            if (imageUrl) {
+              activity.imageUrl = imageUrl;
+            }
+
+            // 确保坐标是数字
+            activity.latitude =
+              typeof activity.latitude === "number" ? activity.latitude : 0;
+            activity.longitude =
+              typeof activity.longitude === "number" ? activity.longitude : 0;
+          }
+        }
+      }
+
+      console.log("✅ Successfully processed all routes with images");
+    } catch (parseError: any) {
+      console.error("=== JSON PARSE ERROR ===");
+      console.error("Error:", parseError.message);
+      console.error(
+        "Raw AI response (first 500 chars):",
+        responseText.substring(0, 500)
+      );
+      console.error("========================");
+
       return NextResponse.json(
         {
-          error: `AI generated invalid JSON format or unexpected structure: ${parseError.message}`,
+          error: `AI generated invalid JSON format: ${parseError.message}`,
+          details: responseText.substring(0, 200) + "...",
+          hint: "Check if AI returned text instead of JSON array",
         },
         { status: 500 }
       );
     }
 
+    // ============ 暂时注释掉数据库保存 ============
+    // 原因：现在返回多条路线，等用户选择后再保存
+    /*
     // 4. Save AI-generated itinerary to the database
     const tripName = generatedItineraryData.name;
 
@@ -304,9 +374,13 @@ export async function POST(request: NextRequest) {
         locations: true,
       },
     });
+    */
+    // ============ 数据库保存结束 ============
 
     // 5. Return AI-generated itinerary to the frontend
-    return NextResponse.json(generatedItineraryData.itineraryDays, {
+    // 5. Return AI-generated routes to the frontend
+    return NextResponse.json(generatedItineraryData, {
+      // 改这里
       status: 200,
     });
   } catch (error: any) {
