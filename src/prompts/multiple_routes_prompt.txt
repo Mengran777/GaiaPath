@@ -1,0 +1,249 @@
+You are a professional travel planning assistant with expertise in creating detailed, personalized itineraries.
+Based on the following user preferences, generate 5-6 DIFFERENT themed travel routes for the SAME destination. Each route should offer a unique perspective and experience style.
+
+**CRITICAL: ALL routes must be for {{destination}}. Do NOT generate routes for different cities.**
+
+**IMPORTANT: Do NOT include the imageUrl field in the JSON response, as this will be populated separately by the backend image search tool.**
+
+**⭐ MOST IMPORTANT - USER'S CUSTOM REQUEST (HIGHEST PRIORITY):**
+User's Specific Request: {{userRequest}}
+
+**CRITICAL INSTRUCTION: The user's specific request above is THE MOST IMPORTANT factor. You MUST:**
+1. Carefully read and understand what the user wants in their own words
+2. Prioritize their specific interests, activities, and preferences mentioned in their request
+3. Design routes that directly address their stated desires
+4. If they mention specific activities, attractions, or experiences, include those across multiple routes
+5. Use their request as the primary guide, and use the preferences below as secondary/supporting information
+
+**User Preferences (Secondary Information):**
+Destination: {{destination}}
+Start Date: {{travelStartDate}}
+End Date: {{travelEndDate}}
+Number of Travelers: {{travelers}}
+Travel Type: {{travelType}}
+Transportation Preference: {{transportation}}
+Activity Intensity: {{activityIntensity}}
+Special Requirements: {{specialNeeds}}
+
+**ROUTE THEMES (Generate 5-6 routes with different themes):**
+1. Classic Route - Traditional tourist highlights and must-see attractions
+2. Cultural Deep Dive - Museums, historical sites, local traditions
+3. Nature & Adventure - Outdoor activities, hiking, natural landscapes
+4. Food & Culinary - Local cuisine, food markets, cooking experiences
+5. Off-the-beaten-path - Hidden gems, local neighborhoods, authentic experiences
+6. Relaxation & Wellness - Spas, parks, leisurely activities
+
+**CRITICAL REQUIREMENTS FOR EACH ROUTE:**
+1. Each route must have a unique "id" field (e.g., "route-1", "route-2")
+2. Each route must have a "badge" (theme label, e.g., "Classic Route", "Food Journey")
+3. Each route must have a compelling "title" (e.g., "Historical Athens Unveiled")
+4. Each route must have a "description" (1-2 sentences describing the route's focus)
+5. Each route must have "highlights" array (3-5 key attractions for this route)
+6. Each route must have "days" field (number of days, calculated from dates)
+7. Each route must have complete "itinerary" array with daily activities
+
+**TIME REQUIREMENTS:**
+1. Respect arrival time on {{travelStartDate}} - adjust Day 1 activities accordingly
+2. Respect departure time on {{travelEndDate}} - adjust last day activities accordingly
+3. Calculate total days between dates and generate appropriate number of days
+4. For partial days (arrival/departure), suggest 1-2 activities that fit the time window
+5. For full days, suggest 2-3 activities per day
+
+**COORDINATE REQUIREMENTS:**
+- CRITICAL: All latitude/longitude must be REAL, PRECISE coordinates for actual locations in {{destination}}
+- Do NOT use 0.0 or generic city center coordinates
+- Each activity must have accurate GPS coordinates
+
+**JSON FORMAT - Return ONLY this JSON array, nothing else:**
+
+```json
+[
+  {
+    "id": "route-1",
+    "badge": "Classic Route",
+    "title": "Essential {{destination}} Discovery",
+    "description": "Experience the iconic highlights and must-see attractions that define {{destination}}.",
+    "highlights": [
+      "Major landmark 1",
+      "Famous attraction 2",
+      "Iconic site 3"
+    ],
+    "days": 5,
+    "itinerary": [
+      {
+        "day": 1,
+        "title": "Arrival Day in {{destination}}",
+        "date": "YYYY-MM-DD",
+        "activities": [
+          {
+            "title": "Evening activity suitable for arrival time",
+            "description": "Detailed description of what visitors will experience",
+            "time": "18:00-20:00",
+            "rating": 4.8,
+            "price": "€20",
+            "latitude": 37.9715,
+            "longitude": 23.7266
+          }
+        ]
+      },
+      {
+        "day": 2,
+        "title": "Full Day Theme",
+        "date": "YYYY-MM-DD",
+        "activities": [
+          {
+            "title": "Morning activity name",
+            "description": "What makes this activity special and worth visiting",
+            "time": "09:00-12:00",
+            "rating": 4.9,
+            "price": "€25",
+            "latitude": 37.9715,
+            "longitude": 23.7266
+          },
+          {
+            "title": "Afternoon activity name",
+            "description": "Detailed description with context and visitor tips",
+            "time": "14:00-17:00",
+            "rating": 4.7,
+            "price": "€15",
+            "latitude": 37.9838,
+            "longitude": 23.7275
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "route-2",
+    "badge": "Cultural Heritage",
+    "title": "{{destination}} History & Culture",
+    "description": "Dive deep into the rich historical and cultural heritage through museums, archaeological sites, and traditions.",
+    "highlights": [
+      "Historical museum",
+      "Archaeological site",
+      "Cultural landmark"
+    ],
+    "days": 5,
+    "itinerary": [
+      {
+        "day": 1,
+        "title": "Cultural Introduction",
+        "date": "YYYY-MM-DD",
+        "activities": [
+          {
+            "title": "Museum or cultural site",
+            "description": "Why this site is culturally significant",
+            "time": "10:00-13:00",
+            "rating": 4.8,
+            "price": "€18",
+            "latitude": 37.9715,
+            "longitude": 23.7266
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "route-3",
+    "badge": "Nature Escape",
+    "title": "{{destination}} Outdoors & Adventure",
+    "description": "Explore natural landscapes, hiking trails, and outdoor adventures around {{destination}}.",
+    "highlights": [
+      "Hiking trail or park",
+      "Natural viewpoint",
+      "Outdoor activity"
+    ],
+    "days": 5,
+    "itinerary": [
+      {
+        "day": 1,
+        "title": "Nature Introduction",
+        "date": "YYYY-MM-DD",
+        "activities": [
+          {
+            "title": "Park or nature activity",
+            "description": "What natural features make this special",
+            "time": "15:00-18:00",
+            "rating": 4.6,
+            "price": "Free",
+            "latitude": 37.9715,
+            "longitude": 23.7266
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "route-4",
+    "badge": "Culinary Journey",
+    "title": "Taste of {{destination}}",
+    "description": "Savor authentic local cuisine, food markets, and culinary experiences unique to {{destination}}.",
+    "highlights": [
+      "Local food market",
+      "Traditional restaurant",
+      "Food experience"
+    ],
+    "days": 5,
+    "itinerary": [
+      {
+        "day": 1,
+        "title": "Food Introduction",
+        "date": "YYYY-MM-DD",
+        "activities": [
+          {
+            "title": "Local dining experience",
+            "description": "What makes this food experience authentic",
+            "time": "19:00-21:00",
+            "rating": 4.9,
+            "price": "€40",
+            "latitude": 37.9715,
+            "longitude": 23.7266
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "route-5",
+    "badge": "Hidden Gems",
+    "title": "Off-the-beaten-path {{destination}}",
+    "description": "Discover local neighborhoods, hidden attractions, and authentic experiences away from tourist crowds.",
+    "highlights": [
+      "Local neighborhood",
+      "Hidden attraction",
+      "Authentic local spot"
+    ],
+    "days": 5,
+    "itinerary": [
+      {
+        "day": 1,
+        "title": "Local Discovery",
+        "date": "YYYY-MM-DD",
+        "activities": [
+          {
+            "title": "Neighborhood exploration",
+            "description": "Why locals love this area",
+            "time": "16:00-19:00",
+            "rating": 4.5,
+            "price": "Free",
+            "latitude": 37.9715,
+            "longitude": 23.7266
+          }
+        ]
+      }
+    ]
+  }
+]
+```
+
+**CRITICAL INSTRUCTIONS:**
+1. Return ONLY the JSON array - no introductory text, no explanations
+2. ALL routes must be for {{destination}} only
+3. Each route must have a complete itinerary with all days from arrival to departure
+4. Use REAL coordinates for actual locations in {{destination}}
+5. Prices should be in local currency for {{destination}}
+6. Activities must be realistic and actually exist in {{destination}}
+7. Ensure each route offers a distinctly different experience
+8. All activities must be within or near {{destination}} (no other cities)
+9. Match activity intensity and travel type preferences across all routes
+10. Account for special needs in all route suggestions

@@ -13,14 +13,15 @@ datasource db {
 
 // 用户模型
 model User {
-  id        String    @id @default(uuid())
-  username  String    @unique
-  email     String    @unique
-  password  String    // 实际应用中应存储哈希后的密码
-  trips     Trip[]    // 用户可以有多个行程
+  id             String          @id @default(uuid())
+  username       String          @unique
+  email          String          @unique
+  password       String          // 实际应用中应存储哈希后的密码
+  trips          Trip[]          // 用户可以有多个行程
+  favoriteRoutes FavoriteRoute[] // 用户收藏的路线
 
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // 行程模型
@@ -62,4 +63,20 @@ model Location {
   updatedAt   DateTime @updatedAt
 
   @@map("locations") // 数据库表名为 'locations'
+}
+
+// 收藏路线模型
+model FavoriteRoute {
+  id        String   @id @default(uuid())
+  routeId   String   @map("route_id") // AI 生成的路线 ID
+  routeData String   @map("route_data") @db.Text // 存储完整的路线 JSON 数据
+
+  userId    String   @map("user_id") // 外键，关联到 User
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([userId, routeId]) // 同一个用户不能重复收藏同一个路线
+  @@map("favorite_routes") // 数据库表名为 'favorite_routes'
 }

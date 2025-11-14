@@ -38,6 +38,7 @@ const MapView: React.FC<MapViewProps> = ({
   highlightedLocation,
 }) => {
   const mapRef = useRef<mapboxgl.Map | null>(null);
+  const [isMapReady, setIsMapReady] = useState(false);
 
   // Use a controlled viewState from Mapbox GL JS, allows flyTo
   const [viewState, setViewState] = useState({
@@ -123,25 +124,34 @@ const MapView: React.FC<MapViewProps> = ({
   const onMapLoad = useCallback(
     (event: mapboxgl.MapboxEvent) => {
       mapRef.current = event.target as mapboxgl.Map;
-      // After map loads, if there's an itinerary, fit bounds
-      if (locations.length > 0 && !highlightedLocation) {
-        const bounds = new mapboxgl.LngLatBounds();
-        locations.forEach((loc) => {
-          if (
-            typeof loc.latitude === "number" &&
-            typeof loc.longitude === "number" &&
-            loc.latitude !== 0 &&
-            loc.longitude !== 0
-          ) {
-            bounds.extend([loc.longitude, loc.latitude]);
-          }
-        });
-        if (!bounds.isEmpty()) {
-          mapRef.current.fitBounds(bounds, {
-            padding: { top: 50, bottom: 50, left: 50, right: 50 },
-            duration: 0, // No animation on initial load
+
+      // Trigger resize immediately and mark map as ready
+      if (mapRef.current) {
+        mapRef.current.resize();
+
+        // After map loads, if there's an itinerary, fit bounds
+        if (locations.length > 0 && !highlightedLocation) {
+          const bounds = new mapboxgl.LngLatBounds();
+          locations.forEach((loc) => {
+            if (
+              typeof loc.latitude === "number" &&
+              typeof loc.longitude === "number" &&
+              loc.latitude !== 0 &&
+              loc.longitude !== 0
+            ) {
+              bounds.extend([loc.longitude, loc.latitude]);
+            }
           });
+          if (!bounds.isEmpty()) {
+            mapRef.current.fitBounds(bounds, {
+              padding: { top: 50, bottom: 50, left: 50, right: 50 },
+              duration: 0, // No animation on initial load
+            });
+          }
         }
+
+        // Mark map as ready after initial setup
+        setIsMapReady(true);
       }
     },
     [locations, highlightedLocation]
@@ -154,6 +164,27 @@ const MapView: React.FC<MapViewProps> = ({
       );
     }
   }, []);
+
+  // Effect to handle map resize when container dimensions change
+  useEffect(() => {
+    if (!mapRef.current || !isMapReady) return;
+
+    // Use ResizeObserver to detect container size changes
+    const mapContainer = mapRef.current.getContainer();
+    if (!mapContainer) return;
+
+    const resizeObserver = new ResizeObserver(() => {
+      if (mapRef.current) {
+        mapRef.current.resize();
+      }
+    });
+
+    resizeObserver.observe(mapContainer);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [isMapReady]);
 
   // const lineLayerStyle = {
   //   id: "route-line",
@@ -172,6 +203,7 @@ const MapView: React.FC<MapViewProps> = ({
   return (
     <div className="relative w-full h-full rounded-2xl overflow-hidden shadow-xl">
       {MAPBOX_TOKEN ? (
+        <div className={`w-full h-full transition-opacity duration-300 ${isMapReady ? 'opacity-100' : 'opacity-0'}`}>
         <Map
           mapboxAccessToken={MAPBOX_TOKEN}
           {...viewState} // Use spread operator for controlled viewState
@@ -256,9 +288,18 @@ const MapView: React.FC<MapViewProps> = ({
             </Popup>
           )}
         </Map>
+        </div>
       ) : (
         <div className="flex items-center justify-center w-full h-full bg-gray-100 text-gray-500 rounded-2xl">
           地图加载中... (请检查 Mapbox Token)
+        </div>
+      )}
+      {MAPBOX_TOKEN && !isMapReady && (
+        <div className="absolute inset-0 flex items-center justify-center bg-white rounded-2xl">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+            <p className="text-gray-600">Loading map...</p>
+          </div>
         </div>
       )}
     </div>

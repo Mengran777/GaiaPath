@@ -1,5 +1,5 @@
 import React from "react";
-import { Input, Select, Slider, Tag, TypeCard } from "../UI"; // Import from UI
+import { Input, Select, Slider, Tag, TypeCard, LocationAutocomplete } from "../UI"; // Import from UI
 import Section from "../Layout/Section"; // Import from Layout
 
 interface PreferenceFormProps {
@@ -66,12 +66,10 @@ const PreferenceForm: React.FC<PreferenceFormProps> = ({
           >
             Country/City
           </label>
-          <Input
-            id="destination"
-            type="text"
-            placeholder="e.g., Paris, France"
+          <LocationAutocomplete
             value={preferences.destination}
-            onChange={(e) => onPreferenceChange("destination", e.target.value)}
+            onChange={(value) => onPreferenceChange("destination", value)}
+            placeholder="e.g., Paris, New York, Tokyo"
           />
         </div>
 

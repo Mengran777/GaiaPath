@@ -30,7 +30,7 @@ body {
 
 /* Custom CSS for scrollbar */
 .custom-scrollbar::-webkit-scrollbar {
-  width: 8px; /* Width of the vertical scrollbar */
+  width: 12px; /* Width of the vertical scrollbar */
   height: 8px; /* Height of the horizontal scrollbar */
 }
 

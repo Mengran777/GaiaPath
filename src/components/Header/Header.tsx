@@ -8,14 +8,22 @@ interface HeaderProps {
   onLogout: () => void;
   currentUserId: string | null; // This prop will now receive either the User ID OR the Username
   pathname?: string;
+  activeTab?: string;
+  onTabChange?: (tab: string) => void;
 }
 
 const Header: React.FC<HeaderProps> = ({
   onLogout,
   currentUserId,
   pathname,
+  activeTab = "Discover",
+  onTabChange,
 }) => {
-  const [activeNav, setActiveNav] = useState("Discover");
+  const handleNavClick = (label: string) => {
+    if (onTabChange) {
+      onTabChange(label);
+    }
+  };
 
   const isOnAuthPage = pathname?.startsWith("/auth") || false;
   console.log("Header Render - currentUserId:", currentUserId); // This will show "Mona" on the later renders
@@ -37,28 +45,16 @@ const Header: React.FC<HeaderProps> = ({
         </div>
         <nav className="flex flex-wrap justify-center md:justify-start gap-2 md:gap-4">
           <NavItem
-            label="Discover"
+            label="Home"
             to="#"
-            isActive={activeNav === "Discover"}
-            onClick={() => setActiveNav("Discover")}
-          />
-          <NavItem
-            label="My Itineraries"
-            to="#"
-            isActive={activeNav === "My Itineraries"}
-            onClick={() => setActiveNav("My Itineraries")}
+            isActive={activeTab === "Home"}
+            onClick={() => handleNavClick("Home")}
           />
           <NavItem
             label="Favorites"
             to="#"
-            isActive={activeNav === "Favorites"}
-            onClick={() => setActiveNav("Favorites")}
-          />
-          <NavItem
-            label="Community"
-            to="#"
-            isActive={activeNav === "Community"}
-            onClick={() => setActiveNav("Community")}
+            isActive={activeTab === "Favorites"}
+            onClick={() => handleNavClick("Favorites")}
           />
         </nav>
       </div>
@@ -94,6 +90,23 @@ const Header: React.FC<HeaderProps> = ({
           >
             Logout
           </button>
+        </div>
+      ) : !isOnAuthPage ? (
+        <div className="flex items-center space-x-3">
+          <a
+            href="/auth/login"
+            className="px-6 py-2 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium
+                       hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-md hover:shadow-lg"
+          >
+            Login
+          </a>
+          <a
+            href="/auth/register"
+            className="px-6 py-2 rounded-full border-2 border-blue-600 text-blue-600 font-medium
+                       hover:bg-blue-50 transition-all duration-200"
+          >
+            Sign Up
+          </a>
         </div>
       ) : null}
     </header>
