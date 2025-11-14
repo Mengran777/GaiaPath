@@ -45,28 +45,16 @@ const Header: React.FC<HeaderProps> = ({
         </div>
         <nav className="flex flex-wrap justify-center md:justify-start gap-2 md:gap-4">
           <NavItem
-            label="Discover"
+            label="Home"
             to="#"
-            isActive={activeTab === "Discover"}
-            onClick={() => handleNavClick("Discover")}
-          />
-          <NavItem
-            label="My Itineraries"
-            to="#"
-            isActive={activeTab === "My Itineraries"}
-            onClick={() => handleNavClick("My Itineraries")}
+            isActive={activeTab === "Home"}
+            onClick={() => handleNavClick("Home")}
           />
           <NavItem
             label="Favorites"
             to="#"
             isActive={activeTab === "Favorites"}
             onClick={() => handleNavClick("Favorites")}
-          />
-          <NavItem
-            label="Community"
-            to="#"
-            isActive={activeTab === "Community"}
-            onClick={() => handleNavClick("Community")}
           />
         </nav>
       </div>

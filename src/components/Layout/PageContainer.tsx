@@ -24,7 +24,7 @@ const PageContainer: React.FC<PageContainerProps> = ({
   currentUserId,
   pathname,
   stage,
-  activeTab = "Discover",
+  activeTab = "Home",
   onTabChange,
 }) => {
   return (
@@ -41,39 +41,43 @@ const PageContainer: React.FC<PageContainerProps> = ({
       {/* Main Content Area */}
       <main
         className={`flex-1 py-6 flex gap-6
-              ${stage === "initial" ? "overflow-y-auto pl-4 lg:pl-8 pr-0 items-start" : "overflow-hidden pl-4 lg:pl-8 pr-0 items-stretch"}
+              ${activeTab === "Favorites" ? "px-4 lg:px-8 overflow-y-auto items-start" : ""}
+              ${stage === "initial" && activeTab !== "Favorites" ? "overflow-y-auto pl-4 lg:pl-8 pr-0 items-start" : ""}
+              ${stage !== "initial" && activeTab !== "Favorites" ? "overflow-hidden pl-4 lg:pl-8 pr-0 items-stretch" : ""}
               `}
       >
-        {/* Sidebar - Changes width based on stage */}
-        <aside
-          className={`
-            flex-shrink-0 transition-all duration-800 ease-in-out
-            ${stage === "initial" ? "w-full" : ""}
-            ${stage === "routes" ? "w-full lg:w-[35%]" : ""}
-            ${stage === "details" ? "w-16" : ""}
-          `}
-        >
-          <div
+        {/* Sidebar - Changes width based on stage, hidden on Favorites tab */}
+        {activeTab !== "Favorites" && (
+          <aside
             className={`
-              bg-white shadow-xl h-full flex flex-col
-              transition-all duration-800 ease-in-out overflow-hidden
-              ${stage === "initial" ? "rounded-2xl" : "rounded-l-2xl"}
-              ${stage === "details" ? "p-4 items-center justify-start" : ""}
+              flex-shrink-0 transition-all duration-800 ease-in-out
+              ${stage === "initial" ? "w-full" : ""}
+              ${stage === "routes" ? "w-full lg:w-[35%]" : ""}
+              ${stage === "details" ? "w-16" : ""}
             `}
           >
-            {stage === "details" ? (
-              // Minimized view in stage 3
-              <div className="writing-mode-vertical text-blue-600 font-bold text-sm">
-                {sidebar}
-              </div>
-            ) : (
-              // Full view in stages 1 & 2
-              <div className="flex-1 overflow-y-auto custom-scrollbar pr-0 pl-6 pt-6 pb-6">
-                {sidebar}
-              </div>
-            )}
-          </div>
-        </aside>
+            <div
+              className={`
+                bg-white shadow-xl h-full flex flex-col
+                transition-all duration-800 ease-in-out overflow-hidden
+                ${stage === "initial" ? "rounded-2xl" : "rounded-l-2xl"}
+                ${stage === "details" ? "p-4 items-center justify-start" : ""}
+              `}
+            >
+              {stage === "details" ? (
+                // Minimized view in stage 3
+                <div className="writing-mode-vertical text-blue-600 font-bold text-sm">
+                  {sidebar}
+                </div>
+              ) : (
+                // Full view in stages 1 & 2
+                <div className="flex-1 overflow-y-auto custom-scrollbar pr-0 pl-6 pt-6 pb-6">
+                  {sidebar}
+                </div>
+              )}
+            </div>
+          </aside>
+        )}
 
         {/* Main Content - Changes based on stage */}
         <section
@@ -82,6 +86,7 @@ const PageContainer: React.FC<PageContainerProps> = ({
             ${stage === "initial" ? "hidden" : ""}
             ${stage === "routes" ? "flex-1" : ""}
             ${stage === "details" ? "flex-1" : ""}
+            ${activeTab === "Favorites" ? "w-full" : ""}
           `}
         >
           {mainContent}

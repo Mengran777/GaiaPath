@@ -29,7 +29,7 @@ const App: React.FC = () => {
   const [stage, setStage] = useState<AppStage>("initial");
 
   // ⭐ 当前活动标签 ⭐
-  const [activeTab, setActiveTab] = useState<string>("Discover");
+  const [activeTab, setActiveTab] = useState<string>("Home");
 
   const [preferences, setPreferences] = useState({
     destination: "",
@@ -294,7 +294,7 @@ const App: React.FC = () => {
     console.log("Tab changed to:", tab);
     setActiveTab(tab);
 
-    if (tab === "Discover") {
+    if (tab === "Home") {
       setStage("initial");
     } else if (tab === "Favorites") {
       // 切换到 Favorites 时，从数据库加载收藏的路线
@@ -495,6 +495,17 @@ const App: React.FC = () => {
         >
           ← Back to Routes
         </button>
+      ) : activeTab === "Favorites" ? (
+        // Favorites 标签：显示提示信息
+        <div className="flex flex-col items-center justify-center h-full text-center px-6">
+          <div className="text-6xl mb-4">🏆</div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">
+            Your Favorite Routes
+          </h2>
+          <p className="text-gray-600">
+            These are the routes you've saved for future reference.
+          </p>
+        </div>
       ) : (
         // Stage 1 & 2: 显示完整表单
         <>
@@ -502,7 +513,6 @@ const App: React.FC = () => {
             query={smartSearchQuery}
             setQuery={setSmartSearchQuery}
             onSearch={handleSmartSearch}
-            onSuggestionClick={(s) => setSmartSearchQuery(s)}
           />
           <div className="flex-1 mt-4 overflow-y-auto custom-scrollbar">
             <PreferenceForm
@@ -514,7 +524,7 @@ const App: React.FC = () => {
             onClick={handleGenerateItinerary}
             isLoading={isLoading}
           />
-          {stage === "routes" && (
+          {stage === "routes" && activeTab !== "Favorites" && (
             <button
               onClick={handleBackToInitial}
               className="mt-4 w-full py-2 text-sm text-gray-600 hover:text-gray-800 transition-colors"
