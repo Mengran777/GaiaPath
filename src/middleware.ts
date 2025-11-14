@@ -44,6 +44,6 @@ export const config = {
     "/",
     "/auth/:path*",
     // 不要排除所有 API，只排除不需要认证的
-    "/((?!_next/static|_next/image|favicon.ico|.*\\..*|api/auth/login|api/auth/register).*)",
+    "/((?!_next/static|_next/image|favicon.ico|.*\\..*|api/auth/login|api/auth/register|api/auth/logout).*)",
   ],
 };

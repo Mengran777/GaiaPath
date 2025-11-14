@@ -2,21 +2,47 @@
 
 import React from "react";
 import { RouteOption } from "@/types/routes";
+import { FavoriteButton } from "../UI";
 
 interface RouteCardProps {
   route: RouteOption;
   onSelect: (routeId: string) => void;
+  isFavorite?: boolean;
+  onToggleFavorite?: (routeId: string) => void;
 }
 
-const RouteCard: React.FC<RouteCardProps> = ({ route, onSelect }) => {
+const RouteCard: React.FC<RouteCardProps> = ({
+  route,
+  onSelect,
+  isFavorite = false,
+  onToggleFavorite,
+}) => {
+  const handleFavoriteClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // 防止触发卡片的 onClick
+    if (onToggleFavorite) {
+      onToggleFavorite(route.id); // 直接调用收藏切换
+    }
+  };
+
   return (
     <div
       onClick={() => onSelect(route.id)}
-      className="bg-white rounded-2xl p-6 shadow-md hover:shadow-xl 
+      className="bg-white rounded-2xl p-6 shadow-md hover:shadow-xl
                  transition-all duration-500 cursor-pointer
                  border-3 border-transparent hover:border-blue-500
-                 transform hover:-translate-y-2 active:scale-98"
+                 transform hover:-translate-y-2 active:scale-98 relative"
     >
+      {/* 收藏按钮 */}
+      {onToggleFavorite && (
+        <div className="absolute top-4 right-4 z-10" onClick={handleFavoriteClick}>
+          <FavoriteButton
+            isFavorite={isFavorite}
+            onToggle={() => {}} // 空函数，因为已经在 handleFavoriteClick 中处理了
+            size="medium"
+          />
+        </div>
+      )}
+
       {/* Badge */}
       <div
         className="inline-block px-4 py-2 rounded-full text-white font-bold text-sm mb-4"

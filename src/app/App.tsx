@@ -2,7 +2,6 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { useRouter } from "next/navigation";
 import PageContainer from "../components/Layout/PageContainer";
 import SmartSearch from "../components/Sidebar/SmartSearch";
 import PreferenceForm from "../components/Sidebar/PreferenceForm";
@@ -26,10 +25,11 @@ interface Location {
 type AppStage = "initial" | "routes" | "details";
 
 const App: React.FC = () => {
-  const router = useRouter();
-
   // ⭐ 核心状态：当前阶段 ⭐
   const [stage, setStage] = useState<AppStage>("initial");
+
+  // ⭐ 当前活动标签 ⭐
+  const [activeTab, setActiveTab] = useState<string>("Discover");
 
   const [preferences, setPreferences] = useState({
     destination: "",
@@ -49,6 +49,7 @@ const App: React.FC = () => {
 
   // ⭐ 路线选项状态 ⭐
   const [routeOptions, setRouteOptions] = useState<RouteOption[]>([]);
+  const [myItineraries, setMyItineraries] = useState<RouteOption[]>([]); // 保存生成的路线
   const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
 
   // ⭐ 当前选中的路线和行程 ⭐
@@ -67,6 +68,9 @@ const App: React.FC = () => {
   const [highlightedDay, setHighlightedDay] = useState<number | null>(null);
   const [highlightedLocation, setHighlightedLocation] =
     useState<Location | null>(null);
+
+  // ⭐ 收藏功能状态 ⭐
+  const [favoriteRoutes, setFavoriteRoutes] = useState<Set<string>>(new Set());
 
   const getCookie = (name: string): string | null => {
     if (typeof document === "undefined") {
@@ -118,17 +122,69 @@ const App: React.FC = () => {
     }
   }, [currentUserId]);
 
-  const handleLogout = () => {
-    document.cookie =
-      "authToken=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax;";
-    document.cookie =
-      "userId=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax;";
-    document.cookie =
-      "isLoggedIn=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax;";
+  // ⭐ 从数据库加载用户的收藏路线 ⭐
+  useEffect(() => {
+    if (currentUserId) {
+      const fetchFavorites = async () => {
+        try {
+          const response = await fetch("/api/favorites", {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${getCookie("authToken")}`,
+            },
+          });
 
-    setCurrentUserId(null);
-    setCurrentUsername(null);
-    window.location.href = "/auth/login";
+          if (response.ok) {
+            const favoritesData = await response.json();
+            // 提取所有收藏路线的 ID
+            const favoriteIds = favoritesData.map((route: any) => route.id);
+            setFavoriteRoutes(new Set(favoriteIds));
+            console.log("Loaded favorites from database:", favoriteIds);
+          } else {
+            console.error("Failed to load favorites:", response.statusText);
+          }
+        } catch (error) {
+          console.error("Error loading favorites:", error);
+        }
+      };
+      fetchFavorites();
+    } else {
+      // 用户未登录，清空收藏
+      setFavoriteRoutes(new Set());
+    }
+  }, [currentUserId]);
+
+  const handleLogout = async () => {
+    try {
+      // 调用服务器端登出 API 来清除 httpOnly cookies
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      // 清除客户端状态
+      setCurrentUserId(null);
+      setCurrentUsername(null);
+      setFavoriteRoutes(new Set());
+      setRouteOptions([]);
+      setMyItineraries([]);
+      setItinerary([]);
+
+      // 清除客户端可访问的 cookies
+      const cookiesToClear = ["userId", "isLoggedIn"];
+      cookiesToClear.forEach((cookieName) => {
+        document.cookie = `${cookieName}=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax;`;
+      });
+
+      // 使用 replace 强制跳转到登录页
+      window.location.replace("/auth/login");
+    } catch (error) {
+      console.error("Logout error:", error);
+      // 即使出错也要跳转到登录页
+      window.location.replace("/auth/login");
+    }
   };
 
   const handlePreferenceChange = (key: string, value: any) => {
@@ -139,6 +195,138 @@ const App: React.FC = () => {
     console.log("Smart search:", query);
     // 不再将 query 设置为 destination，而是保持在 smartSearchQuery 中
     setSmartSearchQuery(query);
+  };
+
+  // ⭐ 收藏功能处理 ⭐
+  const toggleFavorite = async (routeId: string) => {
+    const isFavorited = favoriteRoutes.has(routeId);
+    const action = isFavorited ? "remove" : "add";
+
+    // 先更新 UI 状态（乐观更新）
+    setFavoriteRoutes((prev) => {
+      const newFavorites = new Set(prev);
+      if (isFavorited) {
+        newFavorites.delete(routeId);
+      } else {
+        newFavorites.add(routeId);
+      }
+      return newFavorites;
+    });
+
+    // 然后同步到数据库
+    try {
+      const route = routeOptions.find((r) => r.id === routeId);
+
+      const response = await fetch("/api/favorites", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${getCookie("authToken")}`,
+        },
+        body: JSON.stringify({
+          routeId: routeId,
+          routeData: route, // 保存完整的路线数据
+          action: action,
+        }),
+      });
+
+      if (!response.ok) {
+        // 如果保存失败，回滚 UI 状态
+        setFavoriteRoutes((prev) => {
+          const newFavorites = new Set(prev);
+          if (isFavorited) {
+            newFavorites.add(routeId);
+          } else {
+            newFavorites.delete(routeId);
+          }
+          return newFavorites;
+        });
+        console.error("Failed to save favorite to database");
+      } else {
+        console.log(`Favorite ${action}ed successfully:`, routeId);
+      }
+    } catch (error) {
+      console.error("Error saving favorite:", error);
+      // 回滚 UI 状态
+      setFavoriteRoutes((prev) => {
+        const newFavorites = new Set(prev);
+        if (isFavorited) {
+          newFavorites.add(routeId);
+        } else {
+          newFavorites.delete(routeId);
+        }
+        return newFavorites;
+      });
+    }
+  };
+
+  // ⭐ 从数据库加载收藏路线 ⭐
+  const loadFavoritesFromDatabase = async () => {
+    if (!currentUserId) {
+      console.log("No user logged in, skipping favorites load");
+      return [];
+    }
+
+    try {
+      const response = await fetch("/api/favorites", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${getCookie("authToken")}`,
+        },
+      });
+
+      if (response.ok) {
+        const favoritesData = await response.json();
+        console.log("Loaded favorite routes from database:", favoritesData);
+        return favoritesData;
+      } else {
+        console.error("Failed to load favorite routes:", response.statusText);
+        return [];
+      }
+    } catch (error) {
+      console.error("Error loading favorite routes:", error);
+      return [];
+    }
+  };
+
+  // ⭐ 标签切换处理 ⭐
+  const handleTabChange = async (tab: string) => {
+    console.log("Tab changed to:", tab);
+    setActiveTab(tab);
+
+    if (tab === "Discover") {
+      setStage("initial");
+    } else if (tab === "Favorites") {
+      // 切换到 Favorites 时，从数据库加载收藏的路线
+      const favoritesData = await loadFavoritesFromDatabase();
+
+      if (favoritesData.length > 0) {
+        // 更新收藏的路线 ID（不覆盖，而是合并）
+        const favoriteIds = favoritesData.map((route: any) => route.id);
+        setFavoriteRoutes(new Set(favoriteIds));
+
+        // 更新显示的路线为收藏的路线
+        setRouteOptions(favoritesData);
+        setStage("routes");
+      } else {
+        // 没有收藏的路线，显示空状态
+        setRouteOptions([]);
+        setStage("routes");
+      }
+    } else if (tab === "My Itineraries") {
+      // 切换到 My Itineraries 时，显示所有生成的路线
+      if (myItineraries.length > 0) {
+        setRouteOptions(myItineraries);
+        setStage("routes");
+      } else {
+        // 如果没有生成过路线，显示初始状态
+        setRouteOptions([]);
+        setStage("initial");
+      }
+    } else if (tab === "Community") {
+      // Community 功能暂未实现，保持当前状态
+      console.log("Community feature coming soon...");
+    }
   };
 
   // ⭐ 生成多条路线 ⭐
@@ -171,18 +359,24 @@ const App: React.FC = () => {
       }
 
       const data = await response.json();
-      console.log("API 返回的数据：", data); // 添加这行
-      console.log("第一个路线的结构：", data[0]); // 添加这行
+      console.log("API 返回的数据：", data);
+      console.log("第一个路线的结构：", data[0]);
+
+      let generatedRoutes = [];
       if (Array.isArray(data)) {
-        setRouteOptions(data);
-        setStage("routes");
+        generatedRoutes = data;
       } else if (Array.isArray(data.routes)) {
-        setRouteOptions(data.routes);
-        setStage("routes");
+        generatedRoutes = data.routes;
       } else {
         console.error("AI response data is not in expected format:", data);
         setError("AI generated an unexpected response format.");
+        return;
       }
+
+      // 保存生成的路线
+      setRouteOptions(generatedRoutes);
+      setMyItineraries(generatedRoutes);
+      setStage("routes");
     } catch (error: any) {
       console.error("Error generating routes:", error.message);
       setError(error.message);
@@ -353,9 +547,17 @@ const App: React.FC = () => {
       {stage === "routes" && (
         <div className="h-full bg-white rounded-2xl shadow-xl p-6">
           <RouteList
-            routes={routeOptions}
+            routes={
+              activeTab === "Favorites"
+                ? routeOptions.filter((route) => favoriteRoutes.has(route.id))
+                : routeOptions
+            }
             onSelectRoute={handleSelectRoute}
             isLoading={isLoading}
+            favoriteRoutes={favoriteRoutes}
+            onToggleFavorite={toggleFavorite}
+            showFavoritesOnly={activeTab === "Favorites"}
+            activeTab={activeTab}
           />
         </div>
       )}
@@ -367,12 +569,15 @@ const App: React.FC = () => {
               {error && (
                 <p className="text-red-500 text-center py-8">错误: {error}</p>
               )}
-              {!error && itinerary.length > 0 && (
+              {!error && itinerary.length > 0 && selectedRouteId && (
                 <ItineraryPanel
                   itinerary={itinerary}
                   onActivityClick={handleCardClick}
                   onDayClick={handleDayClick}
                   highlightedDay={highlightedDay}
+                  routeId={selectedRouteId}
+                  isFavorite={favoriteRoutes.has(selectedRouteId)}
+                  onToggleFavorite={() => toggleFavorite(selectedRouteId)}
                 />
               )}
             </div>
@@ -407,6 +612,8 @@ const App: React.FC = () => {
           typeof window !== "undefined" ? window.location.pathname : "/"
         }
         stage={stage}
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
       />
       <FloatingActions />
     </div>

@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import ItineraryCard from "./ItineraryCard";
 import { DayItinerary } from "../../types/itinerary";
+import { FavoriteButton } from "../UI";
 
 interface Location {
   name: string;
@@ -17,6 +18,9 @@ interface ItineraryPanelProps {
   onActivityClick: (location: Location) => void;
   onDayClick?: (dayNumber: number) => void; // ⭐ NEW: Day click handler
   highlightedDay?: number | null; // ⭐ NEW: Currently highlighted day
+  routeId?: string; // ⭐ NEW: Route ID for favorite
+  isFavorite?: boolean; // ⭐ NEW: Is this route favorited
+  onToggleFavorite?: () => void; // ⭐ NEW: Toggle favorite handler
 }
 
 const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
@@ -24,6 +28,9 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
   onActivityClick,
   onDayClick,
   highlightedDay = null,
+  routeId,
+  isFavorite = false,
+  onToggleFavorite,
 }) => {
   const [weatherData, setWeatherData] = useState<{ [key: string]: string }>({});
   const panelRef = useRef<HTMLDivElement>(null);
@@ -109,8 +116,19 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
   return (
     <div>
       {/* Header */}
-      <div className="mb-6 pb-4 border-b-2 border-gray-100">
-        <h2 className="text-3xl font-bold text-gray-800 mb-2">
+      <div className="mb-6 pb-4 border-b-2 border-gray-100 relative">
+        {/* 收藏按钮 */}
+        {onToggleFavorite && (
+          <div className="absolute top-0 right-0">
+            <FavoriteButton
+              isFavorite={isFavorite}
+              onToggle={onToggleFavorite}
+              size="large"
+            />
+          </div>
+        )}
+
+        <h2 className="text-3xl font-bold text-gray-800 mb-2 pr-16">
           Your Personalized Itinerary
         </h2>
         <p className="text-gray-600">

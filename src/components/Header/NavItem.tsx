@@ -13,10 +13,17 @@ const NavItem: React.FC<NavItemProps> = ({
   isActive = false,
   onClick,
 }) => {
+  const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault(); // 阻止默认的链接跳转行为
+    if (onClick) {
+      onClick();
+    }
+  };
+
   return (
     <a
       href={to}
-      onClick={onClick}
+      onClick={handleClick}
       className={`px-5 py-2 rounded-full font-medium transition-all duration-300 ease-in-out cursor-pointer
                   ${
                     isActive

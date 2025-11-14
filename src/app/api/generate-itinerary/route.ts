@@ -222,38 +222,76 @@ export async function POST(request: NextRequest) {
         .replaceAll("{{themeDescription}}", routeTheme.description)
         .replaceAll("{{routeId}}", routeTheme.id);
 
-      try {
-        const model = genAI.getGenerativeModel({
-          model: "gemini-2.5-flash",
-          generationConfig: {
-            temperature: 0.7,  // Lower = faster, more focused
-            maxOutputTokens: 2048,  // Limit output length for speed
-          },
-        });
+      // 重试函数（带指数退避）
+      const generateWithRetry = async (maxRetries = 3) => {
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+          let responseText = ''; // 在外部定义，以便在 catch 中访问
+          try {
+            const model = genAI.getGenerativeModel({
+              model: "gemini-2.5-flash",
+              generationConfig: {
+                temperature: 0.7,  // Lower = faster, more focused
+                maxOutputTokens: 8192,  // Further increased to ensure complete JSON
+              },
+            });
 
-        const result = await model.generateContent(routePrompt);
-        const responseText = result.response.text();
+            const result = await model.generateContent(routePrompt);
+            responseText = result.response.text();
 
-        console.log(`✅ Generated route: ${routeTheme.theme}`);
+            console.log(`✅ Generated route: ${routeTheme.theme} (attempt ${attempt})`);
+            console.log(`📝 Response length: ${responseText.length} characters`);
 
-        // 提取 JSON
-        let jsonString = responseText.trim();
-        const jsonMatch = jsonString.match(/```json\s*([\s\S]*?)\s*```/);
-        if (jsonMatch) {
-          jsonString = jsonMatch[1].trim();
-        }
-        if (!jsonString.startsWith("{")) {
-          const objectMatch = jsonString.match(/\{[\s\S]*\}/);
-          if (objectMatch) {
-            jsonString = objectMatch[0];
+            // 提取 JSON
+            let jsonString = responseText.trim();
+            const jsonMatch = jsonString.match(/```json\s*([\s\S]*?)\s*```/);
+            if (jsonMatch) {
+              jsonString = jsonMatch[1].trim();
+            }
+            if (!jsonString.startsWith("{")) {
+              const objectMatch = jsonString.match(/\{[\s\S]*\}/);
+              if (objectMatch) {
+                jsonString = objectMatch[0];
+              }
+            }
+
+            // 验证 JSON 是否完整
+            if (!jsonString || jsonString.length < 10) {
+              throw new Error(`JSON string too short or empty: "${jsonString.substring(0, 100)}..."`);
+            }
+
+            // 检查 JSON 是否以 } 结尾（完整的对象）
+            if (!jsonString.trim().endsWith("}")) {
+              console.warn(`⚠️ JSON may be incomplete for ${routeTheme.theme}`);
+              console.log(`Last 200 chars: ...${responseText.substring(responseText.length - 200)}`);
+            }
+
+            return JSON.parse(jsonString);
+          } catch (error: any) {
+            const isOverloaded = error?.message?.includes('503') || error?.message?.includes('overloaded');
+            const isJSONError = error?.message?.includes('JSON') || error?.name === 'SyntaxError';
+
+            // 如果是 JSON 错误，打印更多调试信息
+            if (isJSONError && responseText) {
+              console.error(`🔍 JSON Parse Error for ${routeTheme.theme}:`);
+              console.log(`First 300 chars: ${responseText.substring(0, 300)}`);
+              console.log(`Last 300 chars: ...${responseText.substring(Math.max(0, responseText.length - 300))}`);
+            }
+
+            // 对于 503 错误或 JSON 错误，进行重试
+            if ((isOverloaded || isJSONError) && attempt < maxRetries) {
+              const waitTime = Math.pow(2, attempt) * 1000; // 2s, 4s, 8s
+              console.log(`⏳ Retrying ${routeTheme.theme} in ${waitTime/1000}s... (attempt ${attempt}/${maxRetries})`);
+              await new Promise(resolve => setTimeout(resolve, waitTime));
+            } else {
+              console.error(`❌ Failed to generate route ${routeTheme.theme} after ${attempt} attempts:`, error);
+              return null;
+            }
           }
         }
-
-        return JSON.parse(jsonString);
-      } catch (error) {
-        console.error(`❌ Failed to generate route ${routeTheme.theme}:`, error);
         return null;
-      }
+      };
+
+      return await generateWithRetry();
     });
 
     // 等待所有路线生成完成
@@ -262,12 +300,65 @@ export async function POST(request: NextRequest) {
     // 过滤掉失败的路线
     let generatedItineraryData = generatedRoutes.filter((route): route is RouteOption => route !== null);
 
+    // ⭐ 修复 highlights 格式 ⭐
+    generatedItineraryData = generatedItineraryData.map(route => {
+      // 如果 highlights 是字符串数组，转换为对象数组
+      if (route.highlights && route.highlights.length > 0) {
+        const firstHighlight = route.highlights[0];
+        // 检查是否为字符串（需要转换）
+        if (typeof firstHighlight === 'string') {
+          // 为每个 highlight 添加合适的图标
+          const iconMap: { [key: string]: string } = {
+            'museum': '🏛️',
+            'food': '🍽️',
+            'nature': '🌳',
+            'beach': '🏖️',
+            'mountain': '⛰️',
+            'shopping': '🛍️',
+            'art': '🎨',
+            'history': '📜',
+            'culture': '🎭',
+            'adventure': '🎒',
+            'restaurant': '🍴',
+            'cafe': '☕',
+            'park': '🌲',
+            'church': '⛪',
+            'castle': '🏰',
+            'palace': '👑',
+            'market': '🏪',
+            'lake': '🌊',
+            'sunset': '🌅',
+            'sunrise': '🌄'
+          };
+
+          route.highlights = (route.highlights as unknown as string[]).map((highlight: string) => {
+            // 尝试匹配关键词找到合适的图标
+            const lowerHighlight = highlight.toLowerCase();
+            let icon = '✨'; // 默认图标
+
+            for (const [keyword, emoji] of Object.entries(iconMap)) {
+              if (lowerHighlight.includes(keyword)) {
+                icon = emoji;
+                break;
+              }
+            }
+
+            return {
+              label: highlight,
+              icon: icon
+            };
+          });
+        }
+      }
+      return route;
+    });
+
     console.log(`✅ Successfully generated ${generatedItineraryData.length} routes in parallel`);
 
     // ⭐ 优化选项 ⭐
     // false = 占位图 (~10-15秒总时间)
     // true = 真实图片 (~20-30秒总时间)
-    const FETCH_IMAGES = false; // 推荐设为 false 以获得最快速度
+    const FETCH_IMAGES = true; // 使用真实图片
 
     if (FETCH_IMAGES) {
       console.log("⚡ Fetching real images in parallel...");
