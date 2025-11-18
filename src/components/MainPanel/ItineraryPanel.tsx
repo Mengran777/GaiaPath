@@ -116,10 +116,16 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
   return (
     <div>
       {/* Header */}
-      <div className="mb-6 pb-4 border-b-2 border-gray-100 relative">
+      <div
+        className="mb-6 pb-4 border-b-2 border-gray-100 relative cursor-pointer hover:bg-gray-50 rounded-lg p-4 -mx-4 transition-colors duration-200"
+        onClick={() => onDayClick && onDayClick(0)}
+      >
         {/* 收藏按钮 */}
         {onToggleFavorite && (
-          <div className="absolute top-0 right-0">
+          <div
+            className="absolute top-4 right-4"
+            onClick={(e) => e.stopPropagation()}
+          >
             <FavoriteButton
               isFavorite={isFavorite}
               onToggle={onToggleFavorite}
@@ -132,7 +138,9 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
           Your Personalized Itinerary
         </h2>
         <p className="text-gray-600">
-          Click on any day to highlight locations on the map
+          {highlightedDay === null || highlightedDay === 0
+            ? "Showing all locations · Click any day to filter"
+            : "Click here to show all locations again · Click any day to filter"}
         </p>
       </div>
 

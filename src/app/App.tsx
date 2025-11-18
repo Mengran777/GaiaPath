@@ -373,10 +373,11 @@ const App: React.FC = () => {
         return;
       }
 
-      // 保存生成的路线
+      // 保存生成的路线并切换到 My Itineraries tab
       setRouteOptions(generatedRoutes);
       setMyItineraries(generatedRoutes);
       setStage("routes");
+      setActiveTab("My Itineraries");
     } catch (error: any) {
       console.error("Error generating routes:", error.message);
       setError(error.message);
@@ -441,13 +442,36 @@ const App: React.FC = () => {
 
   // ⭐ 处理点击某天的行程 ⭐
   const handleDayClick = useCallback((dayNumber: number) => {
-    setHighlightedDay(dayNumber);
+    // 清除地点详情浮窗
+    setHighlightedLocation(null);
+
+    // 如果点击的是 0（头部），则重置为显示所有地点
+    if (dayNumber === 0) {
+      setHighlightedDay(null);
+    } else {
+      setHighlightedDay(dayNumber);
+    }
     // 可以在这里添加滚动到地图的逻辑
   }, []);
 
   // ⭐ 处理点击活动卡片 ⭐
   const handleCardClick = useCallback((location: Location) => {
-    setHighlightedLocation(location);
+    console.log("handleCardClick called with location:", location);
+
+    // 如果点击的是同一个地点，则关闭浮窗
+    setHighlightedLocation((prev) => {
+      console.log("Previous highlightedLocation:", prev);
+
+      if (prev &&
+          prev.name === location.name &&
+          prev.latitude === location.latitude &&
+          prev.longitude === location.longitude) {
+        console.log("Same location clicked, closing popup");
+        return null;
+      }
+      console.log("Different or new location, showing popup");
+      return location;
+    });
   }, []);
 
   // ⭐ 当前显示的地点列表（基于选中的天数） ⭐
@@ -507,31 +531,21 @@ const App: React.FC = () => {
           </p>
         </div>
       ) : (
-        // Stage 1 & 2: 显示完整表单
+        // Home 和 My Itineraries: 显示完整表单
         <>
           <SmartSearch
             query={smartSearchQuery}
             setQuery={setSmartSearchQuery}
             onSearch={handleSmartSearch}
           />
-          <div className="flex-1 mt-4 overflow-y-auto custom-scrollbar">
-            <PreferenceForm
-              preferences={preferences}
-              onPreferenceChange={handlePreferenceChange}
-            />
-          </div>
+          <PreferenceForm
+            preferences={preferences}
+            onPreferenceChange={handlePreferenceChange}
+          />
           <GenerateButton
             onClick={handleGenerateItinerary}
             isLoading={isLoading}
           />
-          {stage === "routes" && activeTab !== "Favorites" && (
-            <button
-              onClick={handleBackToInitial}
-              className="mt-4 w-full py-2 text-sm text-gray-600 hover:text-gray-800 transition-colors"
-            >
-              ✏️ Edit Preferences
-            </button>
-          )}
         </>
       )}
     </div>

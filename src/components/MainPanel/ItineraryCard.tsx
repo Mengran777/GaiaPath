@@ -63,7 +63,9 @@ const ItineraryCard: React.FC<ItineraryCardProps> = ({
   }, []);
 
   // Handler for clicking the entire card to focus on the map
-  const handleCardClick = () => {
+  const handleCardClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // ⭐ Prevent event from bubbling to parent day container
+
     // Only trigger if valid coordinates exist
     if (
       typeof latitude === "number" &&

@@ -56,7 +56,7 @@ const PreferenceForm: React.FC<PreferenceFormProps> = ({
   return (
     <Section
       title="⚙️ Travel Preferences"
-      className="flex-1 overflow-y-auto pr-2 -mr-2 custom-scrollbar"
+      className="mt-4"
     >
       <div className="space-y-6">
         <div className="form-group">
