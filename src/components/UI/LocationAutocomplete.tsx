@@ -23,6 +23,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
   const [showDropdown, setShowDropdown] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  const justSelectedRef = useRef(false); // ⭐ 使用 ref 而不是 state，避免触发重新渲染
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   // 点击外部关闭下拉框
@@ -39,6 +40,12 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
 
   // 使用 Nominatim API (OpenStreetMap) 获取地理位置建议
   useEffect(() => {
+    // ⭐ 如果刚刚选择了选项，不要重新获取建议
+    if (justSelectedRef.current) {
+      justSelectedRef.current = false;
+      return;
+    }
+
     const fetchSuggestions = async () => {
       if (value.trim().length < 2) {
         setSuggestions([]);
@@ -49,7 +56,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
       setIsLoading(true);
 
       try {
-        // 使用 Nominatim API (免费，无需 API key)
+        // 使用 Nominatim API (OpenStreetMap) 获取地理位置建议
         const response = await fetch(
           `https://nominatim.openstreetmap.org/search?` +
           `format=json&` +
@@ -126,6 +133,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
   }, [value]);
 
   const handleSelect = (suggestion: LocationSuggestion) => {
+    justSelectedRef.current = true; // ⭐ 标记刚刚选择了选项
     onChange(suggestion.name);
     setShowDropdown(false);
     setSuggestions([]);
@@ -163,10 +171,14 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
         <input
           type="text"
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => {
+            justSelectedRef.current = false; // ⭐ 用户开始输入，重置标志
+            onChange(e.target.value);
+          }}
           onKeyDown={handleKeyDown}
           onFocus={() => {
-            if (suggestions.length > 0) {
+            // ⭐ 只有在没有刚刚选择且有建议时才显示下拉框
+            if (suggestions.length > 0 && !justSelectedRef.current) {
               setShowDropdown(true);
             }
           }}

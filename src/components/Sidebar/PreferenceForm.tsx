@@ -56,7 +56,7 @@ const PreferenceForm: React.FC<PreferenceFormProps> = ({
   return (
     <Section
       title="⚙️ Travel Preferences"
-      className="flex-1 overflow-y-auto pr-2 -mr-2 custom-scrollbar"
+      className="mt-4"
     >
       <div className="space-y-6">
         <div className="form-group">
@@ -82,25 +82,47 @@ const PreferenceForm: React.FC<PreferenceFormProps> = ({
               <label className="block text-xs text-gray-600 mb-1">
                 Start Date & Time
               </label>
-              <Input
-                type="datetime-local"
-                value={preferences.travelStartDate}
-                onChange={(e) =>
-                  onPreferenceChange("travelStartDate", e.target.value)
-                }
-              />
+              <div
+                onClick={(e) => {
+                  const input = (e.currentTarget as HTMLDivElement).querySelector('input');
+                  if (input) {
+                    input.focus();
+                    input.showPicker?.(); // ⭐ Modern API to show date picker programmatically
+                  }
+                }}
+                className="cursor-pointer"
+              >
+                <Input
+                  type="datetime-local"
+                  value={preferences.travelStartDate}
+                  onChange={(e) =>
+                    onPreferenceChange("travelStartDate", e.target.value)
+                  }
+                />
+              </div>
             </div>
             <div>
               <label className="block text-xs text-gray-600 mb-1">
                 End Date & Time
               </label>
-              <Input
-                type="datetime-local"
-                value={preferences.travelEndDate}
-                onChange={(e) =>
-                  onPreferenceChange("travelEndDate", e.target.value)
-                }
-              />
+              <div
+                onClick={(e) => {
+                  const input = (e.currentTarget as HTMLDivElement).querySelector('input');
+                  if (input) {
+                    input.focus();
+                    input.showPicker?.(); // ⭐ Modern API to show date picker programmatically
+                  }
+                }}
+                className="cursor-pointer"
+              >
+                <Input
+                  type="datetime-local"
+                  value={preferences.travelEndDate}
+                  onChange={(e) =>
+                    onPreferenceChange("travelEndDate", e.target.value)
+                  }
+                />
+              </div>
             </div>
           </div>
         </div>

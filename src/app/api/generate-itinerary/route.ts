@@ -182,9 +182,9 @@ export async function POST(request: NextRequest) {
 
     // ⭐ 并行生成策略：同时生成 3 条精选路线 ⭐
     const routeThemes = [
-      { id: "route-1", theme: "Classic Route", description: "Traditional tourist highlights and must-see attractions" },
-      { id: "route-2", theme: "Cultural & Culinary", description: "Museums, historical sites, local cuisine and food experiences" },
-      { id: "route-3", theme: "Nature & Hidden Gems", description: "Outdoor activities, natural landscapes, and off-the-beaten-path discoveries" },
+      { id: crypto.randomUUID(), theme: "Classic Route", description: "Traditional tourist highlights and must-see attractions" },
+      { id: crypto.randomUUID(), theme: "Cultural & Culinary", description: "Museums, historical sites, local cuisine and food experiences" },
+      { id: crypto.randomUUID(), theme: "Nature & Hidden Gems", description: "Outdoor activities, natural landscapes, and off-the-beaten-path discoveries" },
     ];
 
     // 读取单条路线的 prompt 模板

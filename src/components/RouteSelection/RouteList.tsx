@@ -111,7 +111,7 @@ const RouteList: React.FC<RouteListProps> = ({
       <div className="grid grid-cols-1 gap-6 pb-6">
         {routes.map((route, index) => (
           <RouteCard
-            key={route.id || `route-${index}`}
+            key={`${activeTab}-${route.id || index}`}
             route={route}
             onSelect={onSelectRoute}
             isFavorite={favoriteRoutes.has(route.id)}

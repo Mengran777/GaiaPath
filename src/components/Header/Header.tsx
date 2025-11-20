@@ -51,6 +51,12 @@ const Header: React.FC<HeaderProps> = ({
             onClick={() => handleNavClick("Home")}
           />
           <NavItem
+            label="My Itineraries"
+            to="#"
+            isActive={activeTab === "My Itineraries"}
+            onClick={() => handleNavClick("My Itineraries")}
+          />
+          <NavItem
             label="Favorites"
             to="#"
             isActive={activeTab === "Favorites"}

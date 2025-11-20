@@ -37,6 +37,8 @@ const MapView: React.FC<MapViewProps> = ({
   // route,
   highlightedLocation,
 }) => {
+  console.log("🗺️ MapView render - highlightedLocation:", highlightedLocation);
+
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const [isMapReady, setIsMapReady] = useState(false);
 
@@ -53,11 +55,23 @@ const MapView: React.FC<MapViewProps> = ({
     null
   );
 
+  console.log("🗺️ MapView render - selectedLocation:", selectedLocation);
+
   // ⭐ IMPORTANT EFFECT: Fly to and highlight location when highlightedLocation changes ⭐
   useEffect(() => {
-    if (highlightedLocation && mapRef.current) {
+    console.log("MapView useEffect triggered, highlightedLocation:", highlightedLocation);
+
+    if (!highlightedLocation) {
+      // Clear the popup when highlightedLocation is null
+      console.log("Clearing selectedLocation because highlightedLocation is null");
+      setSelectedLocation(null);
+      return;
+    }
+
+    if (mapRef.current) {
       const { latitude, longitude } = highlightedLocation;
       if (latitude !== 0 && longitude !== 0) {
+        console.log("Flying to location and setting selectedLocation:", highlightedLocation);
         mapRef.current.flyTo({
           center: [longitude, latitude],
           zoom: 14, // Zoom in closer for highlighted location
@@ -66,22 +80,6 @@ const MapView: React.FC<MapViewProps> = ({
         });
         setSelectedLocation(highlightedLocation); // Open popup for highlighted location
       }
-    }
-  }, [highlightedLocation, mapRef.current]); // Depend on mapRef.current too, to ensure map is loaded
-
-  useEffect(() => {
-    if (!highlightedLocation) return;
-    if (!mapRef.current) return;
-
-    const { latitude, longitude } = highlightedLocation;
-    if (latitude !== 0 && longitude !== 0) {
-      mapRef.current.flyTo({
-        center: [longitude, latitude],
-        zoom: 14,
-        duration: 1500,
-        essential: true,
-      });
-      setSelectedLocation(highlightedLocation);
     }
   }, [highlightedLocation]);
 
