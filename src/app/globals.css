@@ -21,7 +21,7 @@
 
 html,
 body {
-  /* Next.js 14 推荐的 body 样式，不需要手动设置 height: 100vh; */
+  /* Next.js 14 recommended body style, no need to manually set height: 100vh; */
   min-height: 100vh;
   background: var(--background);
   color: var(--foreground);
@@ -68,40 +68,40 @@ body {
   transition: opacity 0.6s ease-out, transform 0.6s ease-out;
 }
 
-/* 行程日期过渡动画 */
+/* Itinerary day transition animation */
 .itinerary-day-animated {
   transition: opacity 0.6s ease-out, transform 0.6s ease-out,
     background-color 0.5s ease, border-color 0.5s ease;
 }
 
-/* 垂直文字模式（用于 Stage 3 的侧边栏） */
+/* Vertical writing mode (used for Stage 3 sidebar) */
 .writing-mode-vertical {
   writing-mode: vertical-rl;
   text-orientation: mixed;
 }
 
-/* 卡片缩放动画 */
+/* Card scale animation */
 .active\:scale-98:active {
   transform: scale(0.98);
 }
 
-/* 行数限制（用于路线卡片描述） */
+/* Line clamp (used for route card descriptions) */
 .line-clamp-3 {
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
-/* Stage 1 滚动修复 */
+/* Stage 1 scroll fix */
 .page-container.stage-initial {
-  justify-content: flex-start !important; /* 从顶部开始 */
+  justify-content: flex-start !important; /* Start from the top */
   align-items: center;
   padding-top: 2rem;
   padding-bottom: 2rem;
 }
 
 .preference-form-wrapper {
-  /* 移除任何固定高度 */
+  /* Remove any fixed height */
   height: auto !important;
   max-height: none !important;
 }

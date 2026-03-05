@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation"; // Import Next.js router
-import { setAuthToken } from "@/lib/auth-client"; // Import client-side auth helper
 import Input from "@/components/UI/Input"; // Import Input component
 import Section from "@/components/Layout/Section"; // Import Section component
 
@@ -39,9 +38,8 @@ const RegisterPage: React.FC = () => {
         const loginData = await loginResponse.json();
 
         if (loginResponse.ok) {
-          setAuthToken(loginData.token, loginData.user.id); // Store token and user ID
-          alert("Registration successful and logged in!");
-          router.push("/"); // Redirect to home page
+          // Server sets httpOnly cookie automatically, just redirect
+          window.location.href = "/"; // Redirect to home page
         } else {
           setError(
             loginData.error ||

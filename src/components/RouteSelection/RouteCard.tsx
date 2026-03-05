@@ -18,9 +18,9 @@ const RouteCard: React.FC<RouteCardProps> = ({
   onToggleFavorite,
 }) => {
   const handleFavoriteClick = (e: React.MouseEvent) => {
-    e.stopPropagation(); // 防止触发卡片的 onClick
+    e.stopPropagation(); // Prevent triggering card's onClick
     if (onToggleFavorite) {
-      onToggleFavorite(route.id); // 直接调用收藏切换
+      onToggleFavorite(route.id); // Directly call favorite toggle
     }
   };
 
@@ -32,12 +32,12 @@ const RouteCard: React.FC<RouteCardProps> = ({
                  border-3 border-transparent hover:border-blue-500
                  transform hover:-translate-y-2 active:scale-98 relative"
     >
-      {/* 收藏按钮 */}
+      {/* Favorite button */}
       {onToggleFavorite && (
         <div className="absolute top-4 right-4 z-10" onClick={handleFavoriteClick}>
           <FavoriteButton
             isFavorite={isFavorite}
-            onToggle={() => {}} // 空函数，因为已经在 handleFavoriteClick 中处理了
+            onToggle={() => {}} // Empty function, already handled in handleFavoriteClick
             size="medium"
           />
         </div>

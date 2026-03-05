@@ -1,6 +1,7 @@
 import React from "react";
 import { Input, Select, Slider, Tag, TypeCard, LocationAutocomplete } from "../UI"; // Import from UI
 import Section from "../Layout/Section"; // Import from Layout
+import DateRangePicker from "../UI/DateRangePicker";
 
 interface PreferenceFormProps {
   preferences: {
@@ -75,56 +76,14 @@ const PreferenceForm: React.FC<PreferenceFormProps> = ({
 
         <div className="form-group">
           <label className="block text-sm font-semibold text-gray-700 mb-2">
-            Travel Dates & Times
+            Travel Date Range
           </label>
-          <div className="grid grid-cols-1 gap-4">
-            <div>
-              <label className="block text-xs text-gray-600 mb-1">
-                Start Date & Time
-              </label>
-              <div
-                onClick={(e) => {
-                  const input = (e.currentTarget as HTMLDivElement).querySelector('input');
-                  if (input) {
-                    input.focus();
-                    input.showPicker?.(); // ⭐ Modern API to show date picker programmatically
-                  }
-                }}
-                className="cursor-pointer"
-              >
-                <Input
-                  type="datetime-local"
-                  value={preferences.travelStartDate}
-                  onChange={(e) =>
-                    onPreferenceChange("travelStartDate", e.target.value)
-                  }
-                />
-              </div>
-            </div>
-            <div>
-              <label className="block text-xs text-gray-600 mb-1">
-                End Date & Time
-              </label>
-              <div
-                onClick={(e) => {
-                  const input = (e.currentTarget as HTMLDivElement).querySelector('input');
-                  if (input) {
-                    input.focus();
-                    input.showPicker?.(); // ⭐ Modern API to show date picker programmatically
-                  }
-                }}
-                className="cursor-pointer"
-              >
-                <Input
-                  type="datetime-local"
-                  value={preferences.travelEndDate}
-                  onChange={(e) =>
-                    onPreferenceChange("travelEndDate", e.target.value)
-                  }
-                />
-              </div>
-            </div>
-          </div>
+          <DateRangePicker
+            startDate={preferences.travelStartDate}
+            endDate={preferences.travelEndDate}
+            onStartDateChange={(date) => onPreferenceChange("travelStartDate", date)}
+            onEndDateChange={(date) => onPreferenceChange("travelEndDate", date)}
+          />
         </div>
 
         {/* <div className="form-group">

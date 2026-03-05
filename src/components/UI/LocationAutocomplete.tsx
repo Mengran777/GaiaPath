@@ -23,10 +23,10 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
   const [showDropdown, setShowDropdown] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
-  const justSelectedRef = useRef(false); // ⭐ 使用 ref 而不是 state，避免触发重新渲染
+  const justSelectedRef = useRef(false); // ⭐ Use ref instead of state to avoid triggering re-renders
   const wrapperRef = useRef<HTMLDivElement>(null);
 
-  // 点击外部关闭下拉框
+  // Click outside to close dropdown
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
@@ -38,9 +38,9 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // 使用 Nominatim API (OpenStreetMap) 获取地理位置建议
+  // Use Nominatim API (OpenStreetMap) to get location suggestions
   useEffect(() => {
-    // ⭐ 如果刚刚选择了选项，不要重新获取建议
+    // ⭐ If an option was just selected, don't re-fetch suggestions
     if (justSelectedRef.current) {
       justSelectedRef.current = false;
       return;
@@ -56,7 +56,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
       setIsLoading(true);
 
       try {
-        // 使用 Nominatim API (OpenStreetMap) 获取地理位置建议
+        // Use Nominatim API (OpenStreetMap) to get location suggestions
         const response = await fetch(
           `https://nominatim.openstreetmap.org/search?` +
           `format=json&` +
@@ -66,7 +66,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
           {
             headers: {
               "Accept": "application/json",
-              "User-Agent": "GaiaPath-TravelApp/1.0", // Nominatim 要求提供 User-Agent
+              "User-Agent": "GaiaPath-TravelApp/1.0", // Nominatim requires a User-Agent
             },
           }
         );
@@ -78,10 +78,10 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
 
         const data = await response.json();
 
-        // 转换为我们的格式
+        // Convert to our format
         const formattedSuggestions: LocationSuggestion[] = data
           .filter((item: any) => {
-            // 只保留城市、国家、州等主要地点
+            // Only keep major locations like cities, countries, states
             const type = item.type;
             return [
               "city",
@@ -115,7 +115,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
               lon: parseFloat(item.lon),
             };
           })
-          .slice(0, 6); // 限制显示 6 个结果
+          .slice(0, 6); // Limit to 6 results
 
         setSuggestions(formattedSuggestions);
         setShowDropdown(formattedSuggestions.length > 0);
@@ -127,13 +127,13 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
       }
     };
 
-    // 添加防抖
+    // Add debounce
     const debounceTimer = setTimeout(fetchSuggestions, 300);
     return () => clearTimeout(debounceTimer);
   }, [value]);
 
   const handleSelect = (suggestion: LocationSuggestion) => {
-    justSelectedRef.current = true; // ⭐ 标记刚刚选择了选项
+    justSelectedRef.current = true; // ⭐ Mark that an option was just selected
     onChange(suggestion.name);
     setShowDropdown(false);
     setSuggestions([]);
@@ -172,12 +172,12 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
           type="text"
           value={value}
           onChange={(e) => {
-            justSelectedRef.current = false; // ⭐ 用户开始输入，重置标志
+            justSelectedRef.current = false; // ⭐ User started typing, reset flag
             onChange(e.target.value);
           }}
           onKeyDown={handleKeyDown}
           onFocus={() => {
-            // ⭐ 只有在没有刚刚选择且有建议时才显示下拉框
+            // ⭐ Only show dropdown if not just selected and there are suggestions
             if (suggestions.length > 0 && !justSelectedRef.current) {
               setShowDropdown(true);
             }
@@ -214,7 +214,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
         )}
       </div>
 
-      {/* 下拉建议列表 */}
+      {/* Dropdown suggestion list */}
       {showDropdown && suggestions.length > 0 && (
         <div className="absolute z-50 w-full mt-2 bg-white rounded-xl shadow-2xl border border-gray-200 max-h-80 overflow-y-auto">
           {suggestions.map((suggestion, index) => (
@@ -247,7 +247,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
         </div>
       )}
 
-      {/* 无结果提示 */}
+      {/* No results message */}
       {showDropdown && !isLoading && value.trim().length >= 2 && suggestions.length === 0 && (
         <div className="absolute z-50 w-full mt-2 bg-white rounded-xl shadow-2xl border border-gray-200 px-4 py-3">
           <div className="text-center text-gray-500">

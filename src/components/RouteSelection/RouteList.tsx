@@ -73,7 +73,7 @@ const RouteList: React.FC<RouteListProps> = ({
     );
   }
 
-  // 根据不同的 tab 显示不同的标题和描述
+  // Show different header content based on active tab
   const getHeaderContent = () => {
     if (activeTab === "Favorites") {
       return {

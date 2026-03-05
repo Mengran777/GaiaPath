@@ -14,7 +14,7 @@ const NavItem: React.FC<NavItemProps> = ({
   onClick,
 }) => {
   const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    e.preventDefault(); // 阻止默认的链接跳转行为
+    e.preventDefault(); // Prevent default link navigation
     if (onClick) {
       onClick();
     }

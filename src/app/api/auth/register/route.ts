@@ -5,77 +5,77 @@ import prisma from "@/lib/db";
 import { hashPassword } from "@/lib/auth";
 
 /**
- * 处理用户注册的 POST 请求
+ * Handle user registration POST request
  */
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { username, email, password } = body;
 
-    // 基本输入验证
+    // Basic input validation
     if (!username || !email || !password) {
       return NextResponse.json(
-        { error: "缺少必填字段：username, email, password" },
+        { error: "Missing required fields: username, email, password" },
         { status: 400 }
       );
     }
 
-    // 验证规则
+    // Validation rules
     const validationErrors = [];
 
-    // 用户名验证
+    // Username validation
     if (username.length < 3 || username.length > 20) {
-      validationErrors.push("用户名长度必须在 3-20 个字符之间");
+      validationErrors.push("Username must be between 3 and 20 characters");
     }
     if (!/^[a-zA-Z0-9_\u4e00-\u9fa5]+$/.test(username)) {
-      validationErrors.push("用户名只能包含字母、数字、下划线和中文");
+      validationErrors.push("Username can only contain letters, numbers, underscores, and Chinese characters");
     }
 
-    // 邮箱验证
+    // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      validationErrors.push("邮箱格式无效");
+      validationErrors.push("Invalid email format");
     }
 
-    // 密码验证
+    // Password validation
     if (password.length < 8) {
-      validationErrors.push("密码长度至少为 8 个字符");
+      validationErrors.push("Password must be at least 8 characters");
     }
     if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) {
       validationErrors.push(
-        "密码必须包含至少一个大写字母、一个小写字母和一个数字"
+        "Password must contain at least one uppercase letter, one lowercase letter, and one number"
       );
     }
 
     if (validationErrors.length > 0) {
       return NextResponse.json(
-        { error: validationErrors.join("；") },
+        { error: validationErrors.join("; ") },
         { status: 400 }
       );
     }
 
-    // 检查邮箱是否已存在
+    // Check if email already exists
     const existingEmailUser = await prisma.user.findUnique({
       where: { email: email.toLowerCase() },
     });
 
     if (existingEmailUser) {
-      return NextResponse.json({ error: "该邮箱已被注册" }, { status: 409 });
+      return NextResponse.json({ error: "Email is already registered" }, { status: 409 });
     }
 
-    // 检查用户名是否已存在
+    // Check if username already exists
     const existingUsernameUser = await prisma.user.findUnique({
       where: { username },
     });
 
     if (existingUsernameUser) {
-      return NextResponse.json({ error: "该用户名已被使用" }, { status: 409 });
+      return NextResponse.json({ error: "Username is already taken" }, { status: 409 });
     }
 
-    // 哈希密码
+    // Hash password
     const hashedPassword = await hashPassword(password);
 
-    // 创建新用户
+    // Create new user
     const newUser = await prisma.user.create({
       data: {
         username,
@@ -92,22 +92,22 @@ export async function POST(request: Request) {
 
     return NextResponse.json(
       {
-        message: "用户注册成功",
+        message: "User registered successfully",
         user: newUser,
       },
       { status: 201 }
     );
   } catch (error) {
-    console.error("用户注册时发生错误:", error);
+    console.error("Error during user registration:", error);
 
-    // 处理数据库唯一约束错误
+    // Handle database unique constraint error
     if (error instanceof Error && error.message.includes("Unique constraint")) {
       return NextResponse.json(
-        { error: "邮箱或用户名已被使用" },
+        { error: "Email or username is already in use" },
         { status: 409 }
       );
     }
 
-    return NextResponse.json({ error: "服务器内部错误" }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
