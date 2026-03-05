@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { isAuthenticated } from "@/lib/auth-client";
 import Input from "@/components/UI/Input";
 import Section from "@/components/Layout/Section";
 
@@ -18,7 +17,7 @@ const LoginPage: React.FC = () => {
     setError(null);
     setLoading(true);
 
-    // 前端基本验证
+    // Basic frontend validation
     if (!email || !password) {
       setError("Please fill all boxes");
       setLoading(false);
@@ -37,10 +36,10 @@ const LoginPage: React.FC = () => {
       const data = await response.json();
 
       if (response.ok) {
-        // 注意：现在不需要调用 setAuthToken，因为服务器已经设置了 cookies
+        // Note: No need to call setAuthToken now, server already sets cookies
         console.log("Login succeed, user info:", data.user);
 
-        // 强制刷新页面以更新认证状态
+        // Force page reload to update auth state
         window.location.href = "/";
       } else {
         setError(
@@ -57,14 +56,14 @@ const LoginPage: React.FC = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#667eea] to-[#764ba2] p-4">
-      <Section title="登录" className="w-full max-w-md">
+      <Section title="Login" className="w-full max-w-md">
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
             <label
               htmlFor="email"
               className="block text-sm font-medium text-gray-700 mb-1"
             >
-              邮箱地址
+              Email Address
             </label>
             <Input
               id="email"
@@ -83,7 +82,7 @@ const LoginPage: React.FC = () => {
               htmlFor="password"
               className="block text-sm font-medium text-gray-700 mb-1"
             >
-              密码
+              Password
             </label>
             <Input
               id="password"
@@ -137,22 +136,22 @@ const LoginPage: React.FC = () => {
                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                   ></path>
                 </svg>
-                登录中...
+                Logging in...
               </span>
             ) : (
-              "登录"
+              "Login"
             )}
           </button>
         </form>
 
         <p className="mt-6 text-center text-gray-600 text-sm">
-          还没有账户？
+          Don't have an account?
           <button
             onClick={() => router.push("/auth/register")}
             className="text-blue-600 hover:text-blue-800 hover:underline ml-1 font-medium transition-colors"
             disabled={loading}
           >
-            立即注册
+            Register now
           </button>
         </p>
       </Section>

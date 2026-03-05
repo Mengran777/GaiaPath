@@ -13,7 +13,7 @@ const FavoriteButton: React.FC<FavoriteButtonProps> = ({
 }) => {
   const [showAnimation, setShowAnimation] = useState(false);
 
-  // 尺寸配置
+  // Size configuration
   const sizeClasses = {
     small: "w-8 h-8 text-xl",
     medium: "w-10 h-10 text-2xl",
@@ -28,7 +28,7 @@ const FavoriteButton: React.FC<FavoriteButtonProps> = ({
 
   const handleClick = () => {
     if (!isFavorite) {
-      // 只在收藏时显示动画
+      // Only show animation when adding to favorites
       setShowAnimation(true);
       setTimeout(() => setShowAnimation(false), 1500);
     }
@@ -51,7 +51,7 @@ const FavoriteButton: React.FC<FavoriteButtonProps> = ({
         `}
         title={isFavorite ? "Remove from favorites" : "Add to favorites"}
       >
-        {/* 月桂花环图标 */}
+        {/* Laurel wreath icon */}
         <span
           className={`transform transition-all duration-300
             ${isFavorite ? "scale-100 rotate-0" : "scale-90 rotate-12"}
@@ -61,21 +61,21 @@ const FavoriteButton: React.FC<FavoriteButtonProps> = ({
           {isFavorite ? "🏆" : "⭐"}
         </span>
 
-        {/* 悬停提示效果 */}
+        {/* Hover highlight effect */}
         {!isFavorite && (
           <span className="absolute inset-0 rounded-full bg-gradient-to-br from-yellow-400/0 to-amber-500/0 group-hover:from-yellow-400/20 group-hover:to-amber-500/20 transition-all duration-300"></span>
         )}
       </button>
 
-      {/* 古希腊神话风格的粒子动画 */}
+      {/* Particle animation */}
       {showAnimation && (
         <div className="absolute inset-0 pointer-events-none">
-          {/* 金色光环扩散 */}
+          {/* Golden halo expansion */}
           <div className="absolute inset-0 -inset-4 animate-ping-once">
             <div className="w-full h-full rounded-full border-4 border-yellow-400 opacity-75"></div>
           </div>
 
-          {/* 月桂叶片粒子 */}
+          {/* Laurel leaf particles */}
           {[...Array(8)].map((_, i) => {
             const angle = (i * 360) / 8;
             const radius = 40;
@@ -97,19 +97,19 @@ const FavoriteButton: React.FC<FavoriteButtonProps> = ({
             );
           })}
 
-          {/* 闪光效果 */}
+          {/* Sparkle effect */}
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 animate-sparkle">
             <span className="text-4xl">✨</span>
           </div>
 
-          {/* 荣耀光芒 */}
+          {/* Glory glow */}
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
             <div className="w-24 h-24 bg-gradient-radial from-yellow-300/50 via-amber-400/30 to-transparent rounded-full animate-pulse-glow"></div>
           </div>
         </div>
       )}
 
-      {/* 添加自定义动画样式 */}
+      {/* Custom animation styles */}
       <style jsx>{`
         @keyframes ping-once {
           0% {

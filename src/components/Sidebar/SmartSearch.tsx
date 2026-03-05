@@ -26,7 +26,7 @@ const SmartSearch: React.FC<SmartSearchProps> = ({
     "🎬 Film locations & movie scenes",
   ];
 
-  // 管理选中的标签
+  // Manage selected tags
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -39,24 +39,24 @@ const SmartSearch: React.FC<SmartSearchProps> = ({
     }
   };
 
-  // 处理键盘事件，支持删除标签
+  // Handle keyboard events, support tag deletion
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    // Ctrl+Enter 触发搜索
+    // Ctrl+Enter triggers search
     if (e.key === "Enter" && e.ctrlKey) {
       handleSearchClick();
       return;
     }
 
-    // Backspace 键删除标签
+    // Backspace key deletes tag
     if (e.key === "Backspace" && selectedTags.size > 0) {
       const textarea = e.currentTarget;
       const cursorPosition = textarea.selectionStart;
       const text = textarea.value;
 
-      // 检查光标是否在文本末尾
+      // Check if cursor is at the end of text
       const isAtEnd = cursorPosition === text.length;
 
-      // 如果光标在末尾，删除最后一个标签
+      // If cursor is at end, delete the last tag
       if (isAtEnd) {
         e.preventDefault();
         const tagsArray = Array.from(selectedTags);
@@ -71,7 +71,7 @@ const SmartSearch: React.FC<SmartSearchProps> = ({
     }
   };
 
-  // 处理标签点击
+  // Handle tag click
   const handleTagClick = (tag: string) => {
     setSelectedTags((prev) => {
       const newSelected = new Set(prev);
@@ -84,13 +84,13 @@ const SmartSearch: React.FC<SmartSearchProps> = ({
     });
   };
 
-  // 当选中的标签变化时，更新查询文本
+  // When selected tags change, update query text
   useEffect(() => {
     if (selectedTags.size > 0) {
       const tagsList = Array.from(selectedTags).join(", ");
       setQuery(`I want to visit places with: ${tagsList}`);
     } else {
-      // 当所有标签都被删除时，清空查询文本
+      // When all tags are removed, clear query text
       setQuery("");
     }
   }, [selectedTags, setQuery]);

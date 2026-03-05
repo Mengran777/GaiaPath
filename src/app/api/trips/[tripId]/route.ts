@@ -1,12 +1,12 @@
 // src/app/api/trips/[tripId]/route.ts
 
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/lib/db"; // 导入 Prisma 客户端
-import { authenticateRequest } from "@/lib/auth"; // 导入认证辅助函数
+import prisma from "@/lib/db"; // Import Prisma client
+import { authenticateRequest } from "@/lib/auth"; // Import auth helper
 
 /**
- * 处理 GET 请求，获取特定行程及其位置，确保用户已认证。
- * 路径：/api/trips/{tripId}
+ * Handle GET request to fetch a specific trip and its locations, ensuring user is authenticated.
+ * Path: /api/trips/{tripId}
  */
 export async function GET(
   request: NextRequest,
@@ -17,19 +17,19 @@ export async function GET(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { tripId } = await context.params; // 等待解析 params
+  const { tripId } = await context.params; // Await params resolution
 
   try {
-    // 查找特定用户的行程及其位置
+    // Find trip with locations for the specific user
     const trip = await prisma.trip.findUnique({
       where: {
         id: tripId,
-        userId: authResult.userId, // 确保用户拥有该行程
+        userId: authResult.userId, // Ensure user owns this trip
       },
       include: {
         locations: {
           orderBy: {
-            order: "asc", // 按位置的 'order' 字段排序
+            order: "asc", // Sort by location 'order' field
           },
         },
       },
@@ -53,8 +53,8 @@ export async function GET(
 }
 
 /**
- * 处理 PUT 请求，更新特定行程的信息。
- * 路径：/api/trips/{tripId}
+ * Handle PUT request to update a specific trip's information.
+ * Path: /api/trips/{tripId}
  */
 export async function PUT(
   request: NextRequest,
@@ -65,7 +65,7 @@ export async function PUT(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { tripId } = await context.params; // 等待解析 params
+  const { tripId } = await context.params; // Await params resolution
 
   try {
     const body = await request.json();
@@ -109,8 +109,8 @@ export async function PUT(
 }
 
 /**
- * 处理 DELETE 请求，删除特定行程。
- * 路径：/api/trips/{tripId}
+ * Handle DELETE request to delete a specific trip.
+ * Path: /api/trips/{tripId}
  */
 export async function DELETE(
   request: NextRequest,
@@ -121,7 +121,7 @@ export async function DELETE(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { tripId } = await context.params; // 等待解析 params
+  const { tripId } = await context.params; // Await params resolution
 
   try {
     const deleteResult = await prisma.trip.deleteMany({

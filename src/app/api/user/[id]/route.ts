@@ -4,7 +4,7 @@ import prisma from "@/lib/db";
 export async function GET(request: NextRequest) {
   try {
     const url = new URL(request.url);
-    const id = url.pathname.split("/").pop(); // 从路径中获取 [id]
+    const id = url.pathname.split("/").pop(); // Get [id] from path
 
     if (!id) {
       return NextResponse.json(

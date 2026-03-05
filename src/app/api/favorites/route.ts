@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/auth";
 import prisma from "@/lib/db";
 
-// GET: 获取用户的所有收藏路线
+// GET: Get all user favorite routes
 export async function GET(request: NextRequest) {
   try {
     const authResult = authenticateRequest(request);
@@ -16,20 +16,20 @@ export async function GET(request: NextRequest) {
 
     const { userId } = authResult;
 
-    // 从数据库获取用户的所有收藏
+    // Get all user favorites from database
     const favorites = await prisma.favoriteRoute.findMany({
       where: {
         userId: userId,
       },
       orderBy: {
-        createdAt: "desc", // 最新收藏的在前面
+        createdAt: "desc", // Latest favorites first
       },
     });
 
-    // 解析 JSON 数据并返回
+    // Parse JSON data and return
     const routesData = favorites.map((fav: any) => ({
       ...JSON.parse(fav.routeData),
-      favoriteId: fav.id, // 添加收藏记录的 ID，方便后续删除
+      favoriteId: fav.id, // Add favorite record ID for easy deletion
     }));
 
     return NextResponse.json(routesData, { status: 200 });
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST: 添加或删除收藏
+// POST: Add or remove favorite
 export async function POST(request: NextRequest) {
   try {
     const authResult = authenticateRequest(request);
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (action === "remove") {
-      // 删除收藏
+      // Remove favorite
       await prisma.favoriteRoute.deleteMany({
         where: {
           userId: userId,
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
         { status: 200 }
       );
     } else if (action === "add") {
-      // 添加收藏
+      // Add favorite
       if (!routeData) {
         return NextResponse.json(
           { error: "Missing required field: routeData" },
@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // 检查是否已经收藏
+      // Check if already favorited
       const existing = await prisma.favoriteRoute.findFirst({
         where: {
           userId: userId,
@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // 创建新的收藏记录
+      // Create new favorite record
       const favorite = await prisma.favoriteRoute.create({
         data: {
           userId: userId,

@@ -289,7 +289,7 @@ const MapView: React.FC<MapViewProps> = ({
         </div>
       ) : (
         <div className="flex items-center justify-center w-full h-full bg-gray-100 text-gray-500 rounded-2xl">
-          地图加载中... (请检查 Mapbox Token)
+          Map loading... (Please check Mapbox Token)
         </div>
       )}
       {MAPBOX_TOKEN && !isMapReady && (

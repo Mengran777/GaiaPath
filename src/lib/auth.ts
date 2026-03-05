@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 
 import { NextRequest } from "next/server";
 
-// 环境变量配置
+// Environment variable configuration
 const JWT_SECRET = process.env.JWT_SECRET;
 const TOKEN_EXPIRATION = process.env.TOKEN_EXPIRATION || "1h";
 
@@ -13,7 +13,7 @@ if (!JWT_SECRET) {
 }
 
 /**
- * 哈希密码
+ * Hash password
  */
 export async function hashPassword(password: string): Promise<string> {
   const salt = await bcrypt.genSalt(12);
@@ -21,7 +21,7 @@ export async function hashPassword(password: string): Promise<string> {
 }
 
 /**
- * 比较密码
+ * Compare passwords
  */
 export async function comparePassword(
   password: string,
@@ -31,7 +31,7 @@ export async function comparePassword(
 }
 
 /**
- * 生成 JWT Token（简化版，避免 TypeScript 类型问题）
+ * Generate JWT Token (simplified version, avoids TypeScript type issues)
  */
 export function generateToken(userId: string): string {
   try {
@@ -45,7 +45,7 @@ export function generateToken(userId: string): string {
 }
 
 /**
- * 验证 JWT Token（简化版）
+ * Verify JWT Token (simplified version)
  */
 export function verifyToken(token: string): string | null {
   try {
@@ -64,7 +64,7 @@ export function verifyToken(token: string): string | null {
 }
 
 /**
- * 从 cookies 中获取 token
+ * Get token from cookies
  */
 function getTokenFromCookies(request: NextRequest): string | null {
   try {
@@ -77,7 +77,7 @@ function getTokenFromCookies(request: NextRequest): string | null {
 }
 
 /**
- * 从 Authorization header 中获取 token
+ * Get token from Authorization header
  */
 function getTokenFromHeader(request: NextRequest): string | null {
   try {
@@ -95,13 +95,13 @@ function getTokenFromHeader(request: NextRequest): string | null {
 }
 
 /**
- * 认证请求（支持 cookies 和 Authorization header）
+ * Authenticate request (supports cookies and Authorization header)
  */
 export function authenticateRequest(
   request: NextRequest
 ): { userId: string } | null {
   try {
-    // 优先从 cookies 获取 token，如果没有则从 header 获取
+    // Prefer token from cookies, fall back to header
     let token = getTokenFromCookies(request);
 
     if (!token) {
@@ -126,32 +126,32 @@ export function authenticateRequest(
 }
 
 /**
- * 验证密码强度
+ * Validate password strength
  */
 export function validatePasswordStrength(password: string): string[] {
   const errors: string[] = [];
 
   if (password.length < 8) {
-    errors.push("密码长度至少为8个字符");
+    errors.push("Password must be at least 8 characters");
   }
 
   if (!/[a-z]/.test(password)) {
-    errors.push("密码必须包含至少一个小写字母");
+    errors.push("Password must contain at least one lowercase letter");
   }
 
   if (!/[A-Z]/.test(password)) {
-    errors.push("密码必须包含至少一个大写字母");
+    errors.push("Password must contain at least one uppercase letter");
   }
 
   if (!/\d/.test(password)) {
-    errors.push("密码必须包含至少一个数字");
+    errors.push("Password must contain at least one number");
   }
 
   return errors;
 }
 
 /**
- * 验证邮箱格式
+ * Validate email format
  */
 export function validateEmail(email: string): boolean {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -159,17 +159,17 @@ export function validateEmail(email: string): boolean {
 }
 
 /**
- * 验证用户名格式
+ * Validate username format
  */
 export function validateUsername(username: string): string[] {
   const errors: string[] = [];
 
   if (username.length < 3 || username.length > 20) {
-    errors.push("用户名长度必须在 3-20 个字符之间");
+    errors.push("Username must be between 3 and 20 characters");
   }
 
   if (!/^[a-zA-Z0-9_\u4e00-\u9fa5]+$/.test(username)) {
-    errors.push("用户名只能包含字母、数字、下划线和中文");
+    errors.push("Username can only contain letters, numbers, underscores, and Chinese characters");
   }
 
   return errors;
