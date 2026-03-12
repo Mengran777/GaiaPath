@@ -40,7 +40,7 @@ const GenerateButton: React.FC<GenerateButtonProps> = ({
                   ${buttonBg} ${
         isLoading
           ? "cursor-not-allowed opacity-80"
-          : "hover:scale-[1.01] active:scale-98"
+          : "hover:scale-[1.01] active:scale-[0.98]"
       }`}
     >
       {isLoading && buttonText === "🔄 Generating..." ? (

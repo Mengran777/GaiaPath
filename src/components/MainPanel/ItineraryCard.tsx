@@ -1,15 +1,6 @@
 // src/components/MainPanel/ItineraryCard.tsx
 import React, { useRef, useEffect } from "react";
-
-// Define Location type - ensure this is consistent across App.tsx, ItineraryPanel.tsx, and ItineraryCard.tsx
-// It's best if this is defined in a shared types file (e.g., src/app/types/itinerary.ts)
-interface Location {
-  name: string;
-  latitude: number;
-  longitude: number;
-  description?: string;
-  imageUrl?: string;
-}
+import { Location } from "../../types/itinerary";
 
 interface ItineraryCardProps {
   title: string;
@@ -100,7 +91,7 @@ const ItineraryCard: React.FC<ItineraryCardProps> = ({
     <div
       ref={cardRef}
       className="bg-gray-50 rounded-xl p-5 mb-4 shadow-md hover:shadow-lg transition-all duration-300 ease-in-out cursor-pointer
-                 border-2 border-transparent hover:border-blue-300 flex flex-col md:flex-row items-start gap-4 active:scale-98"
+                 border-2 border-transparent hover:border-blue-300 flex flex-col md:flex-row items-start gap-4 active:scale-[0.98]"
       onClick={handleCardClick} // ⭐ Attach the map focus handler to the whole card ⭐
     >
       {imageUrl && (

@@ -68,6 +68,7 @@ const PreferenceForm: React.FC<PreferenceFormProps> = ({
             Country/City
           </label>
           <LocationAutocomplete
+            id="destination"
             value={preferences.destination}
             onChange={(value) => onPreferenceChange("destination", value)}
             placeholder="e.g., Paris, New York, Tokyo"
@@ -205,7 +206,7 @@ const PreferenceForm: React.FC<PreferenceFormProps> = ({
                     : [...preferences.specialNeeds, tag];
                   onPreferenceChange("specialNeeds", newNeeds);
                 }}
-                className="bg-gray-100 text-gray-700 hover:bg-gray-200 active:scale-98"
+                className="bg-gray-100 text-gray-700 hover:bg-gray-200 active:scale-[0.98]"
               />
             ))}
           </div>

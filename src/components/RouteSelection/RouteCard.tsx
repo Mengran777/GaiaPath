@@ -17,27 +17,20 @@ const RouteCard: React.FC<RouteCardProps> = ({
   isFavorite = false,
   onToggleFavorite,
 }) => {
-  const handleFavoriteClick = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent triggering card's onClick
-    if (onToggleFavorite) {
-      onToggleFavorite(route.id); // Directly call favorite toggle
-    }
-  };
-
   return (
     <div
       onClick={() => onSelect(route.id)}
       className="bg-white rounded-2xl p-6 shadow-md hover:shadow-xl
                  transition-all duration-500 cursor-pointer
-                 border-3 border-transparent hover:border-blue-500
-                 transform hover:-translate-y-2 active:scale-98 relative"
+                 border-[3px] border-transparent hover:border-blue-500
+                 transform hover:-translate-y-2 active:scale-[0.98] relative"
     >
       {/* Favorite button */}
       {onToggleFavorite && (
-        <div className="absolute top-4 right-4 z-10" onClick={handleFavoriteClick}>
+        <div className="absolute top-4 right-4 z-10" onClick={(e) => e.stopPropagation()}>
           <FavoriteButton
             isFavorite={isFavorite}
-            onToggle={() => {}} // Empty function, already handled in handleFavoriteClick
+            onToggle={() => onToggleFavorite(route.id)}
             size="medium"
           />
         </div>
