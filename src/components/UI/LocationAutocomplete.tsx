@@ -12,12 +12,14 @@ interface LocationAutocompleteProps {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
+  id?: string;
 }
 
 const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
   value,
   onChange,
   placeholder = "e.g., Paris, France",
+  id,
 }) => {
   const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -169,6 +171,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
     <div ref={wrapperRef} className="relative">
       <div className="relative">
         <input
+          id={id}
           type="text"
           value={value}
           onChange={(e) => {

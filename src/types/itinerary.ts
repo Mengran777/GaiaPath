@@ -1,4 +1,12 @@
-// src/app/types/itinerary.ts (or add directly to src/app/types/index.ts)
+// src/types/itinerary.ts
+
+export interface Location {
+  name: string;
+  latitude: number;
+  longitude: number;
+  description?: string;
+  imageUrl?: string;
+}
 
 export interface Activity {
   title: string;

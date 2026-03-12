@@ -2,16 +2,8 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import ItineraryCard from "./ItineraryCard";
-import { DayItinerary } from "../../types/itinerary";
+import { DayItinerary, Location } from "../../types/itinerary";
 import { FavoriteButton } from "../UI";
-
-interface Location {
-  name: string;
-  latitude: number;
-  longitude: number;
-  description?: string;
-  imageUrl?: string;
-}
 
 interface ItineraryPanelProps {
   itinerary: DayItinerary[];
@@ -63,8 +55,6 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
     };
 
     updateWeather();
-    const interval = setInterval(updateWeather, 30000);
-    return () => clearInterval(interval);
   }, [itinerary]);
 
   // Fade-in animation
@@ -79,8 +69,7 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
-          (entry.target as HTMLElement).style.opacity = "1";
-          (entry.target as HTMLElement).style.transform = "translateY(0)";
+          (entry.target as HTMLElement).classList.remove("opacity-0", "translate-y-8");
         }
       });
     }, observerOptions);
@@ -90,8 +79,7 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
         ".itinerary-day-animated"
       );
       dayElements.forEach((el) => {
-        (el as HTMLElement).style.opacity = "0";
-        (el as HTMLElement).style.transform = "translateY(30px)";
+        (el as HTMLElement).classList.add("opacity-0", "translate-y-8");
         observer.observe(el);
       });
     }
@@ -185,6 +173,7 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
                 </h3>
                 <p className="text-gray-600 text-sm mt-1">
                   {dayItem.date} · {weatherData[dayItem.date] || "Loading..."}
+                  <span className="text-xs text-gray-400 ml-1">(simulated)</span>
                 </p>
               </div>
 

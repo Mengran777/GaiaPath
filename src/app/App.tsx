@@ -11,22 +11,16 @@ import { RouteList } from "../components/RouteSelection";
 import ItineraryPanel from "../components/MainPanel/ItineraryPanel";
 import MapView from "../components/MainPanel/MapView";
 import FloatingActions from "../components/Controls/FloatingActions";
-import { DayItinerary } from "../types/itinerary";
+import { DayItinerary, Location } from "../types/itinerary";
 import { RouteOption } from "@/types/routes";
-
-interface Location {
-  name: string;
-  latitude: number;
-  longitude: number;
-  description?: string;
-  imageUrl?: string;
-}
+import { useToast, ToastContainer } from "../components/UI";
 
 // ⭐ Define three app stages ⭐
 type AppStage = "initial" | "routes" | "details";
 
 const App: React.FC = () => {
   const pathname = usePathname();
+  const { toasts, showToast, dismissToast } = useToast();
 
   // ⭐ Core state: current stage ⭐
   const [stage, setStage] = useState<AppStage>("initial");
@@ -46,9 +40,7 @@ const App: React.FC = () => {
     specialNeeds: [],
   });
 
-  const [smartSearchQuery, setSmartSearchQuery] = useState(
-    "Tell me what kind of trip you want..."
-  );
+  const [smartSearchQuery, setSmartSearchQuery] = useState("");
 
   // ⭐ Route options state ⭐
   const [routeOptions, setRouteOptions] = useState<RouteOption[]>([]);
@@ -98,16 +90,11 @@ const App: React.FC = () => {
     if (currentUserId) {
       const fetchFavorites = async () => {
         try {
-          const response = await fetch("/api/favorites", {
-            method: "GET",
-          });
-
+          const response = await fetch("/api/favorites", { method: "GET" });
           if (response.ok) {
             const favoritesData = await response.json();
-            // Extract all favorite route IDs
             const favoriteIds = favoritesData.map((route: any) => route.id);
             setFavoriteRoutes(new Set(favoriteIds));
-            console.log("Loaded favorites from database:", favoriteIds);
           } else {
             console.error("Failed to load favorites:", response.statusText);
           }
@@ -117,7 +104,6 @@ const App: React.FC = () => {
       };
       fetchFavorites();
     } else {
-      // User not logged in, clear favorites
       setFavoriteRoutes(new Set());
     }
   }, [currentUserId]);
@@ -154,8 +140,6 @@ const App: React.FC = () => {
   };
 
   const handleSmartSearch = (query: string) => {
-    console.log("Smart search:", query);
-    // No longer setting query as destination, keep it in smartSearchQuery
     setSmartSearchQuery(query);
   };
 
@@ -164,131 +148,81 @@ const App: React.FC = () => {
     const isFavorited = favoriteRoutes.has(routeId);
     const action = isFavorited ? "remove" : "add";
 
-    // Update UI state first (optimistic update)
-    setFavoriteRoutes((prev) => {
-      const newFavorites = new Set(prev);
-      if (isFavorited) {
-        newFavorites.delete(routeId);
-      } else {
-        newFavorites.add(routeId);
-      }
-      return newFavorites;
-    });
+    const applyFavorite = (set: Set<string>, add: boolean) => {
+      const next = new Set(set);
+      add ? next.add(routeId) : next.delete(routeId);
+      return next;
+    };
 
-    // Then sync to database
+    // Optimistic update
+    setFavoriteRoutes((prev) => applyFavorite(prev, !isFavorited));
+
     try {
       const route = routeOptions.find((r) => r.id === routeId);
-
       const response = await fetch("/api/favorites", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          routeId: routeId,
-          routeData: route, // Save full route data
-          action: action,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ routeId, routeData: route, action }),
       });
 
       if (!response.ok) {
-        // If save fails, roll back UI state
-        setFavoriteRoutes((prev) => {
-          const newFavorites = new Set(prev);
-          if (isFavorited) {
-            newFavorites.add(routeId);
-          } else {
-            newFavorites.delete(routeId);
-          }
-          return newFavorites;
-        });
-        console.error("Failed to save favorite to database");
-      } else {
-        console.log(`Favorite ${action}ed successfully:`, routeId);
+        setFavoriteRoutes((prev) => applyFavorite(prev, isFavorited));
+        showToast("Failed to update favorites. Please try again.", "error");
       }
     } catch (error) {
       console.error("Error saving favorite:", error);
-      // Roll back UI state
-      setFavoriteRoutes((prev) => {
-        const newFavorites = new Set(prev);
-        if (isFavorited) {
-          newFavorites.add(routeId);
-        } else {
-          newFavorites.delete(routeId);
-        }
-        return newFavorites;
-      });
-    }
-  };
-
-  // ⭐ Load favorite routes from database ⭐
-  const loadFavoritesFromDatabase = async () => {
-    if (!currentUserId) {
-      console.log("No user logged in, skipping favorites load");
-      return [];
-    }
-
-    try {
-      const response = await fetch("/api/favorites", {
-        method: "GET",
-      });
-
-      if (response.ok) {
-        const favoritesData = await response.json();
-        console.log("Loaded favorite routes from database:", favoritesData);
-        return favoritesData;
-      } else {
-        console.error("Failed to load favorite routes:", response.statusText);
-        return [];
-      }
-    } catch (error) {
-      console.error("Error loading favorite routes:", error);
-      return [];
+      setFavoriteRoutes((prev) => applyFavorite(prev, isFavorited));
+      showToast("Failed to update favorites. Please try again.", "error");
     }
   };
 
   // ⭐ Tab switch handler ⭐
   const handleTabChange = async (tab: string) => {
-    console.log("Tab changed to:", tab);
     setActiveTab(tab);
 
     if (tab === "Home") {
       setStage("initial");
     } else if (tab === "Favorites") {
-      // When switching to Favorites, load favorited routes from database
-      const favoritesData = await loadFavoritesFromDatabase();
-
-      if (favoritesData.length > 0) {
-        // Update favorited route IDs (merge, don't overwrite)
-        const favoriteIds = favoritesData.map((route: any) => route.id);
-        setFavoriteRoutes(new Set(favoriteIds));
-
-        // Update displayed routes to favorited routes
-        setRouteOptions(favoritesData);
-        setStage("routes");
-      } else {
-        // No favorited routes, show empty state
+      if (!currentUserId) {
         setRouteOptions([]);
         setStage("routes");
+        return;
       }
+      try {
+        const response = await fetch("/api/favorites", { method: "GET" });
+        if (response.ok) {
+          const favoritesData = await response.json();
+          const favoriteIds = favoritesData.map((route: any) => route.id);
+          setFavoriteRoutes(new Set(favoriteIds));
+          setRouteOptions(favoritesData);
+        } else {
+          setRouteOptions([]);
+        }
+      } catch (error) {
+        console.error("Error loading favorite routes:", error);
+        setRouteOptions([]);
+      }
+      setStage("routes");
     } else if (tab === "My Itineraries") {
-      // When switching to My Itineraries, show all generated routes
-      if (myItineraries.length > 0) {
-        setRouteOptions(myItineraries);
-        setStage("routes");
-      } else {
-        // If no routes generated, show initial state
-        setRouteOptions([]);
-        setStage("initial");
-      }
+      setRouteOptions(myItineraries.length > 0 ? myItineraries : []);
+      setStage(myItineraries.length > 0 ? "routes" : "initial");
     } else if (tab === "Community") {
-      // Community feature not yet implemented, keep current state
-      console.log("Community feature coming soon...");
+      setRouteOptions([]);
+      setStage("routes");
     }
   };
 
   // ⭐ Generate multiple routes ⭐
   const handleGenerateItinerary = async () => {
+    if (!preferences.destination.trim()) {
+      showToast("Please enter a destination before generating.", "error");
+      return;
+    }
+    if (!preferences.travelStartDate || !preferences.travelEndDate) {
+      showToast("Please select your travel dates before generating.", "error");
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     setRouteOptions([]);
@@ -316,9 +250,6 @@ const App: React.FC = () => {
       }
 
       const data = await response.json();
-      console.log("API returned data:", data);
-      console.log("First route structure:", data[0]);
-
       let generatedRoutes = [];
       if (Array.isArray(data)) {
         generatedRoutes = data;
@@ -381,13 +312,13 @@ const App: React.FC = () => {
         switch (e.key) {
           case "s":
             e.preventDefault();
-            alert("Save feature coming soon...");
+            showToast("Save feature coming soon!", "info");
             break;
           case "f":
             e.preventDefault();
-            const input = document.querySelector(
-              ".search-input"
-            ) as HTMLInputElement;
+            const input = document.getElementById(
+              "smart-search-textarea"
+            ) as HTMLTextAreaElement;
             input?.focus();
             break;
         }
@@ -395,7 +326,7 @@ const App: React.FC = () => {
     };
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [showToast]);
 
   // ⭐ Handle clicking on a day's itinerary ⭐
   const handleDayClick = useCallback((dayNumber: number) => {
@@ -413,20 +344,15 @@ const App: React.FC = () => {
 
   // ⭐ Handle clicking an activity card ⭐
   const handleCardClick = useCallback((location: Location) => {
-    console.log("handleCardClick called with location:", location);
-
-    // If clicking the same location, close the popup
     setHighlightedLocation((prev) => {
-      console.log("Previous highlightedLocation:", prev);
-
-      if (prev &&
-          prev.name === location.name &&
-          prev.latitude === location.latitude &&
-          prev.longitude === location.longitude) {
-        console.log("Same location clicked, closing popup");
+      if (
+        prev &&
+        prev.name === location.name &&
+        prev.latitude === location.latitude &&
+        prev.longitude === location.longitude
+      ) {
         return null;
       }
-      console.log("Different or new location, showing popup");
       return location;
     });
   }, []);
@@ -477,7 +403,6 @@ const App: React.FC = () => {
           ← Back to Routes
         </button>
       ) : activeTab === "Favorites" ? (
-        // Favorites tab: show informational message
         <div className="flex flex-col items-center justify-center h-full text-center px-6">
           <div className="text-6xl mb-4">🏆</div>
           <h2 className="text-2xl font-bold text-gray-800 mb-2">
@@ -486,6 +411,17 @@ const App: React.FC = () => {
           <p className="text-gray-600">
             These are the routes you've saved for future reference.
           </p>
+        </div>
+      ) : activeTab === "Community" ? (
+        <div className="flex flex-col items-center justify-center h-full text-center px-6">
+          <div className="text-6xl mb-4">🌐</div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">Community</h2>
+          <p className="text-gray-600">
+            Share and discover routes from adventurers worldwide.
+          </p>
+          <span className="mt-4 px-4 py-1.5 bg-purple-100 text-purple-700 text-sm font-semibold rounded-full">
+            Coming Soon
+          </span>
         </div>
       ) : (
         // Home and My Itineraries: show full form
@@ -527,19 +463,50 @@ const App: React.FC = () => {
 
       {stage === "routes" && (
         <div className="h-full bg-white rounded-2xl shadow-xl p-6">
-          <RouteList
-            routes={
-              activeTab === "Favorites"
-                ? routeOptions.filter((route) => favoriteRoutes.has(route.id))
-                : routeOptions
-            }
-            onSelectRoute={handleSelectRoute}
-            isLoading={isLoading}
-            favoriteRoutes={favoriteRoutes}
-            onToggleFavorite={toggleFavorite}
-            showFavoritesOnly={activeTab === "Favorites"}
-            activeTab={activeTab}
-          />
+          {activeTab === "Community" ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center max-w-md">
+                <div className="text-7xl mb-6">🌐</div>
+                <h2 className="text-3xl font-bold text-gray-800 mb-3">
+                  Community Coming Soon
+                </h2>
+                <p className="text-gray-500 text-lg">
+                  Share and discover travel routes from adventurers around the
+                  world. Stay tuned!
+                </p>
+              </div>
+            </div>
+          ) : error ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center max-w-md">
+                <div className="text-6xl mb-4">⚠️</div>
+                <h3 className="text-xl font-bold text-gray-800 mb-2">
+                  Something went wrong
+                </h3>
+                <p className="text-red-500 mb-4">{error}</p>
+                <button
+                  onClick={handleBackToInitial}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
+                >
+                  Try Again
+                </button>
+              </div>
+            </div>
+          ) : (
+            <RouteList
+              routes={
+                activeTab === "Favorites"
+                  ? routeOptions.filter((route) => favoriteRoutes.has(route.id))
+                  : routeOptions
+              }
+              onSelectRoute={handleSelectRoute}
+              isLoading={isLoading}
+              favoriteRoutes={favoriteRoutes}
+              onToggleFavorite={toggleFavorite}
+              showFavoritesOnly={activeTab === "Favorites"}
+              activeTab={activeTab}
+            />
+          )}
         </div>
       )}
 
@@ -595,6 +562,7 @@ const App: React.FC = () => {
         onTabChange={handleTabChange}
       />
       <FloatingActions />
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </div>
   );
 };

@@ -99,6 +99,7 @@ const SmartSearch: React.FC<SmartSearchProps> = ({
     <Section title="🔍 Tell Us About Your Dream Trip">
       <div className="relative mb-4">
         <textarea
+          id="smart-search-textarea"
           className="w-full p-4 pr-16 border-2 border-gray-200 rounded-xl font-medium text-gray-800
                      focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20
                      transition-all duration-300 bg-white shadow-sm hover:shadow-md resize-none"
