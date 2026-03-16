@@ -4,7 +4,7 @@ const Input: React.FC<React.InputHTMLAttributes<HTMLInputElement>> = ({ classNam
   return (
     <input
       className={`w-full p-3 border-2 border-gray-200 rounded-xl font-medium text-gray-800
-                  focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20
+                  focus:outline-none focus:border-[#2d9e8a] focus:ring-2 focus:ring-[#2d9e8a]/20
                   transition-all duration-300 bg-white shadow-sm hover:shadow-md ${className}`}
       {...props}
     />

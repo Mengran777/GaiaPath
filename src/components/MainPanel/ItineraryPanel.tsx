@@ -147,8 +147,8 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
                 transition-all duration-500 ease-in-out
                 ${
                   highlightedDay === dayItem.day
-                    ? "border-purple-600 bg-purple-50/50 -ml-4 pl-10 rounded-r-2xl py-2"
-                    : "border-blue-400 hover:border-purple-400"
+                    ? "border-[#1a6b5e] bg-[#f0faf8]/50 -ml-4 pl-10 rounded-r-2xl py-2"
+                    : "border-[#2d9e8a] hover:border-[#1a6b5e]"
                 }
               `}
             >
@@ -159,8 +159,8 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
                   transition-all duration-500
                   ${
                     highlightedDay === dayItem.day
-                      ? "bg-gradient-to-br from-purple-600 to-pink-600 scale-125"
-                      : "bg-gradient-to-br from-blue-600 to-purple-600"
+                      ? "bg-gradient-to-br from-[#0d3d38] to-[#2d9e8a] scale-125"
+                      : "bg-gradient-to-br from-[#0d3d38] to-[#1a6b5e]"
                   }
                 `}
               >

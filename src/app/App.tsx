@@ -10,7 +10,6 @@ import GenerateButton from "../components/Sidebar/GenerateButton";
 import { RouteList } from "../components/RouteSelection";
 import ItineraryPanel from "../components/MainPanel/ItineraryPanel";
 import MapView from "../components/MainPanel/MapView";
-import FloatingActions from "../components/Controls/FloatingActions";
 import { DayItinerary, Location } from "../types/itinerary";
 import { RouteOption } from "@/types/routes";
 import { useToast, ToastContainer } from "../components/UI";
@@ -424,22 +423,35 @@ const App: React.FC = () => {
           </span>
         </div>
       ) : (
-        // Home and My Itineraries: show full form
-        <>
-          <SmartSearch
-            query={smartSearchQuery}
-            setQuery={setSmartSearchQuery}
-            onSearch={handleSmartSearch}
-          />
-          <PreferenceForm
-            preferences={preferences}
-            onPreferenceChange={handlePreferenceChange}
-          />
-          <GenerateButton
-            onClick={handleGenerateItinerary}
-            isLoading={isLoading}
-          />
-        </>
+        // Home and My Itineraries: sticky top bar + scrollable form + sticky generate button
+        <div className="flex flex-col h-full bg-[#f5f2ee]">
+          {/* Sticky top bar */}
+          <div className="sticky top-0 z-10 bg-[#f5f2ee]/95 backdrop-blur border-b border-[#e2ddd8] px-5 py-4 flex-shrink-0">
+            <h2 className="font-semibold text-xl text-[#1a1a1a]">Plan Your Trip</h2>
+            <p className="text-xs text-[#8a8a8a] mt-0.5">Tell us about your dream journey</p>
+          </div>
+
+          {/* Scrollable content */}
+          <div className="flex-1 overflow-y-auto px-4 pt-4 pb-24 custom-scrollbar">
+            <SmartSearch
+              query={smartSearchQuery}
+              setQuery={setSmartSearchQuery}
+              onSearch={handleSmartSearch}
+            />
+            <PreferenceForm
+              preferences={preferences}
+              onPreferenceChange={handlePreferenceChange}
+            />
+          </div>
+
+          {/* Sticky generate button */}
+          <div className="sticky bottom-0 px-4 pb-4 pt-2 bg-gradient-to-t from-[#f5f2ee] to-transparent flex-shrink-0">
+            <GenerateButton
+              onClick={handleGenerateItinerary}
+              isLoading={isLoading}
+            />
+          </div>
+        </div>
       )}
     </div>
   );
@@ -561,7 +573,6 @@ const App: React.FC = () => {
         activeTab={activeTab}
         onTabChange={handleTabChange}
       />
-      <FloatingActions />
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </div>
   );

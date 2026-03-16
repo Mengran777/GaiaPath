@@ -22,17 +22,17 @@ const TypeCard: React.FC<TypeCardProps> = ({
 transition-all duration-300 ease-in-out bg-white
                   ${
                     isSelected
-                      ? "border-blue-500 bg-blue-100 shadow-md transform -translate-y-1"
-                      : "border-gray-200 hover:border-blue-300 hover:shadow-sm"
+                      ? "border-[#1a6b5e] bg-[#f0faf8] shadow-md transform -translate-y-1"
+                      : "border-gray-200 hover:border-[#2d9e8a] hover:shadow-sm"
                   }
                   ${className}`}
     >
-      <div className={`text-3xl mb-2 ${isSelected ? "text-blue-600" : ""}`}>
+      <div className={`text-3xl mb-2 ${isSelected ? "text-[#0d3d38]" : ""}`}>
         {icon}
       </div>
       <div
         className={`font-medium ${
-          isSelected ? "text-blue-600" : "text-gray-700"
+          isSelected ? "text-[#0d3d38]" : "text-gray-700"
         }`}
       >
         {label}

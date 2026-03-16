@@ -21,9 +21,9 @@ const RouteCard: React.FC<RouteCardProps> = ({
     <div
       onClick={() => onSelect(route.id)}
       className="bg-white rounded-2xl p-6 shadow-md hover:shadow-xl
-                 transition-all duration-500 cursor-pointer
-                 border-[3px] border-transparent hover:border-blue-500
-                 transform hover:-translate-y-2 active:scale-[0.98] relative"
+                 transition-all duration-200 cursor-pointer
+                 border-[3px] border-transparent hover:border-[#1a6b5e]
+                 transform hover:-translate-y-1 active:scale-[0.98] relative"
     >
       {/* Favorite button */}
       {onToggleFavorite && (
@@ -41,8 +41,8 @@ const RouteCard: React.FC<RouteCardProps> = ({
         className="inline-block px-4 py-2 rounded-full text-white font-bold text-sm mb-4"
         style={{
           background: `linear-gradient(135deg, ${
-            route.badgeColor || "#667eea"
-          } 0%, #764ba2 100%)`,
+            route.badgeColor || "#0d3d38"
+          } 0%, #1a6b5e 100%)`,
         }}
       >
         {route.badge}

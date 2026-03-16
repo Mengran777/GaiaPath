@@ -35,11 +35,11 @@ const Header: React.FC<HeaderProps> = ({
 
   return (
     <header
-      className="bg-white bg-opacity-95 backdrop-blur-md shadow-lg py-4 px-8 rounded-b-2xl
+      className="bg-white border-b border-[#e2ddd8] py-3 px-8
                    flex flex-col md:flex-row justify-between items-center gap-4"
     >
       <div className="flex items-center space-x-4">
-        <div className="text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600 flex items-center gap-2">
+        <div className="text-2xl font-extrabold text-[#0d3d38] flex items-center gap-2">
           <span>🌍</span>
           Gaia
         </div>
@@ -81,7 +81,7 @@ const Header: React.FC<HeaderProps> = ({
             <img
               src="https://placehold.co/40x40/667eea/ffffff?text=U" // Placeholder for user avatar
               alt="User Avatar"
-              className="w-10 h-10 rounded-full border-2 border-blue-300"
+              className="w-10 h-10 rounded-full border-2 border-[#2d9e8a]"
             />
             {/* You had `currentUserId` here as well, let's keep it simple for now as 'Welcome, [Username]' is enough */}
             {/* If you want to show username here too, just use currentUserId again */}
@@ -92,7 +92,7 @@ const Header: React.FC<HeaderProps> = ({
           {/* Using a simple button here. If you have shadcn/ui Button, use that. */}
           <button
             onClick={onLogout}
-            className="px-4 py-2 rounded-full bg-red-500 text-white font-medium hover:bg-red-600 transition-colors duration-200" // Fallback styles
+            className="px-4 py-1.5 rounded-full border border-[#e2ddd8] bg-white text-[#4a4a4a] text-sm font-medium hover:bg-[#f5f2ee] transition-colors duration-200"
           >
             Logout
           </button>
@@ -101,15 +101,15 @@ const Header: React.FC<HeaderProps> = ({
         <div className="flex items-center space-x-3">
           <a
             href="/auth/login"
-            className="px-6 py-2 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium
-                       hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-md hover:shadow-lg"
+            className="px-5 py-1.5 rounded-full bg-[#0d3d38] text-white text-sm font-medium
+                       hover:bg-[#1a6b5e] transition-colors duration-200"
           >
             Login
           </a>
           <a
             href="/auth/register"
-            className="px-6 py-2 rounded-full border-2 border-blue-600 text-blue-600 font-medium
-                       hover:bg-blue-50 transition-all duration-200"
+            className="px-5 py-1.5 rounded-full border border-[#e2ddd8] text-[#4a4a4a] text-sm font-medium
+                       hover:bg-[#f5f2ee] transition-colors duration-200"
           >
             Sign Up
           </a>

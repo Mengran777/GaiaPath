@@ -22,7 +22,7 @@ const Tag: React.FC<TagProps> = ({
                   flex items-center justify-center gap-2
                   ${
                     isSelected
-                      ? "bg-gradient-to-br from-blue-600 to-purple-600 text-white shadow-lg transform scale-105"
+                      ? "bg-gradient-to-br from-[#0d3d38] to-[#1a6b5e] text-white shadow-lg transform scale-105"
                       : "bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-md"
                   } ${className}`}
     >

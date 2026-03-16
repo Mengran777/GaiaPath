@@ -91,7 +91,7 @@ const ItineraryCard: React.FC<ItineraryCardProps> = ({
     <div
       ref={cardRef}
       className="bg-gray-50 rounded-xl p-5 mb-4 shadow-md hover:shadow-lg transition-all duration-300 ease-in-out cursor-pointer
-                 border-2 border-transparent hover:border-blue-300 flex flex-col md:flex-row items-start gap-4 active:scale-[0.98]"
+                 border-2 border-transparent hover:border-[#2d9e8a] flex flex-col md:flex-row items-start gap-4 active:scale-[0.98]"
       onClick={handleCardClick} // ⭐ Attach the map focus handler to the whole card ⭐
     >
       {imageUrl && (
@@ -103,7 +103,7 @@ const ItineraryCard: React.FC<ItineraryCardProps> = ({
       )}
       <div className="flex-1">
         <h3
-          className="text-lg font-bold text-gray-800 mb-2 cursor-pointer hover:underline text-blue-700"
+          className="text-lg font-bold text-gray-800 mb-2 cursor-pointer hover:underline text-[#0d3d38]"
           onClick={handleTitleClick} // ⭐ Keep Wikipedia handler on title ⭐
         >
           {title}
@@ -112,7 +112,7 @@ const ItineraryCard: React.FC<ItineraryCardProps> = ({
         <div className="flex justify-between items-center text-gray-600 text-sm">
           {time && (
             <div className="flex items-center gap-1">
-              <span className="text-blue-500">⏰</span> {time}
+              <span className="text-[#2d9e8a]">⏰</span> {time}
             </div>
           )}
           {(rating || price) && (

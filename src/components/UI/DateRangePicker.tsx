@@ -1,12 +1,15 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import ReactDOM from 'react-dom';
 
 interface DateRangePickerProps {
-  startDate: string; // ISO format datetime string
-  endDate: string; // ISO format datetime string
+  startDate: string;
+  endDate: string;
   onStartDateChange: (date: string) => void;
   onEndDateChange: (date: string) => void;
+  triggerRef: React.RefObject<HTMLDivElement | null>;
+  onClose: () => void;
 }
 
 const DateRangePicker: React.FC<DateRangePickerProps> = ({
@@ -14,97 +17,78 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
   endDate,
   onStartDateChange,
   onEndDateChange,
+  triggerRef,
+  onClose,
 }) => {
-  const [showCalendar, setShowCalendar] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [hoverDate, setHoverDate] = useState<Date | null>(null);
-  const calendarRef = useRef<HTMLDivElement>(null);
+  const [hoverDate, setHoverDate]       = useState<Date | null>(null);
+  const popupRef  = useRef<HTMLDivElement>(null);
+  const [popupStyle, setPopupStyle] = useState<React.CSSProperties>({});
 
-  // Format the displayed date range
-  const formatDateRange = () => {
-    if (!startDate && !endDate) return 'Select date range';
-
-    const start = startDate ? new Date(startDate) : null;
-    const end = endDate ? new Date(endDate) : null;
-
-    if (start && end) {
-      return `${formatDate(start)} - ${formatDate(end)}`;
-    } else if (start) {
-      return `${formatDate(start)} - Select end date`;
+  const updatePosition = useCallback(() => {
+    const rect = triggerRef.current?.getBoundingClientRect();
+    if (rect) {
+      setPopupStyle({
+        position: 'fixed',
+        top:      rect.bottom + 4,
+        left:     rect.left,
+        zIndex:   9999,
+        minWidth: rect.width,
+      });
     }
-    return 'Select date range';
-  };
+  }, [triggerRef]);
 
-  const formatDate = (date: Date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
+  // Calculate on mount, then track scroll/resize so popup follows the trigger row
+  useEffect(() => {
+    updatePosition();
+    window.addEventListener('scroll', updatePosition, true);
+    window.addEventListener('resize', updatePosition);
+    return () => {
+      window.removeEventListener('scroll', updatePosition, true);
+      window.removeEventListener('resize', updatePosition);
+    };
+  }, [updatePosition]);
 
-  // Click outside to close calendar
+  // Click outside: close when clicking outside popup AND trigger
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (calendarRef.current && !calendarRef.current.contains(event.target as Node)) {
-        setShowCalendar(false);
+      const inPopup   = popupRef.current?.contains(event.target as Node);
+      const inTrigger = triggerRef.current?.contains(event.target as Node);
+      if (!inPopup && !inTrigger) {
+        onClose();
       }
     };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [onClose, triggerRef]);
 
-    if (showCalendar) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [showCalendar]);
-
-  // Generate calendar days
+  // ── Calendar logic (unchanged) ──
   const generateCalendarDays = () => {
-    const year = currentMonth.getFullYear();
+    const year  = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
-
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const firstDayOfWeek = firstDay.getDay();
-    const daysInMonth = lastDay.getDate();
-
+    const firstDayOfWeek = new Date(year, month, 1).getDay();
+    const daysInMonth    = new Date(year, month + 1, 0).getDate();
     const days: (number | null)[] = [];
-
-    // Fill empty slots at the beginning
-    for (let i = 0; i < firstDayOfWeek; i++) {
-      days.push(null);
-    }
-
-    // Fill actual days
-    for (let i = 1; i <= daysInMonth; i++) {
-      days.push(i);
-    }
-
+    for (let i = 0; i < firstDayOfWeek; i++) days.push(null);
+    for (let i = 1; i <= daysInMonth; i++) days.push(i);
     return days;
   };
 
-  const dateToString = (date: Date) => {
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}T00:00`;
-  };
+  const dateToString = (date: Date) =>
+    `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}T00:00`;
 
   const handleDayClick = (day: number) => {
-    const year = currentMonth.getFullYear();
-    const month = currentMonth.getMonth();
-    const selectedDate = new Date(year, month, day);
-    const datetimeString = dateToString(selectedDate);
-
+    const selectedDate    = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
+    const datetimeString  = dateToString(selectedDate);
     if (!startDate || (startDate && endDate)) {
-      // Start new selection
       onStartDateChange(datetimeString);
       onEndDateChange('');
       setHoverDate(null);
     } else {
-      // Complete the range
       const startDateTime = new Date(startDate);
       if (selectedDate >= startDateTime) {
         onEndDateChange(datetimeString);
       } else {
-        // If clicked date is before start, make it the new start
         onStartDateChange(datetimeString);
         onEndDateChange('');
       }
@@ -113,183 +97,135 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
 
   const handleDayHover = (day: number) => {
     if (startDate && !endDate) {
-      const year = currentMonth.getFullYear();
-      const month = currentMonth.getMonth();
-      setHoverDate(new Date(year, month, day));
+      setHoverDate(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day));
     }
   };
 
   const isDayInRange = (day: number) => {
-    const year = currentMonth.getFullYear();
-    const month = currentMonth.getMonth();
-    const currentDate = new Date(year, month, day);
-
+    const cur = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
     if (startDate && endDate) {
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-      return currentDate > start && currentDate < end;
+      return cur > new Date(startDate) && cur < new Date(endDate);
     }
-
-    // Show preview range when hovering
     if (startDate && !endDate && hoverDate) {
-      const start = new Date(startDate);
-      return currentDate > start && currentDate < hoverDate;
+      return cur > new Date(startDate) && cur < hoverDate;
     }
-
     return false;
   };
 
   const isDayStart = (day: number) => {
     if (!startDate) return false;
-    const year = currentMonth.getFullYear();
-    const month = currentMonth.getMonth();
-    const currentDate = new Date(year, month, day);
-    const start = new Date(startDate);
-    return currentDate.toDateString() === start.toDateString();
+    return new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day).toDateString() ===
+      new Date(startDate).toDateString();
   };
 
   const isDayEnd = (day: number) => {
-    if (endDate) {
-      const year = currentMonth.getFullYear();
-      const month = currentMonth.getMonth();
-      const currentDate = new Date(year, month, day);
-      const end = new Date(endDate);
-      return currentDate.toDateString() === end.toDateString();
-    }
-
-    // Show preview end when hovering
-    if (startDate && !endDate && hoverDate) {
-      const year = currentMonth.getFullYear();
-      const month = currentMonth.getMonth();
-      const currentDate = new Date(year, month, day);
-      return currentDate.toDateString() === hoverDate.toDateString();
-    }
-
+    const cur = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
+    if (endDate)   return cur.toDateString() === new Date(endDate).toDateString();
+    if (startDate && !endDate && hoverDate) return cur.toDateString() === hoverDate.toDateString();
     return false;
   };
 
-  const goToPreviousMonth = () => {
-    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1));
-  };
+  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const weekDays   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
-  const goToNextMonth = () => {
-    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1));
-  };
+  if (typeof document === 'undefined') return null;
 
-  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-  const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
-  return (
-    <div className="relative" ref={calendarRef}>
-      {/* Input display */}
-      <div
-        onClick={() => setShowCalendar(!showCalendar)}
-        className="w-full p-3 border-2 border-gray-200 rounded-xl font-medium text-gray-800
-                   focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20
-                   transition-all duration-300 bg-white shadow-sm hover:shadow-md cursor-pointer
-                   flex items-center justify-between"
-      >
-        <span className={startDate || endDate ? 'text-gray-800' : 'text-gray-400'}>
-          {formatDateRange()}
-        </span>
-        <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-        </svg>
+  return ReactDOM.createPortal(
+    <div
+      ref={popupRef}
+      style={popupStyle}
+      className="bg-white rounded-2xl border border-[#e2ddd8] shadow-xl p-4 min-w-[320px]"
+    >
+      {/* Month navigation */}
+      <div className="flex items-center justify-between mb-4">
+        <button
+          type="button"
+          onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))}
+          className="p-2 hover:bg-[#f0ede8] rounded-lg transition-colors"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+        <div className="font-semibold text-[#1a1a1a] text-sm">
+          {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
+        </div>
+        <button
+          type="button"
+          onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))}
+          className="p-2 hover:bg-[#f0ede8] rounded-lg transition-colors"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
       </div>
 
-      {/* Calendar popup */}
-      {showCalendar && (
-        <div className="absolute z-50 mt-2 bg-white border-2 border-gray-200 rounded-xl shadow-xl p-4 min-w-[320px]">
-          {/* Month navigation */}
-          <div className="flex items-center justify-between mb-4">
+      {/* Weekday headers */}
+      <div className="grid grid-cols-7 gap-1 mb-2">
+        {weekDays.map(d => (
+          <div key={d} className="text-center text-[10px] font-semibold text-[#8a8a8a] py-1 uppercase tracking-wide">
+            {d}
+          </div>
+        ))}
+      </div>
+
+      {/* Calendar days */}
+      <div className="grid grid-cols-7 gap-1">
+        {generateCalendarDays().map((day, index) => {
+          if (day === null) return <div key={`e-${index}`} className="p-2" />;
+
+          const isStart   = isDayStart(day);
+          const isEnd     = isDayEnd(day);
+          const isInRange = isDayInRange(day);
+          const isToday   = new Date().toDateString() ===
+            new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day).toDateString();
+
+          return (
             <button
-              onClick={goToPreviousMonth}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              key={day}
               type="button"
+              onClick={() => handleDayClick(day)}
+              onMouseEnter={() => handleDayHover(day)}
+              className={`
+                p-2 text-sm rounded-lg transition-all relative text-center
+                ${isStart || isEnd
+                  ? 'bg-[#0d3d38] text-white font-semibold'
+                  : ''}
+                ${isInRange
+                  ? 'bg-[#e0f5f2] text-[#0d3d38]'
+                  : ''}
+                ${!isInRange && !isStart && !isEnd
+                  ? 'hover:bg-[#f0ede8] text-[#4a4a4a]'
+                  : ''}
+                ${isToday && !isStart && !isEnd
+                  ? 'ring-1 ring-[#c9a96e]'
+                  : ''}
+              `}
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
+              {day}
             </button>
-            <div className="font-semibold text-gray-800">
-              {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
-            </div>
-            <button
-              onClick={goToNextMonth}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              type="button"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-          </div>
+          );
+        })}
+      </div>
 
-          {/* Week day headers */}
-          <div className="grid grid-cols-7 gap-1 mb-2">
-            {weekDays.map((day) => (
-              <div key={day} className="text-center text-xs font-medium text-gray-500 py-2">
-                {day}
-              </div>
-            ))}
-          </div>
+      {/* Help text */}
+      <div className="mt-3 text-[10.5px] text-[#8a8a8a] text-center">
+        {!startDate || (startDate && endDate) ? 'Select check-in date' : 'Select check-out date'}
+      </div>
 
-          {/* Calendar days grid */}
-          <div className="grid grid-cols-7 gap-1">
-            {generateCalendarDays().map((day, index) => {
-              if (day === null) {
-                return <div key={`empty-${index}`} className="p-2" />;
-              }
-
-              const isInRange = isDayInRange(day);
-              const isStart = isDayStart(day);
-              const isEnd = isDayEnd(day);
-              const isToday = new Date().toDateString() === new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day).toDateString();
-              const isHovering = startDate && !endDate && hoverDate;
-
-              return (
-                <button
-                  key={day}
-                  type="button"
-                  onClick={() => handleDayClick(day)}
-                  onMouseEnter={() => handleDayHover(day)}
-                  className={`
-                    p-2 text-sm rounded-lg transition-all relative
-                    ${isStart || isEnd ? 'bg-blue-500 text-white font-semibold z-10' : ''}
-                    ${isInRange ? 'bg-blue-100 text-blue-800' : ''}
-                    ${!isInRange && !isStart && !isEnd ? 'hover:bg-gray-100 text-gray-700' : ''}
-                    ${isToday && !isStart && !isEnd ? 'ring-1 ring-blue-400' : ''}
-                    ${isHovering && isInRange ? 'bg-blue-50' : ''}
-                  `}
-                >
-                  {day}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Help text */}
-          <div className="mt-4 text-xs text-gray-500 text-center">
-            {!startDate || (startDate && endDate) ? 'Select check-in date' : 'Select check-out date'}
-          </div>
-
-          {/* Clear button */}
-          {(startDate || endDate) && (
-            <button
-              type="button"
-              onClick={() => {
-                onStartDateChange('');
-                onEndDateChange('');
-                setHoverDate(null);
-              }}
-              className="mt-3 w-full py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-            >
-              Clear dates
-            </button>
-          )}
-        </div>
+      {/* Clear button */}
+      {(startDate || endDate) && (
+        <button
+          type="button"
+          onClick={() => { onStartDateChange(''); onEndDateChange(''); setHoverDate(null); }}
+          className="mt-2 w-full py-1.5 text-xs text-[#c9a96e] hover:bg-[#fdf4e7] rounded-lg transition-colors"
+        >
+          Clear dates
+        </button>
       )}
-    </div>
+    </div>,
+    document.body
   );
 };
 

@@ -11,7 +11,10 @@ module.exports = {
   ],
   theme: {
     extend: {
-      // Your custom theme extensions
+      fontFamily: {
+        display: ['"Playfair Display"', 'serif'],
+        sans: ['"DM Sans"', 'sans-serif'],
+      },
     },
   },
   plugins: [], // Ensure this is always an array, even if empty
