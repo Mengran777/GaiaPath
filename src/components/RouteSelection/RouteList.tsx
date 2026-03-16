@@ -28,7 +28,7 @@ const RouteList: React.FC<RouteListProps> = ({
       <div className="flex items-center justify-center h-full">
         <div className="text-center max-w-md">
           <div className="relative mb-8 inline-block">
-            <div className="animate-spin rounded-full h-20 w-20 border-b-4 border-purple-600"></div>
+            <div className="animate-spin rounded-full h-20 w-20 border-b-4 border-[#1a6b5e]"></div>
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-3xl">✨</div>
             </div>
@@ -50,7 +50,7 @@ const RouteList: React.FC<RouteListProps> = ({
               <div className="animate-pulse" style={{ animationDelay: '0.4s' }}>📸 Fetching real images</div>
             </div>
           </div>
-          <div className="text-xs text-purple-600 font-medium bg-purple-50 px-4 py-2 rounded-full inline-block">
+          <div className="text-xs text-[#0d3d38] font-medium bg-[#f0faf8] px-4 py-2 rounded-full inline-block">
             ⚡ Parallel generation + Real images
           </div>
         </div>

@@ -1,4 +1,7 @@
-import React, { useState, useEffect, useRef } from "react";
+'use client';
+
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import ReactDOM from "react-dom";
 
 interface LocationSuggestion {
   name: string;
@@ -25,24 +28,47 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
   const [showDropdown, setShowDropdown] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
-  const justSelectedRef = useRef(false); // ⭐ Use ref instead of state to avoid triggering re-renders
-  const wrapperRef = useRef<HTMLDivElement>(null);
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0, width: 0 });
 
-  // Click outside to close dropdown
+  const justSelectedRef = useRef(false);
+  const wrapperRef  = useRef<HTMLDivElement>(null);
+  const inputRef    = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const updatePosition = useCallback(() => {
+    const rect = inputRef.current?.getBoundingClientRect();
+    if (rect) {
+      setDropdownPos({ top: rect.bottom + 4, left: rect.left, width: rect.width });
+    }
+  }, []);
+
+  // Recalculate on open, then track scroll/resize so popup follows the input
+  useEffect(() => {
+    if (!showDropdown) return;
+    updatePosition();
+    window.addEventListener('scroll', updatePosition, true);
+    window.addEventListener('resize', updatePosition);
+    return () => {
+      window.removeEventListener('scroll', updatePosition, true);
+      window.removeEventListener('resize', updatePosition);
+    };
+  }, [showDropdown, updatePosition]);
+
+  // Click outside: check both the input wrapper and the portal dropdown
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
+      const inWrapper  = wrapperRef.current?.contains(event.target as Node);
+      const inDropdown = dropdownRef.current?.contains(event.target as Node);
+      if (!inWrapper && !inDropdown) {
         setShowDropdown(false);
       }
     };
-
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Use Nominatim API (OpenStreetMap) to get location suggestions
+  // Fetch suggestions via Nominatim
   useEffect(() => {
-    // ⭐ If an option was just selected, don't re-fetch suggestions
     if (justSelectedRef.current) {
       justSelectedRef.current = false;
       return;
@@ -58,7 +84,6 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
       setIsLoading(true);
 
       try {
-        // Use Nominatim API (OpenStreetMap) to get location suggestions
         const response = await fetch(
           `https://nominatim.openstreetmap.org/search?` +
           `format=json&` +
@@ -68,7 +93,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
           {
             headers: {
               "Accept": "application/json",
-              "User-Agent": "GaiaPath-TravelApp/1.0", // Nominatim requires a User-Agent
+              "User-Agent": "GaiaPath-TravelApp/1.0",
             },
           }
         );
@@ -80,44 +105,33 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
 
         const data = await response.json();
 
-        // Convert to our format
         const formattedSuggestions: LocationSuggestion[] = data
           .filter((item: any) => {
-            // Only keep major locations like cities, countries, states
             const type = item.type;
             return [
-              "city",
-              "town",
-              "village",
-              "country",
-              "state",
-              "administrative",
-              "municipality",
+              "city", "town", "village", "country", "state",
+              "administrative", "municipality",
             ].includes(type) || item.class === "place";
           })
           .map((item: any) => {
             const address = item.address || {};
-            const name = item.name || item.display_name.split(",")[0];
+            const name    = item.name || item.display_name.split(",")[0];
             const country = address.country || "";
-            const state = address.state || "";
+            const state   = address.state || "";
 
             let displayName = name;
-            if (state && state !== name) {
-              displayName += `, ${state}`;
-            }
-            if (country && country !== name) {
-              displayName += `, ${country}`;
-            }
+            if (state   && state   !== name) displayName += `, ${state}`;
+            if (country && country !== name) displayName += `, ${country}`;
 
             return {
               name: item.name || item.display_name.split(",")[0],
-              displayName: displayName,
-              country: country,
+              displayName,
+              country,
               lat: parseFloat(item.lat),
               lon: parseFloat(item.lon),
             };
           })
-          .slice(0, 6); // Limit to 6 results
+          .slice(0, 6);
 
         setSuggestions(formattedSuggestions);
         setShowDropdown(formattedSuggestions.length > 0);
@@ -129,13 +143,12 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
       }
     };
 
-    // Add debounce
     const debounceTimer = setTimeout(fetchSuggestions, 300);
     return () => clearTimeout(debounceTimer);
   }, [value]);
 
   const handleSelect = (suggestion: LocationSuggestion) => {
-    justSelectedRef.current = true; // ⭐ Mark that an option was just selected
+    justSelectedRef.current = true;
     onChange(suggestion.name);
     setShowDropdown(false);
     setSuggestions([]);
@@ -147,13 +160,11 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
     switch (e.key) {
       case "ArrowDown":
         e.preventDefault();
-        setHighlightedIndex((prev) =>
-          prev < suggestions.length - 1 ? prev + 1 : prev
-        );
+        setHighlightedIndex(prev => prev < suggestions.length - 1 ? prev + 1 : prev);
         break;
       case "ArrowUp":
         e.preventDefault();
-        setHighlightedIndex((prev) => (prev > 0 ? prev - 1 : -1));
+        setHighlightedIndex(prev => prev > 0 ? prev - 1 : -1);
         break;
       case "Enter":
         e.preventDefault();
@@ -167,20 +178,68 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
     }
   };
 
+  // Portal dropdown content
+  const dropdownContent = showDropdown && (
+    <div
+      ref={dropdownRef}
+      style={{
+        position: "fixed",
+        top:   dropdownPos.top,
+        left:  dropdownPos.left,
+        width: dropdownPos.width,
+        zIndex: 9999,
+      }}
+    >
+      {suggestions.length > 0 ? (
+        <div className="bg-white rounded-xl shadow-2xl border border-gray-200 max-h-80 overflow-y-auto">
+          {suggestions.map((suggestion, index) => (
+            <button
+              key={`suggestion-${index}-${suggestion.lat}-${suggestion.lon}-${suggestion.displayName}`}
+              onClick={() => handleSelect(suggestion)}
+              onMouseEnter={() => setHighlightedIndex(index)}
+              className={`w-full text-left px-4 py-3 transition-colors duration-150
+                ${index === highlightedIndex
+                  ? "bg-blue-50 border-l-4 border-blue-500"
+                  : "hover:bg-gray-50 border-l-4 border-transparent"
+                }
+                ${index !== suggestions.length - 1 ? "border-b border-gray-100" : ""}
+              `}
+            >
+              <div className="flex items-center space-x-3">
+                <span className="text-2xl">📍</span>
+                <div className="flex-1">
+                  <div className="font-semibold text-gray-800">{suggestion.name}</div>
+                  <div className="text-sm text-gray-500">{suggestion.displayName}</div>
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+      ) : !isLoading && value.trim().length >= 2 ? (
+        <div className="bg-white rounded-xl shadow-2xl border border-gray-200 px-4 py-3">
+          <div className="text-center text-gray-500">
+            <span className="text-2xl block mb-1">🔍</span>
+            No locations found
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+
   return (
     <div ref={wrapperRef} className="relative">
       <div className="relative">
         <input
+          ref={inputRef}
           id={id}
           type="text"
           value={value}
           onChange={(e) => {
-            justSelectedRef.current = false; // ⭐ User started typing, reset flag
+            justSelectedRef.current = false;
             onChange(e.target.value);
           }}
           onKeyDown={handleKeyDown}
           onFocus={() => {
-            // ⭐ Only show dropdown if not just selected and there are suggestions
             if (suggestions.length > 0 && !justSelectedRef.current) {
               setShowDropdown(true);
             }
@@ -199,66 +258,21 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
               fill="none"
               viewBox="0 0 24 24"
             >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              ></circle>
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path
                 className="opacity-75"
                 fill="currentColor"
                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              ></path>
+              />
             </svg>
           </div>
         )}
       </div>
 
-      {/* Dropdown suggestion list */}
-      {showDropdown && suggestions.length > 0 && (
-        <div className="absolute z-50 w-full mt-2 bg-white rounded-xl shadow-2xl border border-gray-200 max-h-80 overflow-y-auto">
-          {suggestions.map((suggestion, index) => (
-            <button
-              key={`suggestion-${index}-${suggestion.lat}-${suggestion.lon}-${suggestion.displayName}`}
-              onClick={() => handleSelect(suggestion)}
-              onMouseEnter={() => setHighlightedIndex(index)}
-              className={`w-full text-left px-4 py-3 transition-colors duration-150
-                ${
-                  index === highlightedIndex
-                    ? "bg-blue-50 border-l-4 border-blue-500"
-                    : "hover:bg-gray-50 border-l-4 border-transparent"
-                }
-                ${index !== suggestions.length - 1 ? "border-b border-gray-100" : ""}
-              `}
-            >
-              <div className="flex items-center space-x-3">
-                <span className="text-2xl">📍</span>
-                <div className="flex-1">
-                  <div className="font-semibold text-gray-800">
-                    {suggestion.name}
-                  </div>
-                  <div className="text-sm text-gray-500">
-                    {suggestion.displayName}
-                  </div>
-                </div>
-              </div>
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* No results message */}
-      {showDropdown && !isLoading && value.trim().length >= 2 && suggestions.length === 0 && (
-        <div className="absolute z-50 w-full mt-2 bg-white rounded-xl shadow-2xl border border-gray-200 px-4 py-3">
-          <div className="text-center text-gray-500">
-            <span className="text-2xl block mb-1">🔍</span>
-            No locations found
-          </div>
-        </div>
-      )}
+      {/* Render dropdown via portal so it escapes all overflow/stacking contexts */}
+      {typeof document !== "undefined" &&
+        dropdownContent &&
+        ReactDOM.createPortal(dropdownContent, document.body)}
     </div>
   );
 };

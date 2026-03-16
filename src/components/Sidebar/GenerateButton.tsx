@@ -1,52 +1,28 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 
 interface GenerateButtonProps {
   onClick: () => void;
   isLoading: boolean;
 }
 
-const GenerateButton: React.FC<GenerateButtonProps> = ({
-  onClick,
-  isLoading,
-}) => {
-  const [buttonText, setButtonText] = useState("🚀 Generate My Itinerary");
-  const [buttonBg, setButtonBg] = useState(
-    "bg-gradient-to-br from-blue-600 to-purple-600"
-  );
-
-  useEffect(() => {
-    if (isLoading) {
-      setButtonText("🔄 Generating...");
-      setButtonBg("bg-gradient-to-br from-green-500 to-emerald-500");
-    } else {
-      if (buttonText === "🔄 Generating...") {
-        setButtonText("✅ Generation Complete");
-        setButtonBg("bg-gradient-to-br from-green-600 to-emerald-600");
-        const timer = setTimeout(() => {
-          setButtonText("🚀 Generate My Itinerary");
-          setButtonBg("bg-gradient-to-br from-blue-600 to-purple-600");
-        }, 1500);
-        return () => clearTimeout(timer);
-      }
-    }
-  }, [isLoading, buttonText]);
-
+const GenerateButton: React.FC<GenerateButtonProps> = ({ onClick, isLoading }) => {
   return (
     <button
       onClick={onClick}
       disabled={isLoading}
-      className={`w-full py-4 mt-6 rounded-xl text-white font-bold text-lg
-                  transition-all duration-300 ease-in-out shadow-lg hover:shadow-xl
-                  ${buttonBg} ${
-        isLoading
-          ? "cursor-not-allowed opacity-80"
-          : "hover:scale-[1.01] active:scale-[0.98]"
-      }`}
+      className={`w-full py-4 rounded-2xl text-white font-semibold text-[15px]
+                  bg-gradient-to-r from-[#0d3d38] to-[#1a6b5e]
+                  flex items-center justify-center gap-2
+                  transition-all duration-200 shadow-md
+                  ${isLoading
+                    ? "cursor-not-allowed opacity-80"
+                    : "hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0"
+                  }`}
     >
-      {isLoading && buttonText === "🔄 Generating..." ? (
-        <span className="flex items-center justify-center">
+      {isLoading ? (
+        <>
           <svg
-            className="animate-spin -ml-1 mr-3 h-6 w-6 text-white"
+            className="animate-spin h-5 w-5 text-white flex-shrink-0"
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
             viewBox="0 0 24 24"
@@ -58,17 +34,20 @@ const GenerateButton: React.FC<GenerateButtonProps> = ({
               r="10"
               stroke="currentColor"
               strokeWidth="4"
-            ></circle>
+            />
             <path
               className="opacity-75"
               fill="currentColor"
               d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-            ></path>
+            />
           </svg>
-          {buttonText}
-        </span>
+          Generating...
+        </>
       ) : (
-        buttonText
+        <>
+          ✨ Generate My Itinerary
+          <span className="text-white/50 text-xs font-normal">· ~30s</span>
+        </>
       )}
     </button>
   );

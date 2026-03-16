@@ -24,11 +24,11 @@ const NavItem: React.FC<NavItemProps> = ({
     <a
       href={to}
       onClick={handleClick}
-      className={`px-5 py-2 rounded-full font-medium transition-all duration-300 ease-in-out cursor-pointer
+      className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors duration-200 cursor-pointer
                   ${
                     isActive
-                      ? "bg-gradient-to-br from-blue-600 to-purple-600 text-white shadow-md transform -translate-y-1"
-                      : "text-gray-700 hover:bg-gray-100 hover:text-blue-600"
+                      ? "bg-[#0d3d38] text-white"
+                      : "text-[#4a4a4a] hover:bg-[#f0ede8] hover:text-[#0d3d38]"
                   }`}
     >
       {label}

@@ -1,8 +1,4 @@
-// src/components/Sidebar/SmartSearch.tsx (MODIFIED)
-
 import React, { useState, useEffect } from "react";
-import { Tag } from "../UI";
-import Section from "../Layout/Section";
 
 interface SmartSearchProps {
   onSearch: (query: string) => void;
@@ -16,133 +12,105 @@ const SmartSearch: React.FC<SmartSearchProps> = ({
   setQuery,
 }) => {
   const suggestions = [
-    "📸 Instagram-worthy spots",
-    "🌅 Sunrise & sunset viewpoints",
-    "🎭 Local festivals & events",
-    "🏰 Medieval castles & fortresses",
-    "🌃 Nightlife & entertainment",
-    "🛍️ Shopping & local markets",
-    "☕ Coffee culture tour",
-    "🎬 Film locations & movie scenes",
+    { emoji: "📸", label: "Instagram spots" },
+    { emoji: "🌅", label: "Sunrise views" },
+    { emoji: "🏰", label: "Historic sites" },
+    { emoji: "☕", label: "Coffee culture" },
+    { emoji: "🎭", label: "Local festivals" },
+    { emoji: "🛒", label: "Local markets" },
+    { emoji: "🎬", label: "Film locations" },
   ];
 
-  // Manage selected tags
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setQuery(e.target.value);
   };
 
-  const handleSearchClick = () => {
-    if (query.trim()) {
-      onSearch(query);
-    }
-  };
-
-  // Handle keyboard events, support tag deletion
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    // Ctrl+Enter triggers search
     if (e.key === "Enter" && e.ctrlKey) {
-      handleSearchClick();
+      if (query.trim()) onSearch(query);
       return;
     }
-
-    // Backspace key deletes tag
     if (e.key === "Backspace" && selectedTags.size > 0) {
-      const textarea = e.currentTarget;
-      const cursorPosition = textarea.selectionStart;
-      const text = textarea.value;
-
-      // Check if cursor is at the end of text
-      const isAtEnd = cursorPosition === text.length;
-
-      // If cursor is at end, delete the last tag
-      if (isAtEnd) {
+      const cursorPosition = e.currentTarget.selectionStart;
+      if (cursorPosition === e.currentTarget.value.length) {
         e.preventDefault();
         const tagsArray = Array.from(selectedTags);
         const lastTag = tagsArray[tagsArray.length - 1];
-
         setSelectedTags((prev) => {
-          const newSelected = new Set(prev);
-          newSelected.delete(lastTag);
-          return newSelected;
+          const next = new Set(prev);
+          next.delete(lastTag);
+          return next;
         });
       }
     }
   };
 
-  // Handle tag click
   const handleTagClick = (tag: string) => {
     setSelectedTags((prev) => {
-      const newSelected = new Set(prev);
-      if (newSelected.has(tag)) {
-        newSelected.delete(tag);
-      } else {
-        newSelected.add(tag);
-      }
-      return newSelected;
+      const next = new Set(prev);
+      next.has(tag) ? next.delete(tag) : next.add(tag);
+      return next;
     });
   };
 
-  // When selected tags change, update query text
   useEffect(() => {
     if (selectedTags.size > 0) {
-      const tagsList = Array.from(selectedTags).join(", ");
-      setQuery(`I want to visit places with: ${tagsList}`);
+      setQuery(`I want to visit places with: ${Array.from(selectedTags).join(", ")}`);
     } else {
-      // When all tags are removed, clear query text
       setQuery("");
     }
   }, [selectedTags, setQuery]);
 
   return (
-    <Section title="🔍 Tell Us About Your Dream Trip">
-      <div className="relative mb-4">
-        <textarea
-          id="smart-search-textarea"
-          className="w-full p-4 pr-16 border-2 border-gray-200 rounded-xl font-medium text-gray-800
-                     focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20
-                     transition-all duration-300 bg-white shadow-sm hover:shadow-md resize-none"
-          placeholder="Tell me what kind of trip you want in your own words...
-
-Examples:
-• I want to explore Greek culture and history, with some natural scenery and food spots
-• I'd like to do hiking routes in the Lake District over 3 days
-• Looking for a romantic getaway in Paris with art museums and fine dining"
-          value={query}
-          onChange={handleInputChange}
-          onKeyDown={handleKeyDown}
-          rows={6}
-        />
-        <button
-          onClick={handleSearchClick}
-          className="absolute right-4 bottom-4 bg-gradient-to-br from-blue-500 to-purple-500 text-white
-                      p-3 rounded-lg shadow-md hover:scale-110 transition-transform duration-200 active:scale-95"
-        >
-          ✨
-        </button>
-      </div>
-      
-      <div className="text-xs text-gray-500 mb-3">
-        💡 Tip: Click tags to select multiple interests! Press Backspace to remove last tag.
+    <div className="bg-white rounded-2xl border border-[#e2ddd8] overflow-hidden mb-5">
+      {/* Section label */}
+      <div className="px-4 pt-4 pb-1">
+        <p className="text-[10.5px] font-semibold tracking-widest uppercase text-[#8a8a8a]">
+          YOUR VISION
+        </p>
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        {suggestions.map((tag) => (
-          <Tag
-            key={tag}
-            label={tag}
-            isSelected={selectedTags.has(tag)}
-            onClick={() => handleTagClick(tag)}
-            className={
-              selectedTags.has(tag)
-                ? "bg-gradient-to-br from-blue-500 to-purple-500 text-white border-blue-500 shadow-lg hover:shadow-xl"
-                : "bg-gradient-to-br from-blue-50/50 to-purple-50/50 border border-blue-100 text-blue-700 hover:from-blue-100 hover:to-purple-100 hover:shadow-md"
-            }
-          />
-        ))}
+      {/* Textarea */}
+      <textarea
+        id="smart-search-textarea"
+        className="w-full px-4 py-3 border-b border-[#e2ddd8] text-[13px] text-[#1a1a1a]
+                   placeholder:text-[#8a8a8a] resize-none focus:outline-none bg-white"
+        placeholder={"Describe your ideal trip in your own words...\ne.g. Greek islands with local food and some hiking"}
+        value={query}
+        onChange={handleInputChange}
+        onKeyDown={handleKeyDown}
+        rows={3}
+      />
+
+      {/* Hint */}
+      <p className="px-4 pt-2 text-[10.5px] text-[#8a8a8a]">
+        💡 Or pick from quick tags below
+      </p>
+
+      {/* Tags */}
+      <div className="px-4 pb-3 pt-2 flex flex-wrap gap-1.5">
+        {suggestions.map(({ emoji, label }) => {
+          const tag = `${emoji} ${label}`;
+          const isSelected = selectedTags.has(tag);
+          return (
+            <button
+              key={tag}
+              type="button"
+              onClick={() => handleTagClick(tag)}
+              className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+                isSelected
+                  ? "bg-[#0d3d38] text-white"
+                  : "bg-[#f0ede8] text-[#4a4a4a] hover:bg-[#e5e1db]"
+              }`}
+            >
+              {emoji} {label}
+            </button>
+          );
+        })}
       </div>
-    </Section>
+    </div>
   );
 };
 

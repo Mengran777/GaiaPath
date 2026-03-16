@@ -1,8 +1,11 @@
 // RootLayout.tsx
 // Location: src/app/layout.tsx
 import "./globals.css";
-// import "./styles/App.css"; // From extracted HTML template
-import Header from "@/components/Header/Header";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Gaia – Plan your journey, effortlessly",
+};
 
 export default function RootLayout({
   children,
@@ -10,8 +13,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="zh-CN">
-      <body className="min-h-screen bg-gradient-to-br from-indigo-400 to-purple-500 text-gray-800">
+    <html lang="en">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Sans:wght@400;500;600&display=swap"
+          rel="stylesheet"
+        />
+      </head>
+      <body className="min-h-screen bg-[#0a1a17] text-gray-800">
         {children}
       </body>
     </html>

@@ -28,7 +28,7 @@ const PageContainer: React.FC<PageContainerProps> = ({
   onTabChange,
 }) => {
   return (
-    <div className="h-screen bg-gradient-to-br from-[#667eea] to-[#764ba2] font-sans text-gray-900 antialiased flex flex-col">
+    <div className="h-screen bg-[#0a1a17] font-sans text-gray-900 antialiased flex flex-col">
       {/* Header */}
       <Header
         onLogout={onLogout}
