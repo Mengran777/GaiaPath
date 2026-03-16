@@ -17,6 +17,68 @@ import { useToast, ToastContainer } from "../components/UI";
 // ⭐ Define three app stages ⭐
 type AppStage = "initial" | "routes" | "details";
 
+const loadingSteps = [
+  { icon: "🌍", title: "Exploring your destination",  subtitle: "Researching local attractions, hidden gems and seasonal highlights..." },
+  { icon: "✨", title: "Crafting your routes",         subtitle: "Building 3 personalised itineraries tailored to your preferences..." },
+  { icon: "📸", title: "Fetching real photos",         subtitle: "Finding authentic images for each activity and location..." },
+];
+
+const LoadingView: React.FC<{ loadingPhase: number; isComplete: boolean }> = ({
+  loadingPhase,
+  isComplete,
+}) => (
+  <div className="flex-1 flex flex-col items-center justify-center px-8 py-12">
+    <div className="relative mb-8">
+      <div className="absolute -inset-3 rounded-full animate-ping opacity-10 bg-[#2d9e8a]" />
+      <div className="relative w-20 h-20 rounded-full flex items-center justify-center text-4xl bg-[#f0faf8] border-2 border-[#2d9e8a]/30">
+        {loadingSteps[loadingPhase].icon}
+      </div>
+    </div>
+    <h3 className="text-xl font-semibold text-gray-800 mb-2 text-center">
+      {loadingSteps[loadingPhase].title}
+    </h3>
+    <p className="text-sm text-gray-400 text-center max-w-xs leading-relaxed mb-10">
+      {loadingSteps[loadingPhase].subtitle}
+    </p>
+    <div className="flex items-start gap-6 mb-10">
+      {loadingSteps.map((_, i) => (
+        <div key={i} className="flex flex-col items-center gap-2">
+          <div className={`w-2 h-2 rounded-full transition-all duration-500 ${
+            i < loadingPhase  ? "bg-[#0d3d38] scale-100"
+            : i === loadingPhase ? "bg-[#2d9e8a] scale-125 ring-4 ring-[#2d9e8a]/20"
+            : "bg-gray-200 scale-100"
+          }`} />
+          <span className={`text-[10px] font-medium transition-colors whitespace-nowrap ${
+            i < loadingPhase  ? "text-[#0d3d38]"
+            : i === loadingPhase ? "text-[#2d9e8a]"
+            : "text-gray-300"
+          }`}>
+            {i === 0 ? "Exploring" : i === 1 ? "Crafting" : "Photos"}
+          </span>
+        </div>
+      ))}
+    </div>
+    {/* Progress bar */}
+    <div className="w-64 h-1.5 bg-gray-100 rounded-full overflow-hidden mb-8 relative">
+      <div
+        className={isComplete ? "" : "animate-progress-fill"}
+        style={
+          isComplete
+            ? { width: "100%", transition: "width 0.3s ease-in",
+                background: "linear-gradient(to right, #2d9e8a, #c9a96e)",
+                height: "100%", borderRadius: "9999px" }
+            : { background: "linear-gradient(to right, #2d9e8a, #c9a96e)",
+                height: "100%", borderRadius: "9999px" }
+        }
+      />
+    </div>
+    <div className="flex items-center gap-2 text-xs text-gray-400">
+      <div className="animate-spin rounded-full h-3 w-3 border border-gray-300 border-t-[#2d9e8a]" />
+      Usually takes 20–35 seconds
+    </div>
+  </div>
+);
+
 const App: React.FC = () => {
   const pathname = usePathname();
   const { toasts, showToast, dismissToast } = useToast();
@@ -26,6 +88,8 @@ const App: React.FC = () => {
 
   // ⭐ Current active tab ⭐
   const [activeTab, setActiveTab] = useState<string>("Home");
+
+  const [isTabSwitching, setIsTabSwitching] = useState(false);
 
   const [preferences, setPreferences] = useState({
     destination: "",
@@ -177,17 +241,18 @@ const App: React.FC = () => {
 
   // ⭐ Tab switch handler ⭐
   const handleTabChange = async (tab: string) => {
+    setIsTabSwitching(true);
     setActiveTab(tab);
 
-    if (tab === "Home") {
-      setStage("initial");
-    } else if (tab === "Favorites") {
-      if (!currentUserId) {
-        setRouteOptions([]);
+    try {
+      if (tab === "Home") {
+        setStage("initial");
+      } else if (tab === "Favorites") {
         setStage("routes");
-        return;
-      }
-      try {
+        if (!currentUserId) {
+          setRouteOptions([]);
+          return;
+        }
         const response = await fetch("/api/favorites", { method: "GET" });
         if (response.ok) {
           const favoritesData = await response.json();
@@ -197,17 +262,15 @@ const App: React.FC = () => {
         } else {
           setRouteOptions([]);
         }
-      } catch (error) {
-        console.error("Error loading favorite routes:", error);
-        setRouteOptions([]);
+      } else if (tab === "My Itineraries") {
+        setRouteOptions(myItineraries.length > 0 ? myItineraries : []);
+        setStage(myItineraries.length > 0 ? "routes" : "initial");
       }
-      setStage("routes");
-    } else if (tab === "My Itineraries") {
-      setRouteOptions(myItineraries.length > 0 ? myItineraries : []);
-      setStage(myItineraries.length > 0 ? "routes" : "initial");
-    } else if (tab === "Community") {
+    } catch (error) {
+      console.error("Error switching tab:", error);
       setRouteOptions([]);
-      setStage("routes");
+    } finally {
+      setIsTabSwitching(false);
     }
   };
 
@@ -222,6 +285,7 @@ const App: React.FC = () => {
       return;
     }
 
+    setStage("routes");
     setIsLoading(true);
     setError(null);
     setRouteOptions([]);
@@ -327,6 +391,25 @@ const App: React.FC = () => {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [showToast]);
 
+  const [loadingPhase, setLoadingPhase] = useState(0);
+  const [loadingComplete, setLoadingComplete] = useState(false);
+  const [showLoader, setShowLoader] = useState(false);
+
+  useEffect(() => {
+    if (isLoading) {
+      setShowLoader(true);
+      setLoadingComplete(false);
+      setLoadingPhase(0);
+      const t1 = setTimeout(() => setLoadingPhase(1), 8000);
+      const t2 = setTimeout(() => setLoadingPhase(2), 20000);
+      return () => { clearTimeout(t1); clearTimeout(t2); };
+    } else if (showLoader) {
+      setLoadingComplete(true);
+      const t = setTimeout(() => setShowLoader(false), 400);
+      return () => clearTimeout(t);
+    }
+  }, [isLoading]);
+
   // ⭐ Handle clicking on a day's itinerary ⭐
   const handleDayClick = useCallback((dayNumber: number) => {
     // Clear location detail popup
@@ -411,17 +494,6 @@ const App: React.FC = () => {
             These are the routes you've saved for future reference.
           </p>
         </div>
-      ) : activeTab === "Community" ? (
-        <div className="flex flex-col items-center justify-center h-full text-center px-6">
-          <div className="text-6xl mb-4">🌐</div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">Community</h2>
-          <p className="text-gray-600">
-            Share and discover routes from adventurers worldwide.
-          </p>
-          <span className="mt-4 px-4 py-1.5 bg-purple-100 text-purple-700 text-sm font-semibold rounded-full">
-            Coming Soon
-          </span>
-        </div>
       ) : (
         // Home and My Itineraries: sticky top bar + scrollable form + sticky generate button
         <div className="flex flex-col h-full bg-[#f5f2ee]">
@@ -458,38 +530,18 @@ const App: React.FC = () => {
 
   // ⭐ Main Panel content (changes based on stage) ⭐
   const mainPanelContent = (
-    <>
-      {stage === "initial" && (
-        <div className="flex items-center justify-center h-full">
-          <div className="text-center text-white">
-            <div className="text-6xl mb-4">🌍</div>
-            <h2 className="text-3xl font-bold mb-2">
-              Welcome to Gaia Travel Assistant
-            </h2>
-            <p className="text-lg opacity-90">
-              Fill in your preferences and generate your perfect itinerary
-            </p>
-          </div>
+    <div className="relative h-full">
+      {isTabSwitching && (
+        <div className="absolute inset-0 bg-[#0a1a17] z-10 flex items-center justify-center rounded-2xl">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#2d9e8a]" />
         </div>
       )}
-
       {stage === "routes" && (
-        <div className="h-full bg-white rounded-2xl shadow-xl p-6">
-          {activeTab === "Community" ? (
-            <div className="flex items-center justify-center h-full">
-              <div className="text-center max-w-md">
-                <div className="text-7xl mb-6">🌐</div>
-                <h2 className="text-3xl font-bold text-gray-800 mb-3">
-                  Community Coming Soon
-                </h2>
-                <p className="text-gray-500 text-lg">
-                  Share and discover travel routes from adventurers around the
-                  world. Stay tuned!
-                </p>
-              </div>
-            </div>
+        <div className="h-full min-h-0 bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col">
+          {showLoader ? (
+            <LoadingView loadingPhase={loadingPhase} isComplete={loadingComplete} />
           ) : error ? (
-            <div className="flex items-center justify-center h-full">
+            <div className="flex items-center justify-center flex-1">
               <div className="text-center max-w-md">
                 <div className="text-6xl mb-4">⚠️</div>
                 <h3 className="text-xl font-bold text-gray-800 mb-2">
@@ -498,7 +550,7 @@ const App: React.FC = () => {
                 <p className="text-red-500 mb-4">{error}</p>
                 <button
                   onClick={handleBackToInitial}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
+                  className="px-6 py-2 bg-[#0d3d38] text-white rounded-xl hover:bg-[#1a6b5e] transition-colors"
                 >
                   Try Again
                 </button>
@@ -512,7 +564,6 @@ const App: React.FC = () => {
                   : routeOptions
               }
               onSelectRoute={handleSelectRoute}
-              isLoading={isLoading}
               favoriteRoutes={favoriteRoutes}
               onToggleFavorite={toggleFavorite}
               showFavoritesOnly={activeTab === "Favorites"}
@@ -538,6 +589,7 @@ const App: React.FC = () => {
                   routeId={selectedRouteId}
                   isFavorite={favoriteRoutes.has(selectedRouteId)}
                   onToggleFavorite={() => toggleFavorite(selectedRouteId)}
+                  onBackToRoutes={handleBackToRoutes}
                 />
               )}
             </div>
@@ -558,7 +610,7 @@ const App: React.FC = () => {
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 
   return (

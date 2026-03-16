@@ -1,18 +1,18 @@
 // src/components/MainPanel/ItineraryPanel.tsx (MODIFIED)
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import ItineraryCard from "./ItineraryCard";
 import { DayItinerary, Location } from "../../types/itinerary";
-import { FavoriteButton } from "../UI";
 
 interface ItineraryPanelProps {
   itinerary: DayItinerary[];
   onActivityClick: (location: Location) => void;
-  onDayClick?: (dayNumber: number) => void; // ⭐ NEW: Day click handler
-  highlightedDay?: number | null; // ⭐ NEW: Currently highlighted day
-  routeId?: string; // ⭐ NEW: Route ID for favorite
-  isFavorite?: boolean; // ⭐ NEW: Is this route favorited
-  onToggleFavorite?: () => void; // ⭐ NEW: Toggle favorite handler
+  onDayClick?: (dayNumber: number) => void;
+  highlightedDay?: number | null;
+  routeId?: string;
+  isFavorite?: boolean;
+  onToggleFavorite?: () => void;
+  onBackToRoutes?: () => void;
 }
 
 const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
@@ -23,39 +23,9 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
   routeId,
   isFavorite = false,
   onToggleFavorite,
+  onBackToRoutes,
 }) => {
-  const [weatherData, setWeatherData] = useState<{ [key: string]: string }>({});
   const panelRef = useRef<HTMLDivElement>(null);
-
-  // Simulate weather update
-  useEffect(() => {
-    if (!itinerary || itinerary.length === 0) {
-      setWeatherData({});
-      return;
-    }
-
-    const updateWeather = () => {
-      const weatherOptions = [
-        "Sunny",
-        "Partly Cloudy",
-        "Light Rain",
-        "Overcast",
-      ];
-      const tempOptions = ["25°C", "26°C", "27°C", "28°C", "29°C", "30°C"];
-      const newWeatherData: { [key: string]: string } = {};
-
-      itinerary.forEach((day) => {
-        const randomWeather =
-          weatherOptions[Math.floor(Math.random() * weatherOptions.length)];
-        const randomTemp =
-          tempOptions[Math.floor(Math.random() * tempOptions.length)];
-        newWeatherData[day.date] = `${randomWeather} ${randomTemp}`;
-      });
-      setWeatherData(newWeatherData);
-    };
-
-    updateWeather();
-  }, [itinerary]);
 
   // Fade-in animation
   useEffect(() => {
@@ -103,6 +73,19 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
 
   return (
     <div>
+      {/* Back button */}
+      {onBackToRoutes && (
+        <button
+          onClick={onBackToRoutes}
+          className="flex items-center gap-1.5 text-sm text-[#1a6b5e] hover:text-[#0d3d38] font-medium mb-4 transition-colors group"
+        >
+          <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/>
+          </svg>
+          <span className="group-hover:underline">Back to routes</span>
+        </button>
+      )}
+
       {/* Header */}
       <div
         className="mb-6 pb-4 border-b-2 border-gray-100 relative cursor-pointer hover:bg-gray-50 rounded-lg p-4 -mx-4 transition-colors duration-200"
@@ -110,16 +93,20 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
       >
         {/* Favorite button */}
         {onToggleFavorite && (
-          <div
-            className="absolute top-4 right-4"
-            onClick={(e) => e.stopPropagation()}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleFavorite();
+            }}
+            className={`absolute top-4 right-4 w-9 h-9 rounded-full flex items-center justify-center
+                       text-base leading-none transition-all duration-150
+                       ${isFavorite
+                         ? "bg-[#c9a96e] border-[1.5px] border-[#c9a96e] text-white"
+                         : "bg-white border-[1.5px] border-[#e8e4df] text-[#b0b0b0] hover:border-[#c9a96e]"
+                       }`}
           >
-            <FavoriteButton
-              isFavorite={isFavorite}
-              onToggle={onToggleFavorite}
-              size="large"
-            />
-          </div>
+            {isFavorite ? "★" : "☆"}
+          </button>
         )}
 
         <h2 className="text-3xl font-bold text-gray-800 mb-2 pr-16">
@@ -172,8 +159,7 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
                   {dayItem.title}
                 </h3>
                 <p className="text-gray-600 text-sm mt-1">
-                  {dayItem.date} · {weatherData[dayItem.date] || "Loading..."}
-                  <span className="text-xs text-gray-400 ml-1">(simulated)</span>
+                  {dayItem.date}
                 </p>
               </div>
 

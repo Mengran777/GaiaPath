@@ -199,7 +199,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
               onMouseEnter={() => setHighlightedIndex(index)}
               className={`w-full text-left px-4 py-3 transition-colors duration-150
                 ${index === highlightedIndex
-                  ? "bg-blue-50 border-l-4 border-blue-500"
+                  ? "bg-[#f0faf8] border-l-4 border-[#1a6b5e]"
                   : "hover:bg-gray-50 border-l-4 border-transparent"
                 }
                 ${index !== suggestions.length - 1 ? "border-b border-gray-100" : ""}
@@ -246,7 +246,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
           }}
           placeholder={placeholder}
           className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl
-                   focus:border-blue-500 focus:ring-2 focus:ring-blue-200
+                   focus:border-[#2d9e8a] focus:ring-2 focus:ring-[#2d9e8a]/20
                    transition-all duration-300 outline-none text-gray-800"
           autoComplete="off"
         />

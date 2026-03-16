@@ -247,7 +247,7 @@ const MapView: React.FC<MapViewProps> = ({
                                   highlightedLocation.longitude ===
                                     location.longitude &&
                                   highlightedLocation.name === location.name
-                                    ? "text-blue-600 scale-150 z-10" // Highlighted style + z-index to bring to front
+                                    ? "text-[#c9a96e] scale-150 z-10" // Highlighted style + z-index to bring to front
                                     : "text-red-600 scale-100" // Default style
                                 }`}
                 >
@@ -295,7 +295,7 @@ const MapView: React.FC<MapViewProps> = ({
       {MAPBOX_TOKEN && !isMapReady && (
         <div className="absolute inset-0 flex items-center justify-center bg-white rounded-2xl">
           <div className="text-center">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#1a6b5e] mb-4"></div>
             <p className="text-gray-600">Loading map...</p>
           </div>
         </div>
