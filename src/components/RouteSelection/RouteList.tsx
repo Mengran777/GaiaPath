@@ -3,6 +3,7 @@
 import React from "react";
 import { RouteOption } from "@/types/routes";
 import RouteCard from "./RouteCard";
+import EmptyItineraryState from "./EmptyItineraryState";
 
 interface RouteListProps {
   routes: RouteOption[];
@@ -12,6 +13,8 @@ interface RouteListProps {
   showFavoritesOnly?: boolean;
   activeTab?: string;
   onExploreRoutes?: () => void;
+  onBackToInitial?: () => void;
+  onSelectDestination?: (city: string) => void;
 }
 
 // Stagger delays for first 3 cards, rest get the last value
@@ -25,8 +28,20 @@ const RouteList: React.FC<RouteListProps> = ({
   showFavoritesOnly = false,
   activeTab = "Discover",
   onExploreRoutes,
+  onBackToInitial,
+  onSelectDestination,
 }) => {
   if (!routes || routes.length === 0) {
+    if (activeTab === "My Itineraries") {
+      return (
+        <div className="h-full">
+          <EmptyItineraryState
+            onBackToInitial={onBackToInitial}
+            onSelectDestination={onSelectDestination}
+          />
+        </div>
+      );
+    }
     if (showFavoritesOnly) {
       return (
         <div className="flex items-center justify-center h-full p-6">

@@ -91,10 +91,10 @@ const PreferenceForm: React.FC<PreferenceFormProps> = ({
   ];
 
   const paceOptions = [
-    { value: "easy",     label: "Relaxed",    sub: "~2/day" },
-    { value: "moderate", label: "Moderate",   sub: "3–4/day" },
-    { value: "fast",     label: "Fast-paced", sub: "4–5/day" },
-    { value: "high",     label: "Intense",    sub: "5+/day" },
+    { value: "easy",     label: "Relaxed",    sub: "1–2 stops" },
+    { value: "moderate", label: "Moderate",   sub: "3–4 stops" },
+    { value: "fast",     label: "Fast-paced", sub: "4–5 stops" },
+    { value: "high",     label: "Intense",    sub: "5+ stops" },
   ];
 
   const paceIndex    = paceOptions.findIndex(p => p.value === preferences.activityIntensity);

@@ -37,6 +37,26 @@
   animation: card-enter 0.35s ease-out both;
 }
 
+@keyframes pulse-glow-eis {
+  0%, 100% { transform: scale(1);    opacity: 0.65; }
+  50%       { transform: scale(1.18); opacity: 0.28; }
+}
+
+@keyframes shimmer-sweep {
+  0%   { transform: translateX(-60%); }
+  100% { transform: translateX(140%); }
+}
+
+@keyframes card-glow-pulse {
+  0%, 100% { opacity: 0.45; transform: scale(1); }
+  50%       { opacity: 0.78; transform: scale(1.08); }
+}
+
+@keyframes orbit-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
 /* Mapbox GL JS CSS */
 @import "mapbox-gl/dist/mapbox-gl.css";
 
