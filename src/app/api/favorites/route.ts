@@ -6,7 +6,7 @@ import prisma from "@/lib/db";
 // GET: Get all user favorite routes
 export async function GET(request: NextRequest) {
   try {
-    const authResult = authenticateRequest(request);
+    const authResult = await authenticateRequest(request);
     if (!authResult) {
       return NextResponse.json(
         { error: "Unauthorized - Invalid or missing token" },
@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
 // POST: Add or remove favorite
 export async function POST(request: NextRequest) {
   try {
-    const authResult = authenticateRequest(request);
+    const authResult = await authenticateRequest(request);
     if (!authResult) {
       return NextResponse.json(
         { error: "Unauthorized - Invalid or missing token" },

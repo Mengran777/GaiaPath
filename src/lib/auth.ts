@@ -1,6 +1,7 @@
 // src/lib/auth.ts
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
+import { getToken } from "next-auth/jwt";
 
 import { NextRequest } from "next/server";
 
@@ -95,30 +96,32 @@ function getTokenFromHeader(request: NextRequest): string | null {
 }
 
 /**
- * Authenticate request (supports cookies and Authorization header)
+ * Authenticate request (supports custom JWT cookies/header + NextAuth session).
+ * Now async to support the NextAuth fallback.
  */
-export function authenticateRequest(
+export async function authenticateRequest(
   request: NextRequest
-): { userId: string } | null {
+): Promise<{ userId: string } | null> {
   try {
-    // Prefer token from cookies, fall back to header
+    // 1. Try existing custom authToken (cookie then Authorization header)
     let token = getTokenFromCookies(request);
+    if (!token) token = getTokenFromHeader(request);
 
-    if (!token) {
-      token = getTokenFromHeader(request);
+    if (token) {
+      const userId = verifyToken(token);
+      if (userId) return { userId };
     }
 
-    if (!token) {
-      return null;
+    // 2. Fallback: NextAuth session JWT
+    const nextAuthToken = await getToken({
+      req: request,
+      secret: process.env.NEXTAUTH_SECRET!,
+    });
+    if (nextAuthToken?.userId) {
+      return { userId: nextAuthToken.userId as string };
     }
 
-    const userId = verifyToken(token);
-
-    if (!userId) {
-      return null;
-    }
-
-    return { userId };
+    return null;
   } catch (error) {
     console.error("Error during request authentication:", error);
     return null;

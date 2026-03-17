@@ -117,7 +117,7 @@ async function getPromptFromFile(filename: string): Promise<string> {
 }
 
 export async function POST(request: NextRequest) {
-  const authResult = authenticateRequest(request);
+  const authResult = await authenticateRequest(request);
   if (!authResult) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

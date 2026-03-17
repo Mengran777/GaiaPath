@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { usePathname } from "next/navigation";
+import { useSession, signOut } from "next-auth/react";
 import PageContainer from "../components/Layout/PageContainer";
 import SmartSearch from "../components/Sidebar/SmartSearch";
 import PreferenceForm from "../components/Sidebar/PreferenceForm";
@@ -84,6 +85,9 @@ const App: React.FC = () => {
   const { toasts, showToast, dismissToast } = useToast();
 
   // ⭐ Core state: current stage ⭐
+  // ⭐ NextAuth session ⭐
+  const { data: session } = useSession();
+
   const [stage, setStage] = useState<AppStage>("initial");
 
   // ⭐ Current active tab ⭐
@@ -130,23 +134,18 @@ const App: React.FC = () => {
   // ⭐ Favorites feature state ⭐
   const [favoriteRoutes, setFavoriteRoutes] = useState<Set<string>>(new Set());
 
+  // ⭐ Sync user identity from NextAuth session ⭐
   useEffect(() => {
-    const fetchCurrentUser = async () => {
-      try {
-        const response = await fetch("/api/me");
-        if (!response.ok) {
-          handleLogout();
-          return;
-        }
-        const user = await response.json();
-        setCurrentUserId(user.id);
-        setCurrentUsername(user.username);
-      } catch (error) {
-        console.error("Error fetching current user:", error);
-      }
-    };
-    fetchCurrentUser();
-  }, []);
+    if (session?.user) {
+      setCurrentUserId(session.user.id ?? null);
+      setCurrentUsername(session.user.name ?? null);
+    } else if (session === null) {
+      // session === null means unauthenticated (not loading)
+      handleLogout();
+    }
+    // session === undefined means still loading — do nothing
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session]);
 
   // ⭐ Load user's favorite routes from database ⭐
   useEffect(() => {
@@ -173,13 +172,9 @@ const App: React.FC = () => {
 
   const handleLogout = async () => {
     try {
-      // Call server-side logout API to clear httpOnly cookies
-      await fetch("/api/auth/logout", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+      // Clear custom authToken cookie and NextAuth session
+      await fetch("/api/auth/logout", { method: "POST" });
+      await signOut({ redirect: false });
 
       // Clear client-side state
       setCurrentUserId(null);

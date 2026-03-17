@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 import Input from "@/components/UI/Input";
 
 // ─── SVG Icons ────────────────────────────────────────────────────────────────
@@ -191,18 +192,15 @@ const RegisterPage: React.FC = () => {
       const data = await response.json();
 
       if (response.ok) {
-        const loginResponse = await fetch("/api/auth/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password }),
+        const result = await signIn("credentials", {
+          email,
+          password,
+          redirect: false,
         });
-
-        const loginData = await loginResponse.json();
-
-        if (loginResponse.ok) {
+        if (result?.ok) {
           window.location.href = "/";
         } else {
-          setError(loginData.error || "Automatic login failed. Please try logging in manually.");
+          setError("Account created. Please sign in manually.");
         }
       } else {
         setError(data.error || "Registration failed.");

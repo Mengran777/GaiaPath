@@ -2,6 +2,7 @@
 // Location: src/app/layout.tsx
 import "./globals.css";
 import type { Metadata } from "next";
+import Providers from "@/components/Providers";
 
 export const metadata: Metadata = {
   title: "Gaia – Plan your journey, effortlessly",
@@ -23,7 +24,7 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-screen bg-[#0a1a17] text-gray-800">
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
