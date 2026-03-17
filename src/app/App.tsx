@@ -272,8 +272,8 @@ const App: React.FC = () => {
           setRouteOptions([]);
         }
       } else if (tab === "My Itineraries") {
-        setRouteOptions(myItineraries.length > 0 ? myItineraries : []);
-        setStage(myItineraries.length > 0 ? "routes" : "initial");
+        setRouteOptions(myItineraries);
+        setStage("routes");
       }
     } catch (error) {
       console.error("Error switching tab:", error);
@@ -574,6 +574,11 @@ const App: React.FC = () => {
               showFavoritesOnly={activeTab === "Favorites"}
               activeTab={activeTab}
               onExploreRoutes={() => handleTabChange("Home")}
+              onBackToInitial={() => handleTabChange("Home")}
+              onSelectDestination={(city) => {
+                handlePreferenceChange("destination", city);
+                handleTabChange("Home");
+              }}
             />
           )}
         </div>
