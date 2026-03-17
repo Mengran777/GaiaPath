@@ -217,8 +217,14 @@ const App: React.FC = () => {
       return next;
     };
 
-    // Optimistic update
+    // Optimistic update on favoriteRoutes Set
     setFavoriteRoutes((prev) => applyFavorite(prev, !isFavorited));
+
+    // If removing a favorite while the Favorites tab is active, also remove it
+    // from routeOptions immediately so the list stays consistent without a refetch.
+    if (isFavorited && activeTab === "Favorites") {
+      setRouteOptions((prev) => prev.filter((r) => r.id !== routeId));
+    }
 
     try {
       const route = routeOptions.find((r) => r.id === routeId);
@@ -229,12 +235,20 @@ const App: React.FC = () => {
       });
 
       if (!response.ok) {
+        // Roll back both optimistic updates on failure
         setFavoriteRoutes((prev) => applyFavorite(prev, isFavorited));
+        if (isFavorited && activeTab === "Favorites") {
+          // Restore route to list on rollback (refetch to get correct order)
+          handleTabChange("Favorites");
+        }
         showToast("Failed to update favorites. Please try again.", "error");
       }
     } catch (error) {
       console.error("Error saving favorite:", error);
       setFavoriteRoutes((prev) => applyFavorite(prev, isFavorited));
+      if (isFavorited && activeTab === "Favorites") {
+        handleTabChange("Favorites");
+      }
       showToast("Failed to update favorites. Please try again.", "error");
     }
   };
@@ -558,16 +572,13 @@ const App: React.FC = () => {
             </div>
           ) : (
             <RouteList
-              routes={
-                activeTab === "Favorites"
-                  ? routeOptions.filter((route) => favoriteRoutes.has(route.id))
-                  : routeOptions
-              }
+              routes={routeOptions}
               onSelectRoute={handleSelectRoute}
               favoriteRoutes={favoriteRoutes}
               onToggleFavorite={toggleFavorite}
               showFavoritesOnly={activeTab === "Favorites"}
               activeTab={activeTab}
+              onExploreRoutes={() => handleTabChange("Home")}
             />
           )}
         </div>

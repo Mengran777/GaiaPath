@@ -11,6 +11,7 @@ interface RouteListProps {
   onToggleFavorite?: (routeId: string) => void;
   showFavoritesOnly?: boolean;
   activeTab?: string;
+  onExploreRoutes?: () => void;
 }
 
 // Stagger delays for first 3 cards, rest get the last value
@@ -23,16 +24,40 @@ const RouteList: React.FC<RouteListProps> = ({
   onToggleFavorite,
   showFavoritesOnly = false,
   activeTab = "Discover",
+  onExploreRoutes,
 }) => {
   if (!routes || routes.length === 0) {
+    if (showFavoritesOnly) {
+      return (
+        <div className="flex items-center justify-center h-full p-6">
+          <div className="w-full max-w-sm bg-white rounded-2xl shadow-sm border border-[#e8e4df] p-10 flex flex-col items-center text-center">
+            <div className="w-20 h-20 rounded-full bg-[#fdf3e3] border-2 border-[#e8d9b8] flex items-center justify-center mb-5">
+              <span className="text-4xl leading-none text-[#c9a96e]">☆</span>
+            </div>
+            <h3 className="text-xl font-bold text-[#0d3d38] mb-2">No favourites yet</h3>
+            <p className="text-[#8a8a8a] text-sm mb-6 leading-relaxed">
+              Star a route to save it here and revisit it anytime.
+            </p>
+            {onExploreRoutes && (
+              <button
+                onClick={onExploreRoutes}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full
+                           bg-[#0d3d38] text-white text-sm font-medium
+                           hover:bg-[#1a6b5e] transition-colors duration-150"
+              >
+                Explore routes <span className="text-[#2d9e8a]">→</span>
+              </button>
+            )}
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="flex items-center justify-center h-full">
         <div className="text-center">
-          <div className="text-6xl mb-4">{showFavoritesOnly ? "💫" : "🗺️"}</div>
+          <div className="text-6xl mb-4">🗺️</div>
           <p className="text-[#8a8a8a] text-base">
-            {showFavoritesOnly
-              ? "No favorite routes yet. Start exploring and save your favorites!"
-              : "No routes available. Please try generating again."}
+            No routes available. Please try generating again.
           </p>
         </div>
       </div>

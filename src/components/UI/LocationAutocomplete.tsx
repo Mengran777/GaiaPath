@@ -31,6 +31,10 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
   const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0, width: 0 });
 
   const justSelectedRef = useRef(false);
+  // Only fetch/show suggestions after the user has actively typed in this mount.
+  // Prevents the dropdown from auto-opening when the component remounts with a
+  // pre-populated value (e.g. returning from the details view back to the form).
+  const userTypedRef = useRef(false);
   const wrapperRef  = useRef<HTMLDivElement>(null);
   const inputRef    = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -69,6 +73,11 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
 
   // Fetch suggestions via Nominatim
   useEffect(() => {
+    // Skip fetch if the user hasn't actively typed in this mount — prevents
+    // the dropdown from auto-opening when the component remounts with a
+    // pre-filled value (e.g. returning from the itinerary view back to the form).
+    if (!userTypedRef.current) return;
+
     if (justSelectedRef.current) {
       justSelectedRef.current = false;
       return;
@@ -149,6 +158,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
 
   const handleSelect = (suggestion: LocationSuggestion) => {
     justSelectedRef.current = true;
+    userTypedRef.current = false; // reset so remount won't re-fetch the selected value
     onChange(suggestion.name);
     setShowDropdown(false);
     setSuggestions([]);
@@ -236,6 +246,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
           value={value}
           onChange={(e) => {
             justSelectedRef.current = false;
+            userTypedRef.current = true;
             onChange(e.target.value);
           }}
           onKeyDown={handleKeyDown}
