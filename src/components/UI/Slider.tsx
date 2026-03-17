@@ -25,12 +25,12 @@ const Slider: React.FC<SliderProps> = ({
       step={step}
       value={value}
       onChange={(e) => onValueChange(Number(e.target.value))}
-      className={`w-full h-2 bg-gradient-to-r from-blue-400 to-purple-400 rounded-lg appearance-none cursor-pointer
+      className={`w-full h-2 bg-gradient-to-r from-[#2d9e8a] to-[#c9a96e] rounded-lg appearance-none cursor-pointer
                   [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-white
-                  [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-blue-600 [&::-webkit-slider-thumb]:rounded-full
+                  [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-[#1a6b5e] [&::-webkit-slider-thumb]:rounded-full
                   [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:appearance-none
                   [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:bg-white
-                  [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-blue-600 [&::-moz-range-thumb]:rounded-full
+                  [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-[#1a6b5e] [&::-moz-range-thumb]:rounded-full
                   [&::-moz-range-thumb]:shadow-md transition-all duration-200 ${className}`}
       {...props}
     />

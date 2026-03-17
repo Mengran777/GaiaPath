@@ -79,7 +79,7 @@ const Header: React.FC<HeaderProps> = ({
                          transition-colors duration-200 shadow-sm hover:shadow-md"
           >
             <img
-              src="https://placehold.co/40x40/667eea/ffffff?text=U" // Placeholder for user avatar
+              src="https://placehold.co/40x40/0d3d38/ffffff?text=U" // Placeholder for user avatar
               alt="User Avatar"
               className="w-10 h-10 rounded-full border-2 border-[#2d9e8a]"
             />

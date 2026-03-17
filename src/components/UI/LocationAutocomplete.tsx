@@ -31,6 +31,10 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
   const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0, width: 0 });
 
   const justSelectedRef = useRef(false);
+  // Only fetch/show suggestions after the user has actively typed in this mount.
+  // Prevents the dropdown from auto-opening when the component remounts with a
+  // pre-populated value (e.g. returning from the details view back to the form).
+  const userTypedRef = useRef(false);
   const wrapperRef  = useRef<HTMLDivElement>(null);
   const inputRef    = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -69,6 +73,11 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
 
   // Fetch suggestions via Nominatim
   useEffect(() => {
+    // Skip fetch if the user hasn't actively typed in this mount — prevents
+    // the dropdown from auto-opening when the component remounts with a
+    // pre-filled value (e.g. returning from the itinerary view back to the form).
+    if (!userTypedRef.current) return;
+
     if (justSelectedRef.current) {
       justSelectedRef.current = false;
       return;
@@ -149,6 +158,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
 
   const handleSelect = (suggestion: LocationSuggestion) => {
     justSelectedRef.current = true;
+    userTypedRef.current = false; // reset so remount won't re-fetch the selected value
     onChange(suggestion.name);
     setShowDropdown(false);
     setSuggestions([]);
@@ -199,7 +209,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
               onMouseEnter={() => setHighlightedIndex(index)}
               className={`w-full text-left px-4 py-3 transition-colors duration-150
                 ${index === highlightedIndex
-                  ? "bg-blue-50 border-l-4 border-blue-500"
+                  ? "bg-[#f0faf8] border-l-4 border-[#1a6b5e]"
                   : "hover:bg-gray-50 border-l-4 border-transparent"
                 }
                 ${index !== suggestions.length - 1 ? "border-b border-gray-100" : ""}
@@ -236,6 +246,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
           value={value}
           onChange={(e) => {
             justSelectedRef.current = false;
+            userTypedRef.current = true;
             onChange(e.target.value);
           }}
           onKeyDown={handleKeyDown}
@@ -246,7 +257,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
           }}
           placeholder={placeholder}
           className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl
-                   focus:border-blue-500 focus:ring-2 focus:ring-blue-200
+                   focus:border-[#2d9e8a] focus:ring-2 focus:ring-[#2d9e8a]/20
                    transition-all duration-300 outline-none text-gray-800"
           autoComplete="off"
         />

@@ -49,7 +49,7 @@ export const ToastContainer: React.FC<ToastContainerProps> = ({
             min-w-[280px] max-w-[420px] pointer-events-auto
             ${toast.type === "success" ? "bg-gradient-to-r from-green-500 to-emerald-600" : ""}
             ${toast.type === "error" ? "bg-gradient-to-r from-red-500 to-rose-600" : ""}
-            ${toast.type === "info" ? "bg-gradient-to-r from-blue-500 to-purple-600" : ""}
+            ${toast.type === "info" ? "bg-gradient-to-r from-[#0d3d38] to-[#1a6b5e]" : ""}
           `}
         >
           <span className="text-xl flex-shrink-0">

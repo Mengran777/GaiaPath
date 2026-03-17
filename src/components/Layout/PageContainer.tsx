@@ -40,53 +40,41 @@ const PageContainer: React.FC<PageContainerProps> = ({
 
       {/* Main Content Area */}
       <main
-        className={`flex-1 py-6 flex gap-6
-              ${activeTab === "Favorites" ? "px-4 lg:px-8 overflow-y-auto items-start" : ""}
-              ${stage === "initial" && activeTab !== "Favorites" ? "overflow-y-auto pl-4 lg:pl-8 pr-0 items-start" : ""}
-              ${stage !== "initial" && activeTab !== "Favorites" ? "overflow-hidden pl-4 lg:pl-8 pr-0 items-stretch" : ""}
+        className={`flex-1 flex gap-6 overflow-x-hidden
+              ${activeTab === "Favorites" ? "py-6 px-4 lg:px-8 overflow-y-auto items-start" : ""}
+              ${activeTab !== "Favorites" ? "py-6 pl-4 lg:pl-8 pr-4 lg:pr-6 overflow-hidden items-stretch" : ""}
               `}
       >
-        {/* Sidebar - Changes width based on stage, hidden on Favorites tab */}
-        {activeTab !== "Favorites" && (
+        {/* Sidebar - Hidden on Favorites tab and details stage */}
+        {activeTab !== "Favorites" && stage !== "details" && (
           <aside
             className={`
-              flex-shrink-0 transition-all duration-800 ease-in-out
+              flex-shrink-0 transition-all duration-700 ease-in-out overflow-hidden
               ${stage === "initial" ? "w-full" : ""}
-              ${stage === "routes" ? "w-full lg:w-[35%]" : ""}
-              ${stage === "details" ? "w-16" : ""}
+              ${stage === "routes" ? "w-[35%]" : ""}
             `}
           >
             <div
               className={`
-                bg-white shadow-xl h-full flex flex-col
-                transition-all duration-800 ease-in-out overflow-hidden
+                bg-[#f5f2ee] shadow-lg h-full flex flex-col overflow-hidden
                 ${stage === "initial" ? "rounded-2xl" : "rounded-l-2xl"}
-                ${stage === "details" ? "p-4 items-center justify-start" : ""}
               `}
             >
-              {stage === "details" ? (
-                // Minimized view in stage 3
-                <div className="writing-mode-vertical text-blue-600 font-bold text-sm">
-                  {sidebar}
-                </div>
-              ) : (
-                // Full view in stages 1 & 2
-                <div className="flex-1 overflow-y-auto custom-scrollbar pr-0 pl-6 pt-6 pb-6">
-                  {sidebar}
-                </div>
-              )}
+              <div className="flex-1 overflow-y-auto custom-scrollbar pr-0 pl-6 pt-6 pb-6">
+                {sidebar}
+              </div>
             </div>
           </aside>
         )}
 
-        {/* Main Content - Changes based on stage */}
+        {/* Main Content - Hidden in initial stage, visible in routes/details */}
         <section
           className={`
-            min-w-0 transition-all duration-800 ease-in-out
-            ${stage === "initial" ? "hidden" : ""}
-            ${stage === "routes" ? "flex-1" : ""}
-            ${stage === "details" ? "flex-1" : ""}
-            ${activeTab === "Favorites" ? "w-full" : ""}
+            min-w-0 transition-all duration-700 ease-in-out
+            ${stage === "initial" ? "w-0 opacity-0 overflow-hidden pointer-events-none" : ""}
+            ${stage === "routes" ? "flex-1 opacity-100" : ""}
+            ${stage === "details" ? "flex-1 opacity-100" : ""}
+            ${activeTab === "Favorites" ? "w-full opacity-100" : ""}
           `}
         >
           {mainContent}

@@ -13,6 +13,30 @@
   animation: float 6s ease-in-out infinite;
 }
 
+@keyframes loading-bar {
+  0% { width: 0%; }
+  100% { width: 100%; }
+}
+.animate-loading-bar {
+  animation: loading-bar 8s linear forwards;
+}
+
+@keyframes progress-fill {
+  0%   { width: 0%; }
+  100% { width: 90%; }
+}
+.animate-progress-fill {
+  animation: progress-fill 35s ease-out forwards;
+}
+
+@keyframes card-enter {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-card-enter {
+  animation: card-enter 0.35s ease-out both;
+}
+
 /* Mapbox GL JS CSS */
 @import "mapbox-gl/dist/mapbox-gl.css";
 
