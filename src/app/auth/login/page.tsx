@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 import Input from "@/components/UI/Input";
 
 // ─── SVG Icons ────────────────────────────────────────────────────────────────
@@ -141,23 +142,20 @@ const LoginPage: React.FC = () => {
     }
 
     try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim(), password }),
+      const result = await signIn("credentials", {
+        email: email.trim(),
+        password,
+        redirect: false,
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
-        console.log("Login succeed, user info:", data.user);
+      if (result?.ok) {
         window.location.href = "/";
       } else {
-        setError(data.error || "Login failed, please check your email and password");
+        setError("Invalid email or password");
       }
     } catch (err) {
       console.error("Login request failed:", err);
-      setError("Internet server error, please try again");
+      setError("Network error, please try again");
     } finally {
       setLoading(false);
     }
@@ -209,7 +207,7 @@ const LoginPage: React.FC = () => {
           {/* Google login */}
           <button
             type="button"
-            onClick={() => alert("Google login coming soon")}
+            onClick={() => signIn("google", { callbackUrl: "/" })}
             className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-gray-300 rounded-xl bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 hover:shadow-sm transition-all duration-200 mb-5"
           >
             <GoogleIcon />

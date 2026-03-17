@@ -10,7 +10,7 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ tripId: string }> }
 ) {
-  const authResult = authenticateRequest(request);
+  const authResult = await authenticateRequest(request);
   if (!authResult) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

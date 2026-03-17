@@ -4,7 +4,7 @@ import { authenticateRequest } from "@/lib/auth";
 import prisma from "@/lib/db";
 
 export async function GET(request: NextRequest) {
-  const auth = authenticateRequest(request);
+  const auth = await authenticateRequest(request);
   if (!auth) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
