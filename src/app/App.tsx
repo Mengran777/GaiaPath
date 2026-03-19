@@ -585,8 +585,8 @@ const App: React.FC = () => {
       )}
 
       {stage === "details" && (
-        <div className="flex gap-4 h-full">
-          <div className="flex-1 bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col">
+        <div className="flex flex-col md:flex-row gap-4 h-full min-h-0">
+          <div className="flex-1 min-h-0 min-w-0 bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col">
             <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
               {error && (
                 <p className="text-red-500 text-center py-8">Error: {error}</p>
@@ -601,12 +601,13 @@ const App: React.FC = () => {
                   isFavorite={favoriteRoutes.has(selectedRouteId)}
                   onToggleFavorite={() => toggleFavorite(selectedRouteId)}
                   onBackToRoutes={handleBackToRoutes}
+                  destination={preferences.destination}
                 />
               )}
             </div>
           </div>
 
-          <div className="flex-1 bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col min-h-0">
+          <div className="h-64 md:h-auto md:flex-1 min-h-0 min-w-0 bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col">
             <div className="p-6 pb-4 border-b border-gray-200 flex-shrink-0">
               <h3 className="text-xl font-semibold text-gray-800">
                 📍 Route Map

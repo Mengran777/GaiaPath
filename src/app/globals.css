@@ -3,6 +3,10 @@
 @tailwind components;
 @tailwind utilities;
 
+html {
+  font-size: clamp(14px, 1.1vw, 16px);
+}
+
 /* Float animation for auth page destination tags */
 @keyframes float {
   0%, 100% { transform: translateY(0px); }

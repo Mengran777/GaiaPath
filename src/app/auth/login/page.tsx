@@ -52,7 +52,7 @@ const features: { emoji: string; text: string }[] = [
 // ─── Brand Panel ──────────────────────────────────────────────────────────────
 
 const BrandPanel = () => (
-  <div className="hidden lg:flex flex-col justify-between h-full min-h-screen px-12 py-14 bg-gradient-to-br from-[#071f1a] to-[#0d3d30] relative overflow-hidden">
+  <div className="hidden lg:flex flex-col justify-between h-full min-h-full px-12 py-14 bg-gradient-to-br from-[#071f1a] to-[#0d3d30] relative overflow-hidden">
 
     {/* Floating destination tags */}
     {destinations.map((d) => (
@@ -162,23 +162,23 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0a1a17] p-6 lg:p-12">
+    <div className="min-h-screen overflow-y-auto bg-[#0a1a17] flex items-center justify-center py-6">
       <div
-        className="w-full max-w-5xl flex rounded-3xl overflow-hidden"
+        className="w-full max-w-5xl mx-4 flex rounded-3xl overflow-hidden max-h-[95vh]"
         style={{ boxShadow: "0 40px 120px rgba(0,0,0,0.6)" }}
       >
 
       {/* Left brand panel */}
-      <div className="lg:w-1/2">
+      <div className="hidden lg:block lg:w-[45%] flex-shrink-0">
         <BrandPanel />
       </div>
 
       {/* Right form panel */}
-      <div className="flex-1 flex flex-col justify-center bg-[#f5f2ee] px-8 py-12">
-        <div className="w-full max-w-sm mx-auto">
+      <div className="flex-1 flex flex-col bg-[#f5f2ee] overflow-y-auto">
+        <div className="w-full max-w-sm mx-auto py-8 px-8">
 
           {/* Mobile-only logo */}
-          <div className="lg:hidden text-center mb-8">
+          <div className="lg:hidden text-center mb-6">
             <div className="text-3xl font-extrabold inline-flex items-center gap-2">
               <span>🌍</span>
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-teal-600 to-emerald-600">
@@ -189,7 +189,7 @@ const LoginPage: React.FC = () => {
 
           {/* Heading + inline nav */}
           <div className="mb-7">
-            <h1 className="font-display text-[1.9rem] font-bold text-gray-900 leading-tight">
+            <h1 className="font-display text-[1.6rem] font-bold text-gray-900 leading-tight">
               Welcome back
             </h1>
             <p className="mt-1.5 text-sm text-gray-500">
@@ -222,7 +222,7 @@ const LoginPage: React.FC = () => {
           </div>
 
           {/* Form */}
-          <form onSubmit={handleLogin} className="space-y-4">
+          <form onSubmit={handleLogin} className="space-y-3">
             <div>
               <label htmlFor="email" className="block text-xs font-semibold tracking-wide text-gray-500 uppercase mb-1.5">
                 Email Address
@@ -319,7 +319,7 @@ const LoginPage: React.FC = () => {
 
         </div>
       </div>
-      </div>  {/* card wrapper */}
+      </div>
     </div>
   );
 };

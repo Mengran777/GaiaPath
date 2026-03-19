@@ -28,7 +28,7 @@ const PageContainer: React.FC<PageContainerProps> = ({
   onTabChange,
 }) => {
   return (
-    <div className="h-screen bg-[#0a1a17] font-sans text-gray-900 antialiased flex flex-col">
+    <div className="min-h-screen h-screen overflow-hidden bg-[#0a1a17] font-sans text-gray-900 antialiased flex flex-col">
       {/* Header */}
       <Header
         onLogout={onLogout}
@@ -40,7 +40,7 @@ const PageContainer: React.FC<PageContainerProps> = ({
 
       {/* Main Content Area */}
       <main
-        className={`flex-1 flex gap-6 overflow-x-hidden
+        className={`flex-1 min-h-0 flex gap-6 overflow-x-hidden
               ${activeTab === "Favorites" ? "py-6 px-4 lg:px-8 overflow-y-auto items-start" : ""}
               ${activeTab !== "Favorites" ? "py-6 pl-4 lg:pl-8 pr-4 lg:pr-6 overflow-hidden items-stretch" : ""}
               `}
@@ -51,7 +51,7 @@ const PageContainer: React.FC<PageContainerProps> = ({
             className={`
               flex-shrink-0 transition-all duration-700 ease-in-out overflow-hidden
               ${stage === "initial" ? "w-full" : ""}
-              ${stage === "routes" ? "w-[35%]" : ""}
+              ${stage === "routes" ? "w-full md:w-[320px] lg:w-[35%]" : ""}
             `}
           >
             <div
