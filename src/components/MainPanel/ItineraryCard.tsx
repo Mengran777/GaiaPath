@@ -9,8 +9,8 @@ interface ItineraryCardProps {
   rating?: number;
   price?: string;
   imageUrl?: string;
-  latitude?: number; // ⭐ ADDED: latitude prop ⭐
-  longitude?: number; // ⭐ ADDED: longitude prop ⭐
+  latitude?: number;
+  longitude?: number;
   onActivityClick: (location: Location) => void;
 }
 
@@ -21,9 +21,9 @@ const ItineraryCard: React.FC<ItineraryCardProps> = ({
   rating,
   price,
   imageUrl,
-  latitude, // ⭐ DESTRUCTURED: latitude ⭐
-  longitude, // ⭐ DESTRUCTURED: longitude ⭐
-  onActivityClick, // ⭐ DESTRUCTURED: onActivityClick ⭐
+  latitude,
+  longitude,
+  onActivityClick,
 }) => {
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -37,12 +37,8 @@ const ItineraryCard: React.FC<ItineraryCardProps> = ({
 
     const currentCard = cardRef.current;
     if (currentCard && "ontouchstart" in window) {
-      currentCard.addEventListener("touchstart", handleTouchStart, {
-        passive: true,
-      });
-      currentCard.addEventListener("touchend", handleTouchEnd, {
-        passive: true,
-      });
+      currentCard.addEventListener("touchstart", handleTouchStart, { passive: true });
+      currentCard.addEventListener("touchend", handleTouchEnd, { passive: true });
     }
 
     return () => {
@@ -53,11 +49,8 @@ const ItineraryCard: React.FC<ItineraryCardProps> = ({
     };
   }, []);
 
-  // Handler for clicking the entire card to focus on the map
   const handleCardClick = (e: React.MouseEvent) => {
-    e.stopPropagation(); // ⭐ Prevent event from bubbling to parent day container
-
-    // Only trigger if valid coordinates exist
+    e.stopPropagation();
     if (
       typeof latitude === "number" &&
       typeof longitude === "number" &&
@@ -66,25 +59,12 @@ const ItineraryCard: React.FC<ItineraryCardProps> = ({
     ) {
       onActivityClick({
         name: title,
-        latitude: latitude,
-        longitude: longitude,
-        description: description,
-        imageUrl: imageUrl,
+        latitude,
+        longitude,
+        description,
+        imageUrl,
       });
-    } else {
-      // Optional: Add a user-friendly message or visual cue if coordinates are missing
-      console.warn(
-        `Activity "${title}" has no valid coordinates to display on the map.`
-      );
     }
-  };
-
-  // Handler for clicking the title to go to Wikipedia
-  const handleTitleClick = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent the parent card's onClick from firing when clicking the title
-    const encodedTitle = encodeURIComponent(title);
-    const wikipediaUrl = `https://en.wikipedia.org/wiki/${encodedTitle}`;
-    window.open(wikipediaUrl, "_blank");
   };
 
   return (
@@ -92,7 +72,7 @@ const ItineraryCard: React.FC<ItineraryCardProps> = ({
       ref={cardRef}
       className="bg-gray-50 rounded-xl p-5 mb-4 shadow-md hover:shadow-lg transition-all duration-300 ease-in-out cursor-pointer
                  border-2 border-transparent hover:border-[#2d9e8a] flex flex-col md:flex-row items-start gap-4 active:scale-[0.98]"
-      onClick={handleCardClick} // ⭐ Attach the map focus handler to the whole card ⭐
+      onClick={handleCardClick}
     >
       {imageUrl && (
         <img
@@ -102,12 +82,7 @@ const ItineraryCard: React.FC<ItineraryCardProps> = ({
         />
       )}
       <div className="flex-1">
-        <h3
-          className="text-lg font-bold text-gray-800 mb-2 cursor-pointer hover:underline text-[#0d3d38]"
-          onClick={handleTitleClick} // ⭐ Keep Wikipedia handler on title ⭐
-        >
-          {title}
-        </h3>
+        <h3 className="text-lg font-bold text-gray-800 mb-2 text-[#0d3d38]">{title}</h3>
         <p className="text-gray-600 text-sm mb-3">{description}</p>
         <div className="flex justify-between items-center text-gray-600 text-sm">
           {time && (

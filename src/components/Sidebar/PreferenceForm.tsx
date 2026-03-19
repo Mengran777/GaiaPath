@@ -160,7 +160,7 @@ const PreferenceForm: React.FC<PreferenceFormProps> = ({
   };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       {/* ── WHERE & WHEN ── */}
       <div>
         <SectionLabel>Where &amp; When</SectionLabel>
@@ -168,7 +168,7 @@ const PreferenceForm: React.FC<PreferenceFormProps> = ({
         <div className="bg-white rounded-2xl border border-[#e2ddd8]">
 
           {/* Destination row */}
-          <div className="flex items-center px-4 py-3 gap-3 border-b border-[#e2ddd8]">
+          <div className="flex items-center px-4 py-2.5 gap-3 border-b border-[#e2ddd8]">
             <div className="w-[30px] h-[30px] rounded-[8px] bg-[#e0f5f2] flex items-center justify-center text-[15px] flex-shrink-0">
               📍
             </div>
@@ -186,7 +186,7 @@ const PreferenceForm: React.FC<PreferenceFormProps> = ({
           {/* Dates row — ref passed to DateRangePicker as anchor for popup position */}
           <div
             ref={dateRowRef}
-            className="flex items-center px-4 py-3 gap-3 cursor-pointer select-none border-b border-[#e2ddd8]"
+            className="flex items-center px-4 py-2.5 gap-3 cursor-pointer select-none border-b border-[#e2ddd8]"
             onClick={() => setShowDatePicker(prev => !prev)}
           >
             <div className="w-[30px] h-[30px] rounded-[8px] bg-[#fdf4e7] flex items-center justify-center text-[15px] flex-shrink-0">
@@ -214,7 +214,7 @@ const PreferenceForm: React.FC<PreferenceFormProps> = ({
           )}
 
           {/* Travellers row */}
-          <div className="flex items-center px-4 py-3 gap-3">
+          <div className="flex items-center px-4 py-2.5 gap-3">
             <div className="w-[30px] h-[30px] rounded-[8px] bg-[#e8eef8] flex items-center justify-center text-[15px] flex-shrink-0">
               👥
             </div>
@@ -267,7 +267,7 @@ const PreferenceForm: React.FC<PreferenceFormProps> = ({
       {/* ── TRAVEL STYLE ── */}
       <div>
         <SectionLabel>Travel Style</SectionLabel>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           {travelTypes.map((type) => {
             const isSelected = preferences.travelType.includes(type.value);
             return (
@@ -275,14 +275,14 @@ const PreferenceForm: React.FC<PreferenceFormProps> = ({
                 key={type.value}
                 type="button"
                 onClick={() => handleTravelTypeClick(type.value)}
-                className={`rounded-2xl border-[1.5px] p-3 flex items-center gap-2 text-[13px] font-medium transition-colors text-left ${
+                className={`rounded-2xl border-[1.5px] p-2 flex items-center gap-1.5 text-[11px] font-medium transition-colors text-left ${
                   isSelected
                     ? "bg-[#0d3d38] border-[#0d3d38] text-white"
                     : "bg-white border-[#e2ddd8] text-[#4a4a4a] hover:border-[#c9a96e]"
                 }`}
               >
                 <span
-                  className={`w-[27px] h-[27px] rounded-[7px] flex items-center justify-center text-[15px] flex-shrink-0 ${
+                  className={`w-6 h-6 rounded-[6px] flex items-center justify-center text-[13px] flex-shrink-0 ${
                     isSelected ? "bg-white/15" : "bg-[#f0ede8]"
                   }`}
                 >
@@ -311,14 +311,14 @@ const PreferenceForm: React.FC<PreferenceFormProps> = ({
                 key={type.value}
                 type="button"
                 onClick={() => handleTransportClick(type.value)}
-                className={`rounded-2xl border-[1.5px] p-3 flex items-center gap-2 text-[13px] font-medium transition-colors text-left ${
+                className={`rounded-2xl border-[1.5px] p-2 flex items-center gap-1.5 text-[11px] font-medium transition-colors text-left ${
                   isSelected
                     ? "bg-[#0d3d38] border-[#0d3d38] text-white"
                     : "bg-white border-[#e2ddd8] text-[#4a4a4a] hover:border-[#c9a96e]"
                 }`}
               >
                 <span
-                  className={`w-[27px] h-[27px] rounded-[7px] flex items-center justify-center text-[15px] flex-shrink-0 ${
+                  className={`w-6 h-6 rounded-[6px] flex items-center justify-center text-[13px] flex-shrink-0 ${
                     isSelected ? "bg-white/15" : "bg-[#f0ede8]"
                   }`}
                 >
@@ -343,7 +343,7 @@ const PreferenceForm: React.FC<PreferenceFormProps> = ({
                   key={pace.value}
                   type="button"
                   onClick={() => onPreferenceChange("activityIntensity", pace.value)}
-                  className={`flex-1 py-2 rounded-xl text-center transition-colors ${
+                  className={`flex-1 py-1.5 rounded-xl text-center transition-colors ${
                     isSelected
                       ? "bg-[#0d3d38] text-white"
                       : "text-[#8a8a8a] hover:bg-[#f0ede8]"
