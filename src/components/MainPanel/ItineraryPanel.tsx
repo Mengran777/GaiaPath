@@ -497,6 +497,12 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
   const [localItinerary, setLocalItinerary] = useState<DayItinerary[]>(itinerary);
   const [removeMode, setRemoveMode] = useState(false);
   const [removingKeys, setRemovingKeys] = useState<Set<string>>(new Set());
+  const [editSnapshot, setEditSnapshot] = useState<DayItinerary[] | null>(null);
+  const [undoStack, setUndoStack] = useState<{
+    dayNumber: number;
+    index: number;
+    activity: Activity;
+  }[]>([]);
   const panelRef = useRef<HTMLDivElement>(null);
 
   // Drawer state (shared across all cards)
@@ -515,6 +521,8 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
     setRemoveMode(false);
     setRemovingKeys(new Set());
     setSelectedActivity(null);
+    setEditSnapshot(null);
+    setUndoStack([]);
   }, [itinerary]);
 
   // Fade-in animation for day sections
@@ -652,8 +660,51 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
     setLocalItinerary(next);
   };
 
+  // Enter / exit edit mode
+  const enterEditMode = useCallback(() => {
+    setEditSnapshot(localItinerary.map((d) => ({ ...d, activities: [...d.activities] })));
+    setUndoStack([]);
+    setRemoveMode(true);
+  }, [localItinerary]);
+
+  const exitEditMode = useCallback(() => {
+    setRemoveMode(false);
+    setEditSnapshot(null);
+    setUndoStack([]);
+  }, []);
+
+  // Discard all edits and restore snapshot
+  const handleDiscard = useCallback(() => {
+    if (editSnapshot) setLocalItinerary(editSnapshot);
+    setRemoveMode(false);
+    setEditSnapshot(null);
+    setUndoStack([]);
+  }, [editSnapshot]);
+
+  // Undo last deletion
+  const handleUndo = useCallback(() => {
+    if (undoStack.length === 0) return;
+    const { dayNumber, index, activity } = undoStack[undoStack.length - 1];
+    setLocalItinerary((prev) =>
+      prev.map((d) => {
+        if (d.day !== dayNumber) return d;
+        const acts = [...d.activities];
+        acts.splice(index, 0, activity);
+        return { ...d, activities: acts };
+      })
+    );
+    setUndoStack((prev) => prev.slice(0, -1));
+  }, [undoStack]);
+
   // Remove activity
   const handleRemoveActivity = (dayNumber: number, activityIndex: number) => {
+    const day = localItinerary.find((d) => d.day === dayNumber);
+    if (day) {
+      setUndoStack((prev) => [
+        ...prev,
+        { dayNumber, index: activityIndex, activity: day.activities[activityIndex] },
+      ]);
+    }
     const key = `${dayNumber}-${activityIndex}`;
     setRemovingKeys((prev) => new Set(prev).add(key));
     setTimeout(() => {
@@ -723,19 +774,37 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
                 {isFavorite ? "★" : "☆"}
               </button>
             )}
-            <button
-              onClick={(e) => { e.stopPropagation(); setRemoveMode((m) => !m); }}
-              className={`
-                flex items-center gap-1 text-xs font-semibold
-                px-3 py-1.5 rounded-full border transition-all duration-200
-                ${removeMode
-                  ? "bg-red-500 text-white border-red-500 shadow-sm"
-                  : "bg-white text-gray-400 border-[#e8e4df] hover:text-red-400 hover:border-red-300"
-                }
-              `}
-            >
-              {removeMode ? "✓ Done" : "✎ Edit"}
-            </button>
+            {removeMode ? (
+              <>
+                {undoStack.length > 0 && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleUndo(); }}
+                    className="flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all duration-200 bg-white text-blue-500 border-blue-200 hover:bg-blue-50"
+                  >
+                    ↩ Undo{undoStack.length > 1 ? ` (${undoStack.length})` : ""}
+                  </button>
+                )}
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleDiscard(); }}
+                  className="flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all duration-200 bg-white text-red-400 border-red-200 hover:bg-red-50"
+                >
+                  ✕ Discard
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); exitEditMode(); }}
+                  className="flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all duration-200 bg-red-500 text-white border-red-500 shadow-sm"
+                >
+                  ✓ Done
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={(e) => { e.stopPropagation(); enterEditMode(); }}
+                className="flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all duration-200 bg-white text-gray-400 border-[#e8e4df] hover:text-red-400 hover:border-red-300"
+              >
+                ✎ Edit
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -802,21 +871,6 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
                         🗺 Day route
                       </button>
                     )}
-                    <span
-                      className={`
-                        text-xs font-medium px-2.5 py-1 rounded-full border
-                        ${dayItem.activities.length === 0
-                          ? "text-gray-400 bg-gray-50 border-gray-200"
-                          : "text-[#2d9e8a] bg-[#e8f7f5] border-[#cde8e4]"
-                        }
-                      `}
-                    >
-                      {dayItem.activities.length === 0
-                        ? "Empty"
-                        : `${dayItem.activities.length} activit${
-                            dayItem.activities.length === 1 ? "y" : "ies"
-                          }`}
-                    </span>
                   </div>
                 </div>
 

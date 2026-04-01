@@ -8,80 +8,78 @@ import { promises as fs } from "fs";
 import path from "path";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GOOGLE_CUSTOM_SEARCH_API_KEY = process.env.GOOGLE_CUSTOM_SEARCH_API_KEY; // ⭐ New environment variable ⭐
-const GOOGLE_CUSTOM_SEARCH_ENGINE_ID =
-  process.env.GOOGLE_CUSTOM_SEARCH_ENGINE_ID; // ⭐ New environment variable ⭐
 
 if (!GEMINI_API_KEY) {
   console.error("GEMINI_API_KEY is not set in environment variables.");
 }
-// ⭐ Check new environment variables ⭐
-if (!GOOGLE_CUSTOM_SEARCH_API_KEY || !GOOGLE_CUSTOM_SEARCH_ENGINE_ID) {
-  console.error(
-    "GOOGLE_CUSTOM_SEARCH_API_KEY or GOOGLE_CUSTOM_SEARCH_ENGINE_ID is not set.",
-  );
-}
 
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY || "");
 
-// ⭐ Add delay function to avoid API rate limiting ⭐
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+const SKIP_KEYWORDS = ["map", "plan", "diagram", "logo", "icon", "flag", "coat"];
+const isUsable = (url: string): boolean => {
+  const lower = url.toLowerCase();
+  if (lower.endsWith(".svg")) return false;
+  const filename = lower.split("/").pop() ?? "";
+  return !SKIP_KEYWORDS.some((kw) => filename.includes(kw));
+};
 
-// ⭐ This function calls Google Custom Search API directly ⭐
-async function fetchRealImageUrl(query: string): Promise<string | undefined> {
-  if (!GOOGLE_CUSTOM_SEARCH_API_KEY || !GOOGLE_CUSTOM_SEARCH_ENGINE_ID) {
-    console.warn(
-      "Custom Search API keys not configured. Falling back to placeholder image.",
-    );
-    return `https://placehold.co/400x200/CCCCCC/FFFFFF?text=${encodeURIComponent(
-      query || "No Image",
-    )}`;
+async function fetchWikipediaImage(
+  title: string,
+  destination: string,
+): Promise<string | undefined> {
+  const searchWiki = async (query: string): Promise<string | null> => {
+    try {
+      const r = await fetch(
+        `https://en.wikipedia.org/w/api.php?action=query&list=search` +
+          `&srsearch=${encodeURIComponent(query)}&srlimit=1&format=json&origin=*`,
+      );
+      const d = await r.json();
+      return (d?.query?.search?.[0]?.title as string) ?? null;
+    } catch {
+      return null;
+    }
+  };
+
+  // Step 1: find best-matching Wikipedia article title
+  const primary = destination ? `${title} ${destination}` : title;
+  let matchedTitle = await searchWiki(primary);
+  if (!matchedTitle) {
+    const shortTitle = title.split(/\s+/).slice(0, 2).join(" ");
+    if (shortTitle !== title) {
+      matchedTitle = await searchWiki(shortTitle);
+    }
   }
+  if (!matchedTitle) matchedTitle = title;
 
-  // ⭐ Add small delay to avoid rate limiting ⭐
-  await delay(50); // 50ms delay
-
-  const API_KEY = GOOGLE_CUSTOM_SEARCH_API_KEY;
-  const CX = GOOGLE_CUSTOM_SEARCH_ENGINE_ID;
-  const SEARCH_URL = `https://www.googleapis.com/customsearch/v1?q=${encodeURIComponent(
-    query,
-  )}&cx=${CX}&key=${API_KEY}&searchType=image&num=1`; // num=1 returns only one image
-
+  // Step 2: try summary thumbnail
   try {
-    const response = await fetch(SEARCH_URL);
-    if (!response.ok) {
-      // If response is not OK, log error but don't throw
-      const errorText = await response.text();
-      console.warn(
-        `Google Custom Search API error (${response.status}): ${errorText}`,
-      );
-      console.warn(
-        "Possible reasons: 1) API key invalid, 2) Daily quota exceeded (100 queries/day for free tier), 3) API not enabled",
-      );
-      // Return placeholder directly without interrupting flow
-      return `https://placehold.co/400x200/CCCCCC/FFFFFF?text=${encodeURIComponent(
-        query || "No Image",
-      )}`;
-    }
-    const data = await response.json();
-
-    // Check if image results exist
-    if (data.items && data.items.length > 0) {
-      // Return the link of the first image
-      return data.items[0].link;
-    } else {
-      console.warn(`No image results found for query: "${query}"`);
-    }
-  } catch (error) {
-    console.error(
-      `Error fetching real image for "${query}":`,
-      error instanceof Error ? error.message : error,
+    const summaryRes = await fetch(
+      `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(matchedTitle)}`,
     );
+    const summary = await summaryRes.json();
+    if (summary?.thumbnail?.source && isUsable(summary.thumbnail.source)) {
+      return summary.thumbnail.source;
+    }
+
+    // Step 3: try media-list
+    const mediaRes = await fetch(
+      `https://en.wikipedia.org/api/rest_v1/page/media-list/${encodeURIComponent(matchedTitle)}`,
+    );
+    const media = await mediaRes.json();
+    const items: { type: string; srcset?: { src: string }[]; src?: string }[] =
+      media?.items ?? [];
+    for (const item of items) {
+      if (item.type !== "image") continue;
+      const raw = item.srcset?.[0]?.src ?? item.src ?? "";
+      if (!raw) continue;
+      const src = raw.startsWith("//") ? "https:" + raw : raw;
+      if (isUsable(src)) return src;
+    }
+  } catch {
+    // silent failure
   }
-  // If an error occurred or no image found, return a placeholder
-  return `https://placehold.co/400x200/CCCCCC/FFFFFF?text=${encodeURIComponent(
-    query || "No Image",
-  )}`;
+
+  return undefined;
 }
 
 // Type definitions (consistent with src/app/types/itinerary.ts)
@@ -399,72 +397,39 @@ export async function POST(request: NextRequest) {
       `✅ Successfully generated ${generatedItineraryData.length} routes in parallel`,
     );
 
-    // ⭐ Options ⭐
-    // false = placeholder image (~10-15s total time)
-    // true = real images (~20-30s total time)
-    const FETCH_IMAGES = true; // Use real images
+    console.log("⚡ Fetching Wikipedia images in parallel...");
 
-    if (FETCH_IMAGES) {
-      console.log("⚡ Fetching real images in parallel...");
+    const imagePromises: Promise<void>[] = [];
 
-      // ⭐ Collect all activities that need images ⭐
-      const imagePromises: Promise<void>[] = [];
+    for (const route of generatedItineraryData) {
+      if (!route.itinerary || !Array.isArray(route.itinerary)) continue;
 
-      for (const route of generatedItineraryData) {
-        if (!route.itinerary || !Array.isArray(route.itinerary)) continue;
+      for (const day of route.itinerary) {
+        if (!day.activities || !Array.isArray(day.activities)) continue;
 
-        for (const day of route.itinerary) {
-          if (!day.activities || !Array.isArray(day.activities)) continue;
+        for (const activity of day.activities) {
+          // Ensure coordinate format is correct
+          activity.latitude =
+            typeof activity.latitude === "number" ? activity.latitude : 0;
+          activity.longitude =
+            typeof activity.longitude === "number" ? activity.longitude : 0;
 
-          for (const activity of day.activities) {
-            // Fetch image for each activity in parallel
-            const promise = fetchRealImageUrl(activity.title).then(
-              (imageUrl) => {
-                if (imageUrl) {
-                  activity.imageUrl = imageUrl;
-                }
-              },
-            );
-            imagePromises.push(promise);
-
-            // Ensure coordinate format is correct
-            activity.latitude =
-              typeof activity.latitude === "number" ? activity.latitude : 0;
-            activity.longitude =
-              typeof activity.longitude === "number" ? activity.longitude : 0;
-          }
+          // Fetch Wikipedia image for each activity in parallel
+          const promise = fetchWikipediaImage(activity.title, destination)
+            .then((imageUrl) => {
+              if (imageUrl) activity.imageUrl = imageUrl;
+            })
+            .catch(() => {
+              // silent failure — imageUrl stays unset
+            });
+          imagePromises.push(promise);
         }
       }
-
-      // ⭐ Wait for all image fetches to complete in parallel ⭐
-      console.log(`📸 Fetching ${imagePromises.length} images in parallel...`);
-      await Promise.all(imagePromises);
-      console.log("✅ All images fetched successfully!");
-    } else {
-      console.log("⚡ Using beautiful placeholder images for maximum speed");
-
-      for (const route of generatedItineraryData) {
-        if (!route.itinerary || !Array.isArray(route.itinerary)) continue;
-
-        for (const day of route.itinerary) {
-          if (!day.activities || !Array.isArray(day.activities)) continue;
-
-          for (const activity of day.activities) {
-            activity.latitude =
-              typeof activity.latitude === "number" ? activity.latitude : 0;
-            activity.longitude =
-              typeof activity.longitude === "number" ? activity.longitude : 0;
-
-            // Use Lorem Picsum random placeholder images (free, beautiful, reliable)
-            if (!activity.imageUrl) {
-              // Use activity title as seed to ensure the same activity always shows the same image
-              activity.imageUrl = `https://picsum.photos/seed/${encodeURIComponent(activity.title.substring(0, 20))}/400/200`;
-            }
-          }
-        }
-      }
-      console.log("✅ Routes ready with beautiful placeholders!");
     }
+
+    console.log(`📸 Fetching ${imagePromises.length} Wikipedia images in parallel...`);
+    await Promise.all(imagePromises);
+    console.log("✅ All Wikipedia images fetched!");
 
     // ============ Temporarily commented out database saving ============
     // Reason: now returning multiple routes, save after user selects
