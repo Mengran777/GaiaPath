@@ -88,10 +88,10 @@ const App: React.FC = () => {
   // ⭐ NextAuth session ⭐
   const { data: session } = useSession();
 
-  const [stage, setStage] = useState<AppStage>("initial");
+  const [stage, setStage] = useState<AppStage>("routes");
 
   // ⭐ Current active tab ⭐
-  const [activeTab, setActiveTab] = useState<string>("Home");
+  const [activeTab, setActiveTab] = useState<string>("My Itineraries");
 
   const [isTabSwitching, setIsTabSwitching] = useState(false);
 

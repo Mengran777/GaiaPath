@@ -822,7 +822,7 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
         <p className="text-gray-500 text-center py-8">No itinerary available.</p>
       ) : (
         <DragDropContext onDragEnd={handleDragEnd}>
-          <div ref={panelRef}>
+          <div ref={panelRef} className="pl-7">
             {localItinerary.map((dayItem) => (
               <div
                 key={dayItem.day}
@@ -831,7 +831,7 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
                   itinerary-day-animated relative border-l-4 pl-6 mb-8 cursor-pointer
                   transition-all duration-500 ease-in-out
                   ${highlightedDay === dayItem.day
-                    ? "border-[#1a6b5e] bg-[#f0faf8]/50 -ml-4 pl-10 rounded-r-2xl py-2"
+                    ? "border-[#1a6b5e] bg-[#f0faf8]/50 rounded-r-2xl py-2"
                     : "border-[#2d9e8a] hover:border-[#1a6b5e]"
                   }
                 `}
@@ -843,7 +843,7 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
                     text-white font-bold flex items-center justify-center shadow-md
                     transition-all duration-500
                     ${highlightedDay === dayItem.day
-                      ? "bg-gradient-to-br from-[#0d3d38] to-[#2d9e8a] scale-125"
+                      ? "bg-gradient-to-br from-[#0d3d38] to-[#2d9e8a] scale-110 shadow-lg"
                       : "bg-gradient-to-br from-[#0d3d38] to-[#1a6b5e]"
                     }
                   `}
