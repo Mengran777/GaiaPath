@@ -23,6 +23,8 @@ interface ItineraryPanelProps {
   onToggleFavorite?: () => void;
   onBackToRoutes?: () => void;
   destination?: string;
+  onSave?: (itinerary: DayItinerary[]) => void;
+  isSaving?: boolean;
 }
 
 interface DraggableCardProps {
@@ -45,12 +47,13 @@ interface DraggableCardProps {
 
 interface LightboxProps {
   images: string[];
+  fallbackImages?: string[];
   index: number;
   onClose: () => void;
   onChange: (i: number) => void;
 }
 
-const Lightbox: React.FC<LightboxProps> = ({ images, index, onClose, onChange }) => {
+const Lightbox: React.FC<LightboxProps> = ({ images, fallbackImages, index, onClose, onChange }) => {
   const prev = () => onChange((index - 1 + images.length) % images.length);
   const next = () => onChange((index + 1) % images.length);
 
@@ -85,6 +88,12 @@ const Lightbox: React.FC<LightboxProps> = ({ images, index, onClose, onChange })
         alt=""
         className="max-w-[90vw] max-h-[85vh] object-contain rounded-2xl shadow-2xl"
         onClick={(e) => e.stopPropagation()}
+        onError={(e) => {
+          const fallback = fallbackImages?.[index];
+          if (fallback && e.currentTarget.src !== fallback) {
+            e.currentTarget.src = fallback;
+          }
+        }}
       />
 
       {images.length > 1 && (
@@ -114,6 +123,24 @@ const Lightbox: React.FC<LightboxProps> = ({ images, index, onClose, onChange })
 
 // Module-level cache so all card instances share fetched results across renders
 const wikiImagesCache = new Map<string, string[]>();
+
+// Upgrades a thumbnail URL to its highest-quality variant for Lightbox display
+function toHdUrl(url: string): string {
+  // Unsplash: bump the w= query param to 1080
+  if (url.includes("images.unsplash.com")) {
+    return url.replace(/([?&]w=)\d+/, "$11080");
+  }
+  // Wikipedia: upgrade the resolution prefix only in the FINAL path segment.
+  // A naive /\d+px-/ replacement matches the first occurrence and breaks URLs
+  // where the original filename itself starts with a size prefix (e.g. "800px-File.jpg").
+  // The lookahead (?=[?#]|$) ensures we only match the segment at the very end of the path.
+  if (url.includes("upload.wikimedia.org")) {
+    const upgraded = url.replace(/\/\d+px-([^/?#]*)(?=[?#]|$)/, "/1024px-$1");
+    // If no thumbnail pattern was found (full-resolution URL), return as-is
+    return upgraded;
+  }
+  return url;
+}
 
 // ── DraggableCard ──────────────────────────────────────────────────────────────
 
@@ -363,7 +390,7 @@ const DraggableCard: React.FC<DraggableCardProps> = ({
       {/* ── Inline accordion drawer ── */}
       <div
         style={{
-          maxHeight: isSelected && !isDragging ? 300 : 0,
+          maxHeight: isSelected && !isDragging ? 380 : 0,
           transition: "max-height 0.38s cubic-bezier(0.4,0,0.2,1)",
           overflow: "hidden",
         }}
@@ -374,11 +401,11 @@ const DraggableCard: React.FC<DraggableCardProps> = ({
             className="flex gap-2 px-3 pt-3 pb-2 overflow-x-auto"
             style={{ scrollbarWidth: "none" }}
           >
-            {/* Main image — 120×90 */}
+            {/* Main image — 160×120 */}
             {activity.imageUrl ? (
               <button
                 className="flex-shrink-0 rounded-lg overflow-hidden focus:outline-none"
-                style={{ width: 120, height: 90 }}
+                style={{ width: 160, height: 120 }}
                 onClick={() => onOpenLightbox?.(galleryImages, 0)}
               >
                 <img
@@ -390,24 +417,24 @@ const DraggableCard: React.FC<DraggableCardProps> = ({
             ) : (
               <div
                 className="flex-shrink-0 rounded-lg bg-[#f0faf8] flex items-center justify-center text-3xl border border-[#cde8e4]"
-                style={{ width: 120, height: 90 }}
+                style={{ width: 160, height: 120 }}
               >
                 🏛️
               </div>
             )}
 
-            {/* Wikipedia images — 64×90 each, or skeletons while loading */}
+            {/* Wikipedia images — 90×120 each, or skeletons while loading */}
             {wikiLoading ? (
               <>
-                <div className="flex-shrink-0 rounded-lg bg-gray-100 animate-pulse" style={{ width: 64, height: 90 }} />
-                <div className="flex-shrink-0 rounded-lg bg-gray-100 animate-pulse" style={{ width: 64, height: 90 }} />
+                <div className="flex-shrink-0 rounded-lg bg-gray-100 animate-pulse" style={{ width: 90, height: 120 }} />
+                <div className="flex-shrink-0 rounded-lg bg-gray-100 animate-pulse" style={{ width: 90, height: 120 }} />
               </>
             ) : wikiImages.length > 0 ? (
               wikiImages.map((src, i) => (
                 <button
                   key={src}
                   className="flex-shrink-0 rounded-lg overflow-hidden focus:outline-none"
-                  style={{ width: 64, height: 90 }}
+                  style={{ width: 90, height: 120 }}
                   onClick={() => onOpenLightbox?.(galleryImages, i + (activity.imageUrl ? 1 : 0))}
                 >
                   <img src={src} alt="" className="w-full h-full object-cover" />
@@ -416,7 +443,7 @@ const DraggableCard: React.FC<DraggableCardProps> = ({
             ) : (
               <div
                 className="flex-shrink-0 rounded-lg bg-[#f5f2ee] flex items-center justify-center text-2xl border border-[#e8e4df]"
-                style={{ width: 64, height: 90 }}
+                style={{ width: 90, height: 120 }}
               >
                 🌍
               </div>
@@ -493,6 +520,8 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
   onToggleFavorite,
   onBackToRoutes,
   destination = "",
+  onSave,
+  isSaving = false,
 }) => {
   const [localItinerary, setLocalItinerary] = useState<DayItinerary[]>(itinerary);
   const [removeMode, setRemoveMode] = useState(false);
@@ -512,6 +541,7 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
 
   // Lightbox state (panel-level so fixed overlay isn't clipped)
   const [lightboxImages, setLightboxImages] = useState<string[]>([]);
+  const [lightboxFallbackImages, setLightboxFallbackImages] = useState<string[]>([]);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
@@ -635,7 +665,8 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
   );
 
   const openLightbox = useCallback((imgs: string[], idx: number) => {
-    setLightboxImages(imgs);
+    setLightboxFallbackImages(imgs);
+    setLightboxImages(imgs.map(toHdUrl));
     setLightboxIndex(idx);
     setLightboxOpen(true);
   }, []);
@@ -658,6 +689,7 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
     const [moved] = srcDay.activities.splice(source.index, 1);
     dstDay.activities.splice(destination.index, 0, moved);
     setLocalItinerary(next);
+    onSave?.(next);
   };
 
   // Enter / exit edit mode
@@ -696,6 +728,17 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
     setUndoStack((prev) => prev.slice(0, -1));
   }, [undoStack]);
 
+  // Detect whether localItinerary differs from the original itinerary prop
+  const hasChanges = useMemo(() => {
+    if (localItinerary.length !== itinerary.length) return true;
+    return localItinerary.some((day, di) => {
+      const orig = itinerary[di];
+      if (!orig || day.day !== orig.day) return true;
+      if (day.activities.length !== orig.activities.length) return true;
+      return day.activities.some((act, ai) => act.title !== orig.activities[ai]?.title);
+    });
+  }, [localItinerary, itinerary]);
+
   // Remove activity
   const handleRemoveActivity = (dayNumber: number, activityIndex: number) => {
     const day = localItinerary.find((d) => d.day === dayNumber);
@@ -725,32 +768,42 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
 
   return (
     <div className="relative">
-      {/* Back button */}
-      {onBackToRoutes && (
-        <button
-          onClick={onBackToRoutes}
-          className="flex items-center gap-1.5 text-sm text-[#1a6b5e] hover:text-[#0d3d38] font-medium mb-4 transition-colors group"
-        >
-          <svg
-            width="16"
-            height="16"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            viewBox="0 0 24 24"
+      {/* Back button row — favorite lives here as a secondary action */}
+      <div className="flex items-center justify-between mb-4">
+        {onBackToRoutes ? (
+          <button
+            onClick={onBackToRoutes}
+            className="flex items-center gap-1.5 text-sm text-[#1a6b5e] hover:text-[#0d3d38] font-medium transition-colors group"
           >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-          </svg>
-          <span className="group-hover:underline">Back to routes</span>
-        </button>
-      )}
+            <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+            <span className="group-hover:underline">Back to routes</span>
+          </button>
+        ) : <div />}
+
+        {onToggleFavorite && (
+          <button
+            onClick={onToggleFavorite}
+            title={isFavorite ? "Remove from favourites" : "Add to favourites"}
+            className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full border transition-all duration-150
+              ${isFavorite
+                ? "bg-[#fdf6ec] border-[#c9a96e] text-[#c9a96e]"
+                : "bg-white border-[#e8e4df] text-[#b0b0b0] hover:border-[#c9a96e] hover:text-[#c9a96e]"
+              }`}
+          >
+            {isFavorite ? "★" : "☆"}
+            <span>{isFavorite ? "Saved to favourites" : "Add to favourites"}</span>
+          </button>
+        )}
+      </div>
 
       {/* Header */}
       <div
         className="mb-5 pb-4 border-b-2 border-gray-100 cursor-pointer hover:bg-gray-50 rounded-lg p-4 -mx-4 transition-colors duration-200"
         onClick={() => onDayClick && onDayClick(0)}
       >
-        <div className="flex items-start justify-between gap-2">
+        <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
             <h2 className="text-2xl font-bold text-gray-800 mb-1">Your Itinerary</h2>
             <p className="text-gray-500 text-sm">
@@ -760,20 +813,8 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
             </p>
           </div>
 
+          {/* Action buttons — right side */}
           <div className="flex items-center gap-2 flex-shrink-0">
-            {onToggleFavorite && (
-              <button
-                onClick={(e) => { e.stopPropagation(); onToggleFavorite(); }}
-                className={`w-9 h-9 rounded-full flex items-center justify-center
-                           text-base leading-none transition-all duration-150
-                           ${isFavorite
-                             ? "bg-[#c9a96e] border-[1.5px] border-[#c9a96e] text-white"
-                             : "bg-white border-[1.5px] border-[#e8e4df] text-[#b0b0b0] hover:border-[#c9a96e]"
-                           }`}
-              >
-                {isFavorite ? "★" : "☆"}
-              </button>
-            )}
             {removeMode ? (
               <>
                 {undoStack.length > 0 && (
@@ -790,9 +831,21 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
                 >
                   ✕ Discard
                 </button>
+                {onSave && hasChanges && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onSave(localItinerary); }}
+                    disabled={isSaving}
+                    className={`flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all duration-200
+                      bg-[#0d3d38] text-white border-[#0d3d38] hover:bg-[#1a6b5e]
+                      ${isSaving ? "opacity-60 cursor-not-allowed" : ""}
+                    `}
+                  >
+                    {isSaving ? "Saving…" : "Save"}
+                  </button>
+                )}
                 <button
                   onClick={(e) => { e.stopPropagation(); exitEditMode(); }}
-                  className="flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all duration-200 bg-red-500 text-white border-red-500 shadow-sm"
+                  className="flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all duration-200 bg-red-500 text-white border-red-500 shadow-sm hover:bg-red-600"
                 >
                   ✓ Done
                 </button>
@@ -822,7 +875,7 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
         <p className="text-gray-500 text-center py-8">No itinerary available.</p>
       ) : (
         <DragDropContext onDragEnd={handleDragEnd}>
-          <div ref={panelRef}>
+          <div ref={panelRef} className="pl-7">
             {localItinerary.map((dayItem) => (
               <div
                 key={dayItem.day}
@@ -831,7 +884,7 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
                   itinerary-day-animated relative border-l-4 pl-6 mb-8 cursor-pointer
                   transition-all duration-500 ease-in-out
                   ${highlightedDay === dayItem.day
-                    ? "border-[#1a6b5e] bg-[#f0faf8]/50 -ml-4 pl-10 rounded-r-2xl py-2"
+                    ? "border-[#1a6b5e] bg-[#f0faf8]/50 rounded-r-2xl py-2"
                     : "border-[#2d9e8a] hover:border-[#1a6b5e]"
                   }
                 `}
@@ -843,7 +896,7 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
                     text-white font-bold flex items-center justify-center shadow-md
                     transition-all duration-500
                     ${highlightedDay === dayItem.day
-                      ? "bg-gradient-to-br from-[#0d3d38] to-[#2d9e8a] scale-125"
+                      ? "bg-gradient-to-br from-[#0d3d38] to-[#2d9e8a] scale-110 shadow-lg"
                       : "bg-gradient-to-br from-[#0d3d38] to-[#1a6b5e]"
                     }
                   `}
@@ -969,6 +1022,7 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
       {lightboxOpen && (
         <Lightbox
           images={lightboxImages}
+          fallbackImages={lightboxFallbackImages}
           index={lightboxIndex}
           onClose={() => setLightboxOpen(false)}
           onChange={setLightboxIndex}

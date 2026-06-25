@@ -88,10 +88,10 @@ const App: React.FC = () => {
   // ⭐ NextAuth session ⭐
   const { data: session } = useSession();
 
-  const [stage, setStage] = useState<AppStage>("initial");
+  const [stage, setStage] = useState<AppStage>("routes");
 
   // ⭐ Current active tab ⭐
-  const [activeTab, setActiveTab] = useState<string>("Home");
+  const [activeTab, setActiveTab] = useState<string>("My Itineraries");
 
   const [isTabSwitching, setIsTabSwitching] = useState(false);
 
@@ -133,6 +133,9 @@ const App: React.FC = () => {
 
   // ⭐ Favorites feature state ⭐
   const [favoriteRoutes, setFavoriteRoutes] = useState<Set<string>>(new Set());
+
+  // ⭐ Save state ⭐
+  const [isSavingItinerary, setIsSavingItinerary] = useState(false);
 
   // ⭐ Sync user identity from NextAuth session ⭐
   useEffect(() => {
@@ -248,6 +251,42 @@ const App: React.FC = () => {
     }
   };
 
+  // ⭐ Save itinerary handler ⭐
+  const handleSaveItinerary = async (itinerary: DayItinerary[]) => {
+    if (!selectedRouteId || !selectedRoute) return;
+    setIsSavingItinerary(true);
+    try {
+      const response = await fetch("/api/trips/save-itinerary", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          routeId: selectedRouteId,
+          name: selectedRoute.title,
+          startDate: itinerary[0]?.date ?? preferences.travelStartDate,
+          endDate: itinerary[itinerary.length - 1]?.date ?? preferences.travelEndDate,
+          itinerary,
+          routeMeta: {
+            badge: selectedRoute.badge,
+            badgeColor: selectedRoute.badgeColor,
+            description: selectedRoute.description,
+            highlights: selectedRoute.highlights,
+            days: selectedRoute.days,
+            estimatedBudget: selectedRoute.estimatedBudget,
+            intensity: selectedRoute.intensity,
+          },
+        }),
+      });
+      if (!response.ok) throw new Error("Save failed");
+      await response.json();
+      // Reset the baseline so hasChanges goes false
+      setItinerary(itinerary);
+    } catch {
+      showToast("Failed to save itinerary. Please try again.", "error");
+    } finally {
+      setIsSavingItinerary(false);
+    }
+  };
+
   // ⭐ Tab switch handler ⭐
   const handleTabChange = async (tab: string) => {
     setIsTabSwitching(true);
@@ -272,8 +311,36 @@ const App: React.FC = () => {
           setRouteOptions([]);
         }
       } else if (tab === "My Itineraries") {
-        setRouteOptions(myItineraries);
         setStage("routes");
+        // Load saved trips from DB and merge with in-memory unsaved ones
+        const response = await fetch("/api/trips");
+        if (response.ok) {
+          const trips = await response.json();
+          const dbRoutes: RouteOption[] = trips
+            .filter((t: any) => t.routeId && t.itineraryData)
+            .map((t: any) => {
+              const meta = t.routeMeta ? JSON.parse(t.routeMeta) : {};
+              const itinerary: DayItinerary[] = JSON.parse(t.itineraryData);
+              return {
+                id: t.routeId,
+                title: t.name,
+                itinerary,
+                badge: meta.badge ?? "",
+                badgeColor: meta.badgeColor,
+                description: meta.description ?? "",
+                highlights: meta.highlights ?? [],
+                days: meta.days ?? itinerary.length,
+                estimatedBudget: meta.estimatedBudget,
+                intensity: meta.intensity,
+              } as RouteOption;
+            });
+          // Merge: DB routes first, then unsaved in-memory ones
+          const dbRouteIds = new Set(dbRoutes.map((r) => r.id));
+          const unsaved = myItineraries.filter((r) => !dbRouteIds.has(r.id));
+          setRouteOptions([...dbRoutes, ...unsaved]);
+        } else {
+          setRouteOptions(myItineraries);
+        }
       }
     } catch (error) {
       console.error("Error switching tab:", error);
@@ -384,7 +451,9 @@ const App: React.FC = () => {
         switch (e.key) {
           case "s":
             e.preventDefault();
-            showToast("Save feature coming soon!", "info");
+            if (stage === "details" && selectedRouteId) {
+              showToast("Use the Save button in the itinerary panel.", "info");
+            }
             break;
           case "f":
             e.preventDefault();
@@ -602,6 +671,8 @@ const App: React.FC = () => {
                   onToggleFavorite={() => toggleFavorite(selectedRouteId)}
                   onBackToRoutes={handleBackToRoutes}
                   destination={preferences.destination}
+                  onSave={handleSaveItinerary}
+                  isSaving={isSavingItinerary}
                 />
               )}
             </div>

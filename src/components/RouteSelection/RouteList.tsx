@@ -110,22 +110,40 @@ const RouteList: React.FC<RouteListProps> = ({
       </div>
 
       <div className="px-6 pb-6 pt-4 grid grid-cols-1 gap-3">
-        {routes.map((route, index) => (
-          <div
-            key={`${activeTab}-${route.id || index}`}
-            className="animate-card-enter"
-            style={{
-              animationDelay: `${STAGGER_DELAYS[Math.min(index, STAGGER_DELAYS.length - 1)]}s`,
-            }}
-          >
-            <RouteCard
-              route={route}
-              onSelect={onSelectRoute}
-              isFavorite={favoriteRoutes.has(route.id)}
-              onToggleFavorite={onToggleFavorite}
-            />
-          </div>
-        ))}
+        {(() => {
+          // Prefer route-level Unsplash cover; fall back to first unique Wikipedia activity image
+          const usedImages = new Set<string>();
+          const coverImages = routes.map((route) => {
+            if (route.coverImageUrl !== undefined) return route.coverImageUrl;
+            for (const day of route.itinerary ?? []) {
+              for (const activity of day.activities ?? []) {
+                if (activity.imageUrl && !usedImages.has(activity.imageUrl)) {
+                  usedImages.add(activity.imageUrl);
+                  return activity.imageUrl;
+                }
+              }
+            }
+            return null;
+          });
+
+          return routes.map((route, index) => (
+            <div
+              key={`${activeTab}-${route.id || index}`}
+              className="animate-card-enter"
+              style={{
+                animationDelay: `${STAGGER_DELAYS[Math.min(index, STAGGER_DELAYS.length - 1)]}s`,
+              }}
+            >
+              <RouteCard
+                route={route}
+                onSelect={onSelectRoute}
+                isFavorite={favoriteRoutes.has(route.id)}
+                onToggleFavorite={onToggleFavorite}
+                coverImageUrl={coverImages[index]}
+              />
+            </div>
+          ));
+        })()}
       </div>
     </div>
   );
