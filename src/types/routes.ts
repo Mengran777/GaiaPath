@@ -24,6 +24,7 @@ export interface RouteOption {
   estimatedBudget?: string;
   intensity?: "easy" | "moderate" | "high";
   itinerary: DayItinerary[]; // Full itinerary data
+  coverImageUrl?: string | null; // Unsplash cover image for RouteCard
 }
 
 /**

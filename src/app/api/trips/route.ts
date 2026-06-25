@@ -9,7 +9,15 @@ export async function GET(request: NextRequest) {
 
   const trips = await prisma.trip.findMany({
     where: { userId: auth.userId },
-    select: { id: true, name: true, startDate: true, endDate: true },
+    select: {
+      id: true,
+      name: true,
+      startDate: true,
+      endDate: true,
+      routeId: true,
+      itineraryData: true,
+      routeMeta: true,
+    },
     orderBy: { createdAt: "desc" },
   });
 

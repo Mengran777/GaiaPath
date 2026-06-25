@@ -26,10 +26,13 @@ model User {
 
 // 行程模型
 model Trip {
-  id        String    @id @default(uuid())
-  name      String
-  startDate DateTime  @map("start_date") @db.Date // 存储日期，不含时间
-  endDate   DateTime  @map("end_date") @db.Date    // 存储日期，不含时间
+  id            String    @id @default(uuid())
+  name          String
+  startDate     DateTime  @map("start_date") @db.Date // 存储日期，不含时间
+  endDate       DateTime  @map("end_date") @db.Date    // 存储日期，不含时间
+  routeId       String?   @map("route_id")             // AI 生成的路线 ID
+  itineraryData String?   @map("itinerary_data") @db.Text // JSON: DayItinerary[]（含用户编辑后的版本）
+  routeMeta     String?   @map("route_meta") @db.Text     // JSON: 路线元数据（badge, highlights 等）
 
   userId    String    // 外键，关联到 User
   user      User      @relation(fields: [userId], references: [id])

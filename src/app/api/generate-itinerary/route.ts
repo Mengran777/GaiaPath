@@ -8,6 +8,7 @@ import { promises as fs } from "fs";
 import path from "path";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const UNSPLASH_ACCESS_KEY = process.env.UNSPLASH_ACCESS_KEY;
 
 if (!GEMINI_API_KEY) {
   console.error("GEMINI_API_KEY is not set in environment variables.");
@@ -15,71 +16,76 @@ if (!GEMINI_API_KEY) {
 
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY || "");
 
-const SKIP_KEYWORDS = ["map", "plan", "diagram", "logo", "icon", "flag", "coat"];
-const isUsable = (url: string): boolean => {
-  const lower = url.toLowerCase();
-  if (lower.endsWith(".svg")) return false;
-  const filename = lower.split("/").pop() ?? "";
-  return !SKIP_KEYWORDS.some((kw) => filename.includes(kw));
-};
+function getUnsplashKeywords(badge: string, destination: string): string {
+  const b = badge.toLowerCase();
+  if (b.includes("culinar") || b.includes("food") || b.includes("culture")) {
+    return `${destination} culture food market`;
+  }
+  if (b.includes("nature") || b.includes("hidden")) {
+    return `${destination} waterfall jungle nature`;
+  }
+  return `${destination} landmark temple travel`;
+}
 
-async function fetchWikipediaImage(
-  title: string,
-  destination: string,
-): Promise<string | undefined> {
-  const searchWiki = async (query: string): Promise<string | null> => {
+async function fetchUnsplashCover(
+  keywords: string,
+  excludeUrls: Set<string>,
+): Promise<string | null> {
+  if (!UNSPLASH_ACCESS_KEY) return null;
+  const tryFetch = async (query: string): Promise<string | null> => {
     try {
-      const r = await fetch(
-        `https://en.wikipedia.org/w/api.php?action=query&list=search` +
-          `&srsearch=${encodeURIComponent(query)}&srlimit=1&format=json&origin=*`,
+      const res = await fetch(
+        `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=3&orientation=landscape`,
+        { headers: { Authorization: `Client-ID ${UNSPLASH_ACCESS_KEY}` } },
       );
-      const d = await r.json();
-      return (d?.query?.search?.[0]?.title as string) ?? null;
+      if (!res.ok) return null;
+      const data = await res.json();
+      for (const result of data?.results ?? []) {
+        const url: string | undefined = result?.urls?.regular;
+        if (url && !excludeUrls.has(url)) return url;
+      }
+      return null;
     } catch {
       return null;
     }
   };
+  return (await tryFetch(keywords)) ?? (await tryFetch(keywords + " scenic"));
+}
 
-  // Step 1: find best-matching Wikipedia article title
-  const primary = destination ? `${title} ${destination}` : title;
-  let matchedTitle = await searchWiki(primary);
-  if (!matchedTitle) {
-    const shortTitle = title.split(/\s+/).slice(0, 2).join(" ");
-    if (shortTitle !== title) {
-      matchedTitle = await searchWiki(shortTitle);
-    }
-  }
-  if (!matchedTitle) matchedTitle = title;
+// Module-level cache — survives across requests in the same server process
+const unsplashImageCache = new Map<string, string>();
 
-  // Step 2: try summary thumbnail
+const STOPWORDS = new Set([
+  "the", "and", "of", "at", "in", "a", "an", "to", "for",
+  "by", "on", "with", "from", "visit", "explore", "see", "tour",
+]);
+
+function buildActivityKeywords(title: string, destination: string): string {
+  const words = title
+    .toLowerCase()
+    .replace(/[^a-z\s]/g, " ")
+    .split(/\s+/)
+    .filter((w) => w.length > 1 && !STOPWORDS.has(w))
+    .slice(0, 3);
+  return [...words, destination].join(" ");
+}
+
+async function fetchUnsplashImage(keywords: string): Promise<string | undefined> {
+  if (!UNSPLASH_ACCESS_KEY) return undefined;
+  if (unsplashImageCache.has(keywords)) return unsplashImageCache.get(keywords);
   try {
-    const summaryRes = await fetch(
-      `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(matchedTitle)}`,
+    const res = await fetch(
+      `https://api.unsplash.com/search/photos?query=${encodeURIComponent(keywords)}&per_page=1&orientation=landscape`,
+      { headers: { Authorization: `Client-ID ${UNSPLASH_ACCESS_KEY}` } },
     );
-    const summary = await summaryRes.json();
-    if (summary?.thumbnail?.source && isUsable(summary.thumbnail.source)) {
-      return summary.thumbnail.source;
-    }
-
-    // Step 3: try media-list
-    const mediaRes = await fetch(
-      `https://en.wikipedia.org/api/rest_v1/page/media-list/${encodeURIComponent(matchedTitle)}`,
-    );
-    const media = await mediaRes.json();
-    const items: { type: string; srcset?: { src: string }[]; src?: string }[] =
-      media?.items ?? [];
-    for (const item of items) {
-      if (item.type !== "image") continue;
-      const raw = item.srcset?.[0]?.src ?? item.src ?? "";
-      if (!raw) continue;
-      const src = raw.startsWith("//") ? "https:" + raw : raw;
-      if (isUsable(src)) return src;
-    }
+    if (!res.ok) return undefined;
+    const data = await res.json();
+    const url: string | undefined = data?.results?.[0]?.urls?.small;
+    if (url) unsplashImageCache.set(keywords, url);
+    return url;
   } catch {
-    // silent failure
+    return undefined;
   }
-
-  return undefined;
 }
 
 // Type definitions (consistent with src/app/types/itinerary.ts)
@@ -397,39 +403,64 @@ export async function POST(request: NextRequest) {
       `✅ Successfully generated ${generatedItineraryData.length} routes in parallel`,
     );
 
-    console.log("⚡ Fetching Wikipedia images in parallel...");
-
-    const imagePromises: Promise<void>[] = [];
+    // Collect activities and normalise coordinates
+    type ActivityWithKeywords = { activity: Activity; keywords: string };
+    const activityEntries: ActivityWithKeywords[] = [];
 
     for (const route of generatedItineraryData) {
       if (!route.itinerary || !Array.isArray(route.itinerary)) continue;
-
       for (const day of route.itinerary) {
         if (!day.activities || !Array.isArray(day.activities)) continue;
-
         for (const activity of day.activities) {
-          // Ensure coordinate format is correct
           activity.latitude =
             typeof activity.latitude === "number" ? activity.latitude : 0;
           activity.longitude =
             typeof activity.longitude === "number" ? activity.longitude : 0;
-
-          // Fetch Wikipedia image for each activity in parallel
-          const promise = fetchWikipediaImage(activity.title, destination)
-            .then((imageUrl) => {
-              if (imageUrl) activity.imageUrl = imageUrl;
-            })
-            .catch(() => {
-              // silent failure — imageUrl stays unset
-            });
-          imagePromises.push(promise);
+          activityEntries.push({
+            activity,
+            keywords: buildActivityKeywords(activity.title, destination),
+          });
         }
       }
     }
 
-    console.log(`📸 Fetching ${imagePromises.length} Wikipedia images in parallel...`);
-    await Promise.all(imagePromises);
-    console.log("✅ All Wikipedia images fetched!");
+    // Deduplicate: only fetch keywords not already in the module-level cache
+    const uniqueKeywords = [
+      ...new Set(
+        activityEntries
+          .map((e) => e.keywords)
+          .filter((kw) => !unsplashImageCache.has(kw)),
+      ),
+    ];
+
+    console.log(
+      `📸 Fetching ${uniqueKeywords.length} unique Unsplash activity images ` +
+      `(${activityEntries.length} total activities, cache saves the rest)...`,
+    );
+    await Promise.all(uniqueKeywords.map((kw) => fetchUnsplashImage(kw)));
+
+    // Assign from cache
+    for (const { activity, keywords } of activityEntries) {
+      const url = unsplashImageCache.get(keywords);
+      if (url) activity.imageUrl = url;
+    }
+    console.log("✅ All Unsplash activity images fetched!");
+
+    // Fetch Unsplash cover images sequentially to allow deduplication
+    if (UNSPLASH_ACCESS_KEY) {
+      console.log("🖼️ Fetching Unsplash cover images...");
+      const usedCoverUrls = new Set<string>();
+      for (const route of generatedItineraryData) {
+        const keywords = getUnsplashKeywords(route.badge, destination);
+        const coverUrl = await fetchUnsplashCover(keywords, usedCoverUrls);
+        route.coverImageUrl = coverUrl ?? null;
+        if (coverUrl) usedCoverUrls.add(coverUrl);
+      }
+      console.log("✅ Unsplash cover images fetched!");
+    } else {
+      console.warn("⚠️ UNSPLASH_ACCESS_KEY not set — skipping cover images");
+      for (const route of generatedItineraryData) route.coverImageUrl = null;
+    }
 
     // ============ Temporarily commented out database saving ============
     // Reason: now returning multiple routes, save after user selects
