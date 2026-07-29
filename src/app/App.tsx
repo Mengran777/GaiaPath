@@ -1,7 +1,7 @@
 // src/app/App.tsx (MAJOR REWRITE)
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import PageContainer from "../components/Layout/PageContainer";
@@ -136,6 +136,10 @@ const App: React.FC = () => {
 
   // ⭐ Save state ⭐
   const [isSavingItinerary, setIsSavingItinerary] = useState(false);
+
+  // ⭐ Dev quick-fill hook — ref is initialized null to avoid TDZ; ⭐
+  // the no-dep effect below keeps it pointing to the latest function.
+  const generateRef = useRef<((p?: typeof preferences) => void) | null>(null);
 
   // ⭐ Sync user identity from NextAuth session ⭐
   useEffect(() => {
@@ -351,12 +355,13 @@ const App: React.FC = () => {
   };
 
   // ⭐ Generate multiple routes ⭐
-  const handleGenerateItinerary = async () => {
-    if (!preferences.destination.trim()) {
+  const handleGenerateItinerary = async (prefOverride?: typeof preferences) => {
+    const prefs = prefOverride ?? preferences;
+    if (!prefs.destination.trim()) {
       showToast("Please enter a destination before generating.", "error");
       return;
     }
-    if (!preferences.travelStartDate || !preferences.travelEndDate) {
+    if (!prefs.travelStartDate || !prefs.travelEndDate) {
       showToast("Please select your travel dates before generating.", "error");
       return;
     }
@@ -377,8 +382,8 @@ const App: React.FC = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          ...preferences,
-          userRequest: smartSearchQuery, // ⭐ Added: send user's custom request
+          ...prefs,
+          userRequest: smartSearchQuery,
           userId: currentUserId,
         }),
       });
@@ -412,6 +417,17 @@ const App: React.FC = () => {
       setIsLoading(false);
     }
   };
+
+  // Keep ref pointing to the latest handleGenerateItinerary after every render
+  useEffect(() => { generateRef.current = handleGenerateItinerary; });
+  useEffect(() => {
+    if (process.env.NODE_ENV !== "development") return;
+    (window as any).__gaiaFill = (p: typeof preferences) => {
+      setPreferences(p);
+      generateRef.current?.(p);
+    };
+    return () => { delete (window as any).__gaiaFill; };
+  }, []);
 
   // ⭐ Select a route ⭐
   const handleSelectRoute = useCallback(

@@ -10,13 +10,14 @@ function truncateToSentence(text: string, maxLen: number): string {
 }
 
 export async function POST(req: NextRequest) {
-  const { title } = await req.json();
+  const { title, locationName } = await req.json();
   if (!title || typeof title !== "string") {
     return NextResponse.json({ error: "title is required" }, { status: 400 });
   }
 
+  const searchTerm = locationName || title;
   const res = await fetch(
-    `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`,
+    `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(searchTerm)}`,
     { headers: { "User-Agent": "GaiaPath/1.0 (educational travel app)" } }
   );
 

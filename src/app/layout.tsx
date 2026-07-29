@@ -25,6 +25,11 @@ export default function RootLayout({
       </head>
       <body className="min-h-screen bg-[#0a1a17] text-gray-800">
         <Providers>{children}</Providers>
+        {/* Dev-only quick-fill button — file is gitignored, no-ops if absent */}
+        {process.env.NODE_ENV === "development" && (
+          // eslint-disable-next-line @next/next/no-sync-scripts
+          <script src="/dev-quick-fill.js" async />
+        )}
       </body>
     </html>
   );
