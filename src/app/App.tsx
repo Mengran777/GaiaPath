@@ -134,8 +134,7 @@ const App: React.FC = () => {
   // ⭐ Favorites feature state ⭐
   const [favoriteRoutes, setFavoriteRoutes] = useState<Set<string>>(new Set());
 
-  // ⭐ Save state ⭐
-  const [isSavingItinerary, setIsSavingItinerary] = useState(false);
+  // (no DB-save state needed — itinerary changes are session-only)
 
   // ⭐ Dev quick-fill hook — ref is initialized null to avoid TDZ; ⭐
   // the no-dep effect below keeps it pointing to the latest function.
@@ -255,40 +254,22 @@ const App: React.FC = () => {
     }
   };
 
-  // ⭐ Save itinerary handler ⭐
-  const handleSaveItinerary = async (itinerary: DayItinerary[]) => {
-    if (!selectedRouteId || !selectedRoute) return;
-    setIsSavingItinerary(true);
-    try {
-      const response = await fetch("/api/trips/save-itinerary", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          routeId: selectedRouteId,
-          name: selectedRoute.title,
-          startDate: itinerary[0]?.date ?? preferences.travelStartDate,
-          endDate: itinerary[itinerary.length - 1]?.date ?? preferences.travelEndDate,
-          itinerary,
-          routeMeta: {
-            badge: selectedRoute.badge,
-            badgeColor: selectedRoute.badgeColor,
-            description: selectedRoute.description,
-            highlights: selectedRoute.highlights,
-            days: selectedRoute.days,
-            estimatedBudget: selectedRoute.estimatedBudget,
-            intensity: selectedRoute.intensity,
-          },
-        }),
-      });
-      if (!response.ok) throw new Error("Save failed");
-      await response.json();
-      // Reset the baseline so hasChanges goes false
-      setItinerary(itinerary);
-    } catch {
-      showToast("Failed to save itinerary. Please try again.", "error");
-    } finally {
-      setIsSavingItinerary(false);
-    }
+  // ⭐ Save itinerary handler — session-only (no DB) ⭐
+  // Persists edits in-memory so they survive navigating back to the route list.
+  // Only favoriting writes to the DB.
+  const handleSaveItinerary = (updatedItinerary: DayItinerary[]) => {
+    if (!selectedRouteId) return;
+    setItinerary(updatedItinerary); // reset hasChanges baseline in ItineraryPanel
+    setRouteOptions((prev) =>
+      prev.map((r) =>
+        r.id === selectedRouteId ? { ...r, itinerary: updatedItinerary } : r
+      )
+    );
+    setMyItineraries((prev) =>
+      prev.map((r) =>
+        r.id === selectedRouteId ? { ...r, itinerary: updatedItinerary } : r
+      )
+    );
   };
 
   // ⭐ Tab switch handler ⭐
@@ -315,40 +296,12 @@ const App: React.FC = () => {
           setRouteOptions([]);
         }
       } else if (tab === "My Itineraries") {
+        // Session-only: just show whatever was generated this session
         setStage("routes");
-        // Load saved trips from DB and merge with in-memory unsaved ones
-        const response = await fetch("/api/trips");
-        if (response.ok) {
-          const trips = await response.json();
-          const dbRoutes: RouteOption[] = trips
-            .filter((t: any) => t.routeId && t.itineraryData)
-            .map((t: any) => {
-              const meta = t.routeMeta ? JSON.parse(t.routeMeta) : {};
-              const itinerary: DayItinerary[] = JSON.parse(t.itineraryData);
-              return {
-                id: t.routeId,
-                title: t.name,
-                itinerary,
-                badge: meta.badge ?? "",
-                badgeColor: meta.badgeColor,
-                description: meta.description ?? "",
-                highlights: meta.highlights ?? [],
-                days: meta.days ?? itinerary.length,
-                estimatedBudget: meta.estimatedBudget,
-                intensity: meta.intensity,
-              } as RouteOption;
-            });
-          // Merge: DB routes first, then unsaved in-memory ones
-          const dbRouteIds = new Set(dbRoutes.map((r) => r.id));
-          const unsaved = myItineraries.filter((r) => !dbRouteIds.has(r.id));
-          setRouteOptions([...dbRoutes, ...unsaved]);
-        } else {
-          setRouteOptions(myItineraries);
-        }
+        setRouteOptions(myItineraries);
       }
     } catch (error) {
       console.error("Error switching tab:", error);
-      setRouteOptions([]);
     } finally {
       setIsTabSwitching(false);
     }
@@ -688,7 +641,7 @@ const App: React.FC = () => {
                   onBackToRoutes={handleBackToRoutes}
                   destination={preferences.destination}
                   onSave={handleSaveItinerary}
-                  isSaving={isSavingItinerary}
+                  isSaving={false}
                 />
               )}
             </div>
