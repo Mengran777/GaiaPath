@@ -7,6 +7,8 @@ interface PreferenceFormProps {
     destination: string;
     travelStartDate: string;
     travelEndDate: string;
+    arrivalTime: string;
+    departureTime: string;
     travelers: string;
     travelType: string[];
     transportation: string[];
@@ -44,6 +46,67 @@ const travelerOptions = [
   { value: "3-4", label: "3–4 people" },
   { value: "5+",  label: "5+ people" },
 ];
+
+const timeOfDayOptions = [
+  { value: "morning",   label: "Morning" },
+  { value: "afternoon", label: "Afternoon" },
+  { value: "evening",   label: "Evening" },
+];
+
+// Same custom pill-dropdown look as the Travellers control below.
+const TimeOfDayDropdown: React.FC<{ value: string; onChange: (value: string) => void }> = ({
+  value,
+  onChange,
+}) => {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  const selectedLabel = timeOfDayOptions.find((o) => o.value === value)?.label ?? "Afternoon";
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        className="flex items-center gap-1 text-[#4a4a4a] text-sm cursor-pointer hover:text-[#0d3d38] transition-colors"
+      >
+        {selectedLabel}
+        <svg
+          className={`w-3.5 h-3.5 transition-transform ${open ? "rotate-180" : ""}`}
+          fill="none" stroke="currentColor" viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {open && (
+        <div className="absolute right-0 top-full mt-1.5 z-50 bg-white rounded-xl shadow-lg border border-[#e2ddd8] min-w-[140px] py-1">
+          {timeOfDayOptions.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => { onChange(opt.value); setOpen(false); }}
+              className={`w-full text-left px-3 py-2 text-sm transition-colors hover:bg-[#f0ede8] ${
+                value === opt.value ? "text-[#0d3d38] font-semibold" : "text-[#4a4a4a]"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const PreferenceForm: React.FC<PreferenceFormProps> = ({
   preferences,
@@ -84,17 +147,15 @@ const PreferenceForm: React.FC<PreferenceFormProps> = ({
   ];
 
   const transportationTypes = [
-    { label: "Train / Rail",   icon: "🚄", value: "train" },
-    { label: "Flight",         icon: "✈️", value: "plane" },
     { label: "Self-drive",     icon: "🚗", value: "car" },
     { label: "Public Transit", icon: "🚌", value: "public_transport" },
   ];
 
   const paceOptions = [
     { value: "easy",     label: "Relaxed",    sub: "1–2 stops" },
-    { value: "moderate", label: "Moderate",   sub: "3–4 stops" },
-    { value: "fast",     label: "Fast-paced", sub: "4–5 stops" },
-    { value: "high",     label: "Intense",    sub: "5+ stops" },
+    { value: "moderate", label: "Moderate",   sub: "2–3 stops" },
+    { value: "fast",     label: "Fast-paced", sub: "3–4 stops" },
+    { value: "high",     label: "Intense",    sub: "4–5 stops" },
   ];
 
   const paceIndex    = paceOptions.findIndex(p => p.value === preferences.activityIntensity);
@@ -212,6 +273,34 @@ const PreferenceForm: React.FC<PreferenceFormProps> = ({
               onClose={() => setShowDatePicker(false)}
             />
           )}
+
+          {/* Arrival time row */}
+          <div className="flex items-center px-4 py-2.5 gap-3 border-b border-[#e2ddd8]">
+            <div className="w-[30px] h-[30px] rounded-[8px] bg-[#f3e8fd] flex items-center justify-center text-[15px] flex-shrink-0">
+              🛬
+            </div>
+            <span className="text-sm font-medium text-[#1a1a1a] min-w-[80px]">Arrival</span>
+            <div className="flex-1 flex justify-end">
+              <TimeOfDayDropdown
+                value={preferences.arrivalTime}
+                onChange={(v) => onPreferenceChange("arrivalTime", v)}
+              />
+            </div>
+          </div>
+
+          {/* Departure time row */}
+          <div className="flex items-center px-4 py-2.5 gap-3 border-b border-[#e2ddd8]">
+            <div className="w-[30px] h-[30px] rounded-[8px] bg-[#f3e8fd] flex items-center justify-center text-[15px] flex-shrink-0">
+              🛫
+            </div>
+            <span className="text-sm font-medium text-[#1a1a1a] min-w-[80px]">Departure</span>
+            <div className="flex-1 flex justify-end">
+              <TimeOfDayDropdown
+                value={preferences.departureTime}
+                onChange={(v) => onPreferenceChange("departureTime", v)}
+              />
+            </div>
+          </div>
 
           {/* Travellers row */}
           <div className="flex items-center px-4 py-2.5 gap-3">

@@ -99,6 +99,8 @@ const App: React.FC = () => {
     destination: "",
     travelStartDate: "",
     travelEndDate: "",
+    arrivalTime: "afternoon",
+    departureTime: "afternoon",
     budget: "",
     travelers: "2",
     travelType: [],
@@ -640,6 +642,7 @@ const App: React.FC = () => {
                   onToggleFavorite={() => toggleFavorite(selectedRouteId)}
                   onBackToRoutes={handleBackToRoutes}
                   destination={preferences.destination}
+                  transportationModes={preferences.transportation}
                   onSave={handleSaveItinerary}
                   isSaving={false}
                 />

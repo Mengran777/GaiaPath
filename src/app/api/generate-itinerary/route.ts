@@ -161,6 +161,8 @@ export async function POST(request: NextRequest) {
       destination,
       travelStartDate,
       travelEndDate,
+      arrivalTime,
+      departureTime,
       // budget,
       travelers,
       travelType,
@@ -175,6 +177,8 @@ export async function POST(request: NextRequest) {
     console.log("   destination:", destination);
     console.log("   travelStartDate:", travelStartDate);
     console.log("   travelEndDate:", travelEndDate);
+    console.log("   arrivalTime:", arrivalTime);
+    console.log("   departureTime:", departureTime);
     // console.log("   budget:", budget);
     console.log("   travelers:", travelers);
     console.log("   travelType:", travelType);
@@ -257,6 +261,8 @@ export async function POST(request: NextRequest) {
         .replaceAll("{{destination}}", destination || "Flexible")
         .replaceAll("{{travelStartDate}}", travelStartDate || "Flexible")
         .replaceAll("{{travelEndDate}}", travelEndDate || "Flexible")
+        .replaceAll("{{arrivalTime}}", arrivalTime || "not specified")
+        .replaceAll("{{departureTime}}", departureTime || "not specified")
         .replaceAll("{{travelers}}", travelers || "Flexible")
         .replaceAll(
           "{{travelType}}",

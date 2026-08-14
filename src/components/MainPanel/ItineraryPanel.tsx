@@ -23,6 +23,7 @@ interface ItineraryPanelProps {
   onToggleFavorite?: () => void;
   onBackToRoutes?: () => void;
   destination?: string;
+  transportationModes?: string[];
   onSave?: (itinerary: DayItinerary[]) => void;
   isSaving?: boolean;
 }
@@ -142,6 +143,21 @@ function toHdUrl(url: string): string {
     return upgraded;
   }
   return url;
+}
+
+function hasValidCoords(activity: Activity): boolean {
+  return (
+    typeof activity.latitude === "number" &&
+    typeof activity.longitude === "number" &&
+    activity.latitude !== 0 &&
+    activity.longitude !== 0
+  );
+}
+
+function transitDirectionsUrl(from: Activity, to: Activity): string {
+  const origin = `${from.latitude},${from.longitude}`;
+  const destination = `${to.latitude},${to.longitude}`;
+  return `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&travelmode=transit`;
 }
 
 // ── DraggableCard ──────────────────────────────────────────────────────────────
@@ -868,9 +884,11 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
   onToggleFavorite,
   onBackToRoutes,
   destination = "",
+  transportationModes = [],
   onSave,
   isSaving = false,
 }) => {
+  const showTransitLinks = transportationModes.includes("public_transport");
   const [localItinerary, setLocalItinerary] = useState<DayItinerary[]>(itinerary);
   const [removeMode, setRemoveMode] = useState(false);
   const [removingKeys, setRemovingKeys] = useState<Set<string>>(new Set());
@@ -1475,8 +1493,26 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
                             ? (descriptionCache.get(activity.title) ?? null)
                             : null;
 
+                          const prevActivity = index > 0 ? dayItem.activities[index - 1] : null;
+                          const showTransitLink =
+                            showTransitLinks &&
+                            prevActivity &&
+                            hasValidCoords(prevActivity) &&
+                            hasValidCoords(activity);
+
                           return (
                             <React.Fragment key={`${dayItem.day}-${activity.title}-${index}`}>
+                              {showTransitLink && (
+                                <a
+                                  href={transitDirectionsUrl(prevActivity!, activity)}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="flex items-center justify-center gap-1 py-1 text-[11px] text-[#2d9e8a] hover:text-[#1a6b5e] hover:underline"
+                                >
+                                  🚌 Public transit directions
+                                </a>
+                              )}
                               <Draggable
                                 draggableId={`${dayItem.day}-${activity.title}-${index}`}
                                 index={index}
