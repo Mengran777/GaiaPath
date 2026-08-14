@@ -1,0 +1,426 @@
+[
+  {
+    "name": "British Museum",
+    "description": "The British Museum is a public museum dedicated to human history, art and culture located in the Bloomsbury area of London. Its permanent collection of eight million works is the largest in the world.",
+    "category": "culture",
+    "latitude": 51.519444444,
+    "longitude": -0.126944444,
+    "source": "wikidata"
+  },
+  {
+    "name": "Tower of London",
+    "description": "The Tower of London, officially His Majesty's Royal Palace and Fortress of the Tower of London, is a historic citadel and castle on the north bank of the River Thames in London, England.",
+    "category": "culture",
+    "latitude": 51.5082,
+    "longitude": -0.076198055,
+    "source": "wikidata"
+  },
+  {
+    "name": "Victoria and Albert Museum",
+    "description": "The Victoria and Albert Museum in the United Kingdom is the world's largest museum of applied arts, decorative arts and design, housing a permanent collection of over 2.8 million objects.",
+    "category": "culture",
+    "latitude": 51.49685,
+    "longitude": -0.17162,
+    "source": "wikidata"
+  },
+  {
+    "name": "Tate Modern",
+    "description": "Tate Modern is an art gallery in London, housing the United Kingdom's national collection of international modern and contemporary art.",
+    "category": "culture",
+    "latitude": 51.507777777,
+    "longitude": -0.099444444,
+    "source": "wikidata"
+  },
+  {
+    "name": "Natural History Museum",
+    "description": "The Natural History Museum in London, England, is a museum that exhibits a vast range of specimens from various segments of natural history.",
+    "category": "culture",
+    "latitude": 51.496111111,
+    "longitude": -0.176111111,
+    "source": "wikidata"
+  },
+  {
+    "name": "Science Museum",
+    "description": "The Science Museum is a major museum on Exhibition Road in South Kensington, London. It was founded in 1857 and is one of the city's major tourist attractions, attracting 2,817,852 visitors in 2025.",
+    "category": "culture",
+    "latitude": 51.4975,
+    "longitude": -0.174722222,
+    "source": "wikidata"
+  },
+  {
+    "name": "National Portrait Gallery",
+    "description": "The National Portrait Gallery (NPG) is an art gallery in London that houses a collection of portraits of historically important and famous British people.",
+    "category": "culture",
+    "latitude": 51.509444444,
+    "longitude": -0.128055555,
+    "source": "wikidata"
+  },
+  {
+    "name": "Imperial War Museum London",
+    "description": "The Imperial War Museum (IWM), currently branded \"Imperial War Museums\", is a British national museum. Its headquarters are in London, with five branches in England.",
+    "category": "culture",
+    "latitude": 51.495833333,
+    "longitude": -0.108611111,
+    "source": "wikidata"
+  },
+  {
+    "name": "Tate Britain",
+    "description": "Tate Britain, known from 1897 to 1932 as the National Gallery of British Art and from 1932 to 2000 as the Tate Gallery, is an art museum on Millbank in the City of Westminster in London, England.",
+    "category": "culture",
+    "latitude": 51.491062,
+    "longitude": -0.127789,
+    "source": "wikidata"
+  },
+  {
+    "name": "Marlborough House",
+    "description": "Marlborough House, a Grade I listed mansion on The Mall in St James's, City of Westminster, London, is the headquarters of the Commonwealth of Nations and the seat of the Commonwealth Secretariat.",
+    "category": "culture",
+    "latitude": 51.505,
+    "longitude": -0.135833333,
+    "source": "wikidata"
+  },
+  {
+    "name": "Apsley House",
+    "description": "Apsley House is the London townhouse of the Dukes of Wellington.",
+    "category": "culture",
+    "latitude": 51.503472222,
+    "longitude": -0.151666666,
+    "source": "wikidata"
+  },
+  {
+    "name": "Royal Asiatic Society of Great Britain and Ireland",
+    "description": "The Royal Asiatic Society of Great Britain and Ireland, commonly known as the Royal Asiatic Society, was established, according to its royal charter of 11 August 1824, to further \"the investigation of subjects connected…",
+    "category": "culture",
+    "latitude": 51.526525195,
+    "longitude": -0.135332174,
+    "source": "wikidata"
+  },
+  {
+    "name": "Mansion House",
+    "description": "The Mansion House is the official residence of the Lord Mayor of London. It is a Grade I listed building. Designed by George Dance in the Palladian style, it was built primarily in the 1740s.",
+    "category": "culture",
+    "latitude": 51.51325,
+    "longitude": -0.089361111,
+    "source": "wikidata"
+  },
+  {
+    "name": "Sir John Soane's Museum",
+    "description": "Sir John Soane's Museum is a house museum, located next to Lincoln's Inn Fields in Holborn, London, which was formerly the home of neo-classical architect John Soane.",
+    "category": "culture",
+    "latitude": 51.517102777,
+    "longitude": -0.116913888,
+    "source": "wikidata"
+  },
+  {
+    "name": "Churchill War Rooms",
+    "description": "The Churchill War Rooms is a museum in London and one of the five branches of the Imperial War Museum.",
+    "category": "culture",
+    "latitude": 51.50222,
+    "longitude": -0.1293,
+    "source": "wikidata"
+  },
+  {
+    "name": "London Dungeon",
+    "description": "The London Dungeon is a tourist attraction/haunted attraction along London's South Bank, England, which recreates various gory and macabre historical events in a gallows humour style.",
+    "category": "culture",
+    "latitude": 51.505561111,
+    "longitude": -0.085830555,
+    "source": "wikidata"
+  },
+  {
+    "name": "London Eye",
+    "description": "The London Eye, originally the Millennium Wheel, is a cantilevered observation wheel on the South Bank of the River Thames in London.",
+    "category": "classic",
+    "latitude": 51.503333333,
+    "longitude": -0.119722222,
+    "source": "wikidata"
+  },
+  {
+    "name": "Leicester Square",
+    "description": "Leicester Square is a pedestrianised square in the West End of London, England, and is the centre of London's entertainment district.",
+    "category": "classic",
+    "latitude": 51.510277777,
+    "longitude": -0.130277777,
+    "source": "wikidata"
+  },
+  {
+    "name": "St Martin-in-the-Fields",
+    "description": "St Martin-in-the-Fields is a Church of England parish church at the north-east corner of Trafalgar Square in the City of Westminster, London.",
+    "category": "classic",
+    "latitude": 51.508888888,
+    "longitude": -0.126944444,
+    "source": "wikidata"
+  },
+  {
+    "name": "Lambeth Palace",
+    "description": "Lambeth Palace is the official London residence of the Archbishop of Canterbury.",
+    "category": "classic",
+    "latitude": 51.49556,
+    "longitude": -0.11972,
+    "source": "wikidata"
+  },
+  {
+    "name": "Albert Memorial",
+    "description": "The Albert Memorial is a Gothic Revival ciborium in Kensington Gardens, London, designed and dedicated to the memory of Prince Albert of Great Britain.",
+    "category": "classic",
+    "latitude": 51.502413377,
+    "longitude": -0.177742437,
+    "source": "wikidata"
+  },
+  {
+    "name": "Temple Church, London",
+    "description": "The Temple Church, a royal peculiar in the Church of England, is a church in the Inner and Middle Temples located between Fleet Street and the River Thames in London, England.",
+    "category": "classic",
+    "latitude": 51.5132,
+    "longitude": -0.1104,
+    "source": "wikidata"
+  },
+  {
+    "name": "Parliament Square",
+    "description": "Parliament Square is a square at the northwest end of the Palace of Westminster in the City of Westminster in central London, England.",
+    "category": "classic",
+    "latitude": 51.500555555,
+    "longitude": -0.126666666,
+    "source": "wikidata"
+  },
+  {
+    "name": "Horse Guards Parade",
+    "description": "Horse Guards or horse guards can refer to:The Household Cavalry, a British Army corps: \nTroops of the Horse Guards Regiment of the British Army from 1658 to 1788\nThe Royal Horse Guards, which is now part of the Blues and…",
+    "category": "classic",
+    "latitude": 51.5047,
+    "longitude": -0.1283,
+    "source": "wikidata"
+  },
+  {
+    "name": "20 Fenchurch Street",
+    "description": "20 Fenchurch Street is a commercial skyscraper in London that takes its name from its address on Fenchurch Street, in the historic City of London financial district.",
+    "category": "classic",
+    "latitude": 51.511277777,
+    "longitude": -0.083527777,
+    "source": "wikidata"
+  },
+  {
+    "name": "Heron Tower",
+    "description": "Heron Tower is a commercial skyscraper in London.",
+    "category": "classic",
+    "latitude": 51.5161,
+    "longitude": -0.0808333,
+    "source": "wikidata"
+  },
+  {
+    "name": "22 Bishopsgate",
+    "description": "22 Bishopsgate is a commercial skyscraper in London, England. Completed in 2020, it occupies a prominent site in Bishopsgate, in the City of London financial district, and stands 278 m (912 ft) tall with 62 storeys.",
+    "category": "classic",
+    "latitude": 51.5145,
+    "longitude": -0.0829,
+    "source": "wikidata"
+  },
+  {
+    "name": "Hyde Park",
+    "description": "Hyde Park is a 350-acre (140-hectare), historic Grade I-listed urban park in Westminster, Greater London.",
+    "category": "nature",
+    "latitude": 51.508611111,
+    "longitude": -0.163611111,
+    "source": "wikidata"
+  },
+  {
+    "name": "St James's Park",
+    "description": "St James's Park is a 23-hectare (57-acre) urban park in the City of Westminster, central London.",
+    "category": "nature",
+    "latitude": 51.5025,
+    "longitude": -0.135,
+    "source": "wikidata"
+  },
+  {
+    "name": "Primrose Hill",
+    "description": "Primrose Hill is a Grade II listed public park first opened to the public in 1842, immediately north of Regent's Park, a Royal Park in London, England.",
+    "category": "nature",
+    "latitude": 51.5396,
+    "longitude": -0.1608,
+    "source": "wikidata"
+  },
+  {
+    "name": "Royal Parks of London",
+    "description": "The Royal Parks were originally used for recreation, mostly hunting, by the royal family of England.",
+    "category": "nature",
+    "latitude": 51.5081,
+    "longitude": -0.1654,
+    "source": "wikidata"
+  },
+  {
+    "name": "Battersea Park",
+    "description": "Battersea Park is a 200-acre (83-hectare) green space at Battersea in the London Borough of Wandsworth in London. It is situated on the south bank of the River Thames opposite Chelsea and was opened in 1858.",
+    "category": "nature",
+    "latitude": 51.4793,
+    "longitude": -0.1573,
+    "source": "wikidata"
+  },
+  {
+    "name": "Parliament Hill",
+    "description": "Parliament Hill is an area of open parkland in the south-east corner of Hampstead Heath in north-west London. The hill, which is 98 metres (322 ft) high, is notable for its views of the capital's skyline.",
+    "category": "nature",
+    "latitude": 51.559722222,
+    "longitude": -0.159722222,
+    "source": "wikidata"
+  },
+  {
+    "name": "Lincoln's Inn Fields",
+    "description": "Lincoln's Inn Fields is located in Holborn and is the largest public square in London.",
+    "category": "nature",
+    "latitude": 51.5161,
+    "longitude": -0.1166,
+    "source": "wikidata"
+  },
+  {
+    "name": "Postman's Park",
+    "description": "Postman's Park is a public garden in central London, a short distance north of St Paul's Cathedral. Bordered by Little Britain, Aldersgate Street, St.",
+    "category": "nature",
+    "latitude": 51.5168,
+    "longitude": -0.0976431,
+    "source": "wikidata"
+  },
+  {
+    "name": "Jubilee Gardens",
+    "description": "Jubilee Gardens is a public park on the South Bank in the London Borough of Lambeth.",
+    "category": "nature",
+    "latitude": 51.5038,
+    "longitude": -0.1184,
+    "source": "wikidata"
+  },
+  {
+    "name": "Brook Green",
+    "description": "Brook Green is an affluent sub-neighbourhood of Hammersmith in the London Borough of Hammersmith and Fulham. Located approximately 3.6 miles (5.",
+    "category": "nature",
+    "latitude": 51.4964,
+    "longitude": -0.2205,
+    "source": "wikidata"
+  },
+  {
+    "name": "Artillery Ground",
+    "description": "The Artillery Ground in Finsbury is an open space originally set aside for archery. It later became a famous cricket venue, known to have staged over 200 historically important matches from 1730 to 1778.",
+    "category": "nature",
+    "latitude": 51.5219,
+    "longitude": -0.0887,
+    "source": "wikidata"
+  },
+  {
+    "name": "Clarence House",
+    "description": "Clarence House is a royal residence located near The Mall in the City of Westminster. It has been the primary London residence of Charles III since 2003.",
+    "category": "culture",
+    "latitude": 51.504,
+    "longitude": -0.1385,
+    "source": "wikidata"
+  },
+  {
+    "name": "HMS Belfast",
+    "description": "HMS Belfast is a Town-class light cruiser that was built for the Royal Navy. She is permanently moored as a museum ship on the River Thames in London and is operated by the Imperial War Museum.",
+    "category": "culture",
+    "latitude": 51.506666666,
+    "longitude": -0.081388888,
+    "source": "wikidata"
+  },
+  {
+    "name": "Sherlock Holmes Museum",
+    "description": "The Sherlock Holmes Museum is a privately run museum in London, England, dedicated to the famous fictional detective Sherlock Holmes. It is the world's first museum dedicated to the literary character Sherlock Holmes.",
+    "category": "culture",
+    "latitude": 51.523694444,
+    "longitude": -0.161,
+    "source": "wikidata"
+  },
+  {
+    "name": "Wallace Collection",
+    "description": "The Wallace Collection is a museum in London occupying Hertford House in Manchester Square, the former townhouse of the Seymour family, Marquesses of Hertford.",
+    "category": "culture",
+    "latitude": 51.517454,
+    "longitude": -0.153022,
+    "source": "wikidata"
+  },
+  {
+    "name": "Charing Cross",
+    "description": "Charing Cross is a junction in Westminster, London, England, where six routes meet.",
+    "category": "classic",
+    "latitude": 51.5073,
+    "longitude": -0.12755,
+    "source": "wikidata"
+  },
+  {
+    "name": "Victoria Memorial",
+    "description": "The Victoria Memorial is a monument to Queen Victoria, located at the end of The Mall in London, by the sculptor Sir Thomas Brock. Designed in 1901, it was unveiled on 16 May 1911, though it was not completed until 1924.",
+    "category": "classic",
+    "latitude": 51.501833,
+    "longitude": -0.140639,
+    "source": "wikidata"
+  },
+  {
+    "name": "Tower 42",
+    "description": "Tower 42, commonly known as the NatWest Tower, is a 183-metre-tall (600 ft) skyscraper in the City of London.",
+    "category": "classic",
+    "latitude": 51.515277777,
+    "longitude": -0.083888888,
+    "source": "wikidata"
+  },
+  {
+    "name": "Speakers' Corner",
+    "description": "A Speakers' Corner is an area where free speech, open-air public speaking, debate, and discussion are allowed.",
+    "category": "classic",
+    "latitude": 51.511708333,
+    "longitude": -0.159777777,
+    "source": "wikidata"
+  },
+  {
+    "name": "Barbican Estate",
+    "description": "The Barbican Estate, or Barbican, is a residential complex of around 2,000 flats, maisonettes and houses in central London, England, within the City of London.",
+    "category": "classic",
+    "latitude": 51.519192,
+    "longitude": -0.094607,
+    "source": "wikidata"
+  },
+  {
+    "name": "Kensington Gardens",
+    "description": "Kensington Gardens, once part of the private gardens of Kensington Palace, are now among the Royal Parks of London and largely open to the public.",
+    "category": "nature",
+    "latitude": 51.507222222,
+    "longitude": -0.180277777,
+    "source": "wikidata"
+  },
+  {
+    "name": "Hampstead Heath",
+    "description": "Hampstead Heath is an ancient heath in London, spanning 320 hectares.",
+    "category": "nature",
+    "latitude": 51.561111111,
+    "longitude": -0.161111111,
+    "source": "wikidata"
+  },
+  {
+    "name": "Finsbury Circus",
+    "description": "Finsbury Circus is a park in the Coleman Street Ward of the City of London, England. The 2-acre park is the largest public open space within the City's boundaries.",
+    "category": "nature",
+    "latitude": 51.5178,
+    "longitude": -0.086595,
+    "source": "wikidata"
+  },
+  {
+    "name": "Burgess Park",
+    "description": "Burgess Park is a public park situated in Camberwell in the London Borough of Southwark. It is close to Walworth to the north, Bermondsey to the east and Peckham to the south.",
+    "category": "nature",
+    "latitude": 51.483576,
+    "longitude": -0.081841,
+    "source": "wikidata"
+  },
+  {
+    "name": "Mile End Park",
+    "description": "Mile End is an area in London, England and is located in the London Borough of Tower Hamlets. It is in East London and part of the East End. It is 4.2 miles (6.8 km) east of Charing Cross.",
+    "category": "nature",
+    "latitude": 51.526111111,
+    "longitude": -0.0375,
+    "source": "wikidata"
+  },
+  {
+    "name": "Southwark Park",
+    "description": "Southwark Park is located in Rotherhithe, in central South East London, England, and is managed by the London Borough of Southwark. It first opened in 1869 by the Metropolitan Board of Works as one of its first parks.",
+    "category": "nature",
+    "latitude": 51.495,
+    "longitude": -0.056,
+    "source": "wikidata"
+  }
+]

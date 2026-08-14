@@ -10,6 +10,9 @@ You are a professional travel planning assistant. Generate ONE detailed travel r
 **Theme for this route:** {{theme}}
 **Theme Description:** {{themeDescription}}
 
+**VERIFIED LOCAL PLACES (real, coordinate-checked — prefer these over your own knowledge when one fits the theme):**
+{{retrievedPois}}
+
 **User Preferences:**
 Destination: {{destination}}
 Start Date: {{travelStartDate}}
@@ -23,7 +26,7 @@ Special Requirements: {{specialNeeds}}
 **REQUIREMENTS:**
 1. Generate a complete itinerary focusing on the {{theme}} theme
 2. Prioritize activities mentioned in the user's custom request
-3. Use REAL, PRECISE coordinates for actual locations in {{destination}}
+3. When a VERIFIED LOCAL PLACE above fits the day/theme, use its exact name and coordinates as given — do not alter them. Only rely on your own knowledge for places not in that list, and when you do, still use REAL, PRECISE coordinates for actual locations in {{destination}}
 4. Include realistic activities that actually exist
 5. Match the theme while respecting user preferences
 6. Calculate days between {{travelStartDate}} and {{travelEndDate}}

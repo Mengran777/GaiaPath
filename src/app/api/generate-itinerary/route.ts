@@ -6,6 +6,7 @@ import { authenticateRequest } from "@/lib/auth";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { promises as fs } from "fs";
 import path from "path";
+import { retrievePois, RetrievedPoi } from "@/lib/ai/poiRetrieval";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const UNSPLASH_ACCESS_KEY = process.env.UNSPLASH_ACCESS_KEY;
@@ -120,6 +121,32 @@ async function getPromptFromFile(filename: string): Promise<string> {
   return fileContent;
 }
 
+// Preferred POI category per route theme
+const THEME_CATEGORY: Record<string, string> = {
+  "Classic Route": "classic",
+  "Cultural & Culinary": "culture",
+  "Nature & Hidden Gems": "nature",
+};
+
+const MAX_POIS_PER_PROMPT = 12;
+
+// Same-category candidates first, then the rest as fallback
+function selectPoisForTheme(pois: RetrievedPoi[], theme: string): RetrievedPoi[] {
+  const preferredCategory = THEME_CATEGORY[theme];
+  const primary = pois.filter((p) => p.category === preferredCategory);
+  const rest = pois.filter((p) => p.category !== preferredCategory);
+  return [...primary, ...rest].slice(0, MAX_POIS_PER_PROMPT);
+}
+
+function formatPoisForPrompt(pois: RetrievedPoi[]): string {
+  if (pois.length === 0) {
+    return "(No verified local place data available for this destination — use your own knowledge, but still be as accurate as possible with real place names and coordinates.)";
+  }
+  return pois
+    .map((p) => `- ${p.name} [${p.category ?? "general"}] (${p.latitude}, ${p.longitude}): ${p.description}`)
+    .join("\n");
+}
+
 export async function POST(request: NextRequest) {
   const authResult = await authenticateRequest(request);
   if (!authResult) {
@@ -184,6 +211,18 @@ export async function POST(request: NextRequest) {
     console.log("Generating 3 routes in parallel with real images...");
     console.log("=== === === === === === === ===");
 
+    // Retrieve once per request, not per theme — themes split this shared
+    // pool by category below. Destinations outside the corpus just get an
+    // empty array and the prompt falls back to the model's own knowledge.
+    let retrievedPois: RetrievedPoi[] = [];
+    try {
+      const retrievalQuery = [destination, userRequest].filter(Boolean).join(" — ");
+      retrievedPois = await retrievePois(destination, retrievalQuery, 24);
+      console.log(`📍 Retrieved ${retrievedPois.length} verified local POIs for grounding`);
+    } catch (err) {
+      console.error("POI retrieval failed, falling back to model knowledge only:", err);
+    }
+
     // ⭐ Parallel generation strategy: generate 3 curated routes simultaneously ⭐
     const routeThemes = [
       {
@@ -212,7 +251,9 @@ export async function POST(request: NextRequest) {
 
     // Generate all routes in parallel
     const generateRoutePromises = routeThemes.map(async (routeTheme) => {
+      const themedPois = selectPoisForTheme(retrievedPois, routeTheme.theme);
       const routePrompt = singleRouteTemplate
+        .replaceAll("{{retrievedPois}}", formatPoisForPrompt(themedPois))
         .replaceAll("{{destination}}", destination || "Flexible")
         .replaceAll("{{travelStartDate}}", travelStartDate || "Flexible")
         .replaceAll("{{travelEndDate}}", travelEndDate || "Flexible")

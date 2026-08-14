@@ -1,0 +1,298 @@
+[
+  {
+    "name": "Vatican Museums",
+    "description": "The Vatican Museums are the public museums of the Vatican City.",
+    "category": "culture",
+    "latitude": 41.906388888,
+    "longitude": 12.454444444,
+    "source": "wikidata"
+  },
+  {
+    "name": "Palatine Hill",
+    "description": "The Palatine Hill, which is the centremost of the seven hills of Rome, is one of the most ancient parts of the city; it has been called \"the first nucleus of the Roman Empire\".",
+    "category": "culture",
+    "latitude": 41.888333333,
+    "longitude": 12.486944444,
+    "source": "wikidata"
+  },
+  {
+    "name": "Castel Sant'Angelo",
+    "description": "Castel Sant'Angelo, also known as Mausoleum of Hadrian, is a towering rotunda in Parco Adriano, Rome, Italy. It was initially commissioned by the Roman Emperor Hadrian as a mausoleum for himself and his family.",
+    "category": "culture",
+    "latitude": 41.903044,
+    "longitude": 12.466307,
+    "source": "wikidata"
+  },
+  {
+    "name": "Galleria Borghese",
+    "description": "The Galleria Borghese or Borghese Gallery is an art gallery in Rome, Italy, housed in the former Villa Borghese Pinciana.",
+    "category": "culture",
+    "latitude": 41.91421,
+    "longitude": 12.492144,
+    "source": "wikidata"
+  },
+  {
+    "name": "Capitoline Museums",
+    "description": "The Capitoline Museums are a group of art and archaeological museums located on the Capitoline Hill in Rome, Italy, and constitute the main civic museum complex of the city.",
+    "category": "culture",
+    "latitude": 41.893055555,
+    "longitude": 12.482777777,
+    "source": "wikidata"
+  },
+  {
+    "name": "Baths of Caracalla",
+    "description": "The Baths of Caracalla in Rome, Italy, were the city's second largest Roman public bath complex, or thermae, after the Baths of Diocletian.",
+    "category": "culture",
+    "latitude": 41.880264,
+    "longitude": 12.492764,
+    "source": "wikidata"
+  },
+  {
+    "name": "Ara Pacis",
+    "description": "The Ara Pacis Augustae is an altar in Rome dedicated to the Pax Romana.",
+    "category": "culture",
+    "latitude": 41.906388888,
+    "longitude": 12.475555555,
+    "source": "wikidata"
+  },
+  {
+    "name": "Museo Nazionale Romano",
+    "description": "The Museo Nazionale Romano is a museum with several branches in separate buildings throughout the city of Rome, Italy.",
+    "category": "culture",
+    "latitude": 41.903426175,
+    "longitude": 12.499017895,
+    "source": "wikidata"
+  },
+  {
+    "name": "Galleria Nazionale d'Arte Moderna e Contemporanea di Roma",
+    "description": "The Galleria Nazionale d'Arte Moderna e Contemporanea, also known as La Galleria Nazionale, is an art museum in Rome.",
+    "category": "culture",
+    "latitude": 41.917046,
+    "longitude": 12.4799803,
+    "source": "wikidata"
+  },
+  {
+    "name": "Galleria Nazionale d'Arte Antica",
+    "description": "The Galleria Nazionale d'Arte Antica is an art museum in Rome, Italy. It is the principal national collection of older paintings in Rome – mostly from before 1800; it does not hold any antiquities.",
+    "category": "culture",
+    "latitude": 41.902779717,
+    "longitude": 12.489527499,
+    "source": "wikidata"
+  },
+  {
+    "name": "Galleria Doria Pamphilj",
+    "description": "The Galleria Doria Pamphilj is a large private art collection housed in the Palazzo Doria Pamphilj in Rome, Italy, between Via del Corso and Via della Gatta. The principal entrance is on the Via del Corso.",
+    "category": "culture",
+    "latitude": 41.897669,
+    "longitude": 12.481145,
+    "source": "wikidata"
+  },
+  {
+    "name": "National Museum of Oriental Art",
+    "description": "Rome's National Museum of Oriental Art \"Giuseppe Tucci\" was a museum in Rome, Italy, that was dedicated to the arts of the Orient, from the Middle East to Japan.",
+    "category": "culture",
+    "latitude": 41.832464694,
+    "longitude": 12.471673638,
+    "source": "wikidata"
+  },
+  {
+    "name": "Colosseum",
+    "description": "The Colosseum is an elliptical amphitheatre in the centre of the city of Rome, Italy, just east of the Roman Forum.",
+    "category": "classic",
+    "latitude": 41.890277777,
+    "longitude": 12.492222222,
+    "source": "wikidata"
+  },
+  {
+    "name": "Pantheon",
+    "description": "The Pantheon is an ancient temple in Rome, Italy, originally built under emperor Augustus and reconstructed under Hadrian (117–138); since AD 609, it is a Catholic church called the Basilica of St. Mary and the Martyrs.",
+    "category": "classic",
+    "latitude": 41.898611111,
+    "longitude": 12.476944444,
+    "source": "wikidata"
+  },
+  {
+    "name": "Roman Forum",
+    "description": "The Roman Forum, also known by its Latin name Forum Romanum, is a rectangular forum (plaza) surrounded by the ruins of several important ancient government buildings at the centre of the city of Rome.",
+    "category": "classic",
+    "latitude": 41.8922,
+    "longitude": 12.4852,
+    "source": "wikidata"
+  },
+  {
+    "name": "Saint Peter's Square",
+    "description": "St. Peter's Square is a large plaza located directly in front of St. Peter's Basilica in Vatican City, the papal enclave in Rome, directly west of the neighborhood (rione) of Borgo.",
+    "category": "classic",
+    "latitude": 41.902183055,
+    "longitude": 12.457238888,
+    "source": "wikidata"
+  },
+  {
+    "name": "Trajan's Column",
+    "description": "Trajan's Column is a Roman triumphal column in Rome, Italy, that commemorates Roman emperor Trajan's victory in the Dacian Wars.",
+    "category": "classic",
+    "latitude": 41.895833333,
+    "longitude": 12.484166666,
+    "source": "wikidata"
+  },
+  {
+    "name": "Trajan's Forum",
+    "description": "Trajan's Forum was the last of the Imperial fora to be constructed in ancient Rome. The architect Apollodorus of Damascus oversaw its construction.",
+    "category": "classic",
+    "latitude": 41.895417,
+    "longitude": 12.485869,
+    "source": "wikidata"
+  },
+  {
+    "name": "Arch of Titus",
+    "description": "The Arch of Titus is a 1st-century AD honorific arch, located on the Via Sacra, Rome, just to the south-east of the Roman Forum. It was constructed in c.",
+    "category": "classic",
+    "latitude": 41.890717,
+    "longitude": 12.488585,
+    "source": "wikidata"
+  },
+  {
+    "name": "San Pietro in Vincoli",
+    "description": "San Pietro in Vincoli is a Roman Catholic titular church and minor basilica in Rome, Italy. The church is on the Oppian Hill near Cavour metro station, a short distance from the Colosseum.",
+    "category": "classic",
+    "latitude": 41.893872222,
+    "longitude": 12.493069444,
+    "source": "wikidata"
+  },
+  {
+    "name": "Mausoleum of Augustus",
+    "description": "The Mausoleum of Augustus is a large tomb built by the Roman Emperor Augustus in 28 BC on the Campus Martius in Rome, Italy.",
+    "category": "classic",
+    "latitude": 41.90611,
+    "longitude": 12.47639,
+    "source": "wikidata"
+  },
+  {
+    "name": "Temple of Vesta",
+    "description": "The Temple of Vesta, or the aedes, was an ancient edifice in Rome, Italy. It is located in the Roman Forum near the Regia and the House of the Vestal Virgins.",
+    "category": "classic",
+    "latitude": 41.891707,
+    "longitude": 12.486206,
+    "source": "wikidata"
+  },
+  {
+    "name": "Church of the Gesù",
+    "description": "The Church of the Gesù, officially named Chiesa del Santissimo Nome di Gesù, is a church located at Piazza del Gesù in the Pigna rione of Rome, Italy. It is the mother church of the Society of Jesus.",
+    "category": "classic",
+    "latitude": 41.895833333,
+    "longitude": 12.479722222,
+    "source": "wikidata"
+  },
+  {
+    "name": "Piazza di Spagna",
+    "description": "The Piazza di Spagna is a square in the centre of Rome, the capital of Italy. It lies at the foot of the Spanish Steps and owes its name to the Palazzo di Spagna, the seat of the Embassy of Spain to the Holy See.",
+    "category": "classic",
+    "latitude": 41.90595,
+    "longitude": 12.48205833,
+    "source": "wikidata"
+  },
+  {
+    "name": "bioparco",
+    "description": "Bioparco di Roma is a 17-hectare (42-acre) zoological garden located on part of the original Villa Borghese estate in Rome, Italy. There are 1,114 animals of 222 species maintained.",
+    "category": "nature",
+    "latitude": 41.917472,
+    "longitude": 12.485194,
+    "source": "wikidata"
+  },
+  {
+    "name": "Farnese Gardens",
+    "description": "The Farnese Gardens, or \"Gardens of Farnese upon the Palatine\", are a garden in Rome, central Italy, created in 1550 on the northern portion of Palatine Hill, by Cardinal Alessandro Farnese.",
+    "category": "nature",
+    "latitude": 41.890222036,
+    "longitude": 12.486291901,
+    "source": "wikidata"
+  },
+  {
+    "name": "Villa Gordiani",
+    "description": "Villa Gordiani is a park along the Via Prenestina, in Rome, Italy.",
+    "category": "nature",
+    "latitude": 41.8942,
+    "longitude": 12.5538,
+    "source": "wikidata"
+  },
+  {
+    "name": "Villa Celimontana",
+    "description": "The Villa Celimontana is a villa on the Caelian Hill in Rome, best known for its gardens. Its grounds cover most of the valley between the Aventine Hill and the Caelian.",
+    "category": "nature",
+    "latitude": 41.88423,
+    "longitude": 12.49435,
+    "source": "wikidata"
+  },
+  {
+    "name": "Orange Garden",
+    "description": "The Orange Trees Garden is the name used in Rome to describe the Parco Savello. It is about 7,800 square meters and is located on the Aventine Hill. The park offers an excellent view of the city.",
+    "category": "nature",
+    "latitude": 41.8851,
+    "longitude": 12.4804,
+    "source": "wikidata"
+  },
+  {
+    "name": "Park of the Caffarella",
+    "description": "The Caffarella Park is a large park in Rome, Italy, protected from development. It is part of the Parco Regionale Appia Antica.",
+    "category": "nature",
+    "latitude": 41.8642,
+    "longitude": 12.5158,
+    "source": "wikidata"
+  },
+  {
+    "name": "Circus Maximus",
+    "description": "The Circus Maximus is an ancient Roman chariot-racing stadium and mass entertainment venue in Rome, Italy.",
+    "category": "classic",
+    "latitude": 41.8859,
+    "longitude": 12.4857,
+    "source": "wikidata"
+  },
+  {
+    "name": "Arch of Constantine",
+    "description": "The Arch of Constantine is a triumphal arch in Rome dedicated to the emperor Constantine the Great.",
+    "category": "classic",
+    "latitude": 41.889828,
+    "longitude": 12.490605,
+    "source": "wikidata"
+  },
+  {
+    "name": "Aurelian Walls",
+    "description": "The Aurelian Walls are a line of city walls built between AD 271 and AD 275 in Rome, Italy, during the reign of the Roman Emperor Aurelian. They superseded the earlier Servian Wall built during the 4th century BC.",
+    "category": "classic",
+    "latitude": 41.873292,
+    "longitude": 12.498955,
+    "source": "wikidata"
+  },
+  {
+    "name": "Piazza Navona",
+    "description": "Piazza Navona is a public open space in Rome, Italy. It is built on the site of the 1st century AD Stadium of Domitian and follows the form of the open space of the stadium in an elongated oval.",
+    "category": "classic",
+    "latitude": 41.89871,
+    "longitude": 12.47316,
+    "source": "wikidata"
+  },
+  {
+    "name": "piazza del Popolo",
+    "description": "Piazza del Popolo is a large urban square in Rome.",
+    "category": "classic",
+    "latitude": 41.910714,
+    "longitude": 12.476317,
+    "source": "wikidata"
+  },
+  {
+    "name": "Villa Ada",
+    "description": "Villa Ada is a park in Rome, Italy, with a surface of 180 hectares it is the second largest in the city after Villa Doria Pamphili. It is located in the northeastern part of the city.",
+    "category": "nature",
+    "latitude": 41.932039,
+    "longitude": 12.501497,
+    "source": "wikidata"
+  },
+  {
+    "name": "Parco degli Scipioni",
+    "description": "The Parco degli Acquedotti is a public park to the southeast of Rome, Italy. It is part of the Appian Way Regional Park and is of approximately 240 ha.",
+    "category": "nature",
+    "latitude": 41.87776,
+    "longitude": 12.499881,
+    "source": "wikidata"
+  }
+]

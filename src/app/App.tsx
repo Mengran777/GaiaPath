@@ -566,7 +566,7 @@ const App: React.FC = () => {
           {/* Sticky generate button */}
           <div className="sticky bottom-0 px-4 pb-4 pt-2 bg-gradient-to-t from-[#f5f2ee] to-transparent flex-shrink-0">
             <GenerateButton
-              onClick={handleGenerateItinerary}
+              onClick={() => handleGenerateItinerary()}
               isLoading={isLoading}
             />
           </div>

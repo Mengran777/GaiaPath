@@ -2,84 +2,103 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
 }
 
-// "postgresql"
 datasource db {
-  provider = "postgresql"
-  url      = env("POSTGRES_URL")
+  provider   = "postgresql"
+  url        = env("POSTGRES_URL")
+  directUrl  = env("DIRECT_URL")
+  extensions = [vector]
 }
 
-// 用户模型
 model User {
   id             String          @id @default(uuid())
   username       String          @unique
   email          String          @unique
-  password       String          // 实际应用中应存储哈希后的密码
-  trips          Trip[]          // 用户可以有多个行程
-  favoriteRoutes FavoriteRoute[] // 用户收藏的路线
+  password       String
+  trips          Trip[]
+  favoriteRoutes FavoriteRoute[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
-// 行程模型
 model Trip {
   id            String    @id @default(uuid())
   name          String
-  startDate     DateTime  @map("start_date") @db.Date // 存储日期，不含时间
-  endDate       DateTime  @map("end_date") @db.Date    // 存储日期，不含时间
-  routeId       String?   @map("route_id")             // AI 生成的路线 ID
-  itineraryData String?   @map("itinerary_data") @db.Text // JSON: DayItinerary[]（含用户编辑后的版本）
-  routeMeta     String?   @map("route_meta") @db.Text     // JSON: 路线元数据（badge, highlights 等）
+  startDate     DateTime  @map("start_date") @db.Date // date only, no time
+  endDate       DateTime  @map("end_date") @db.Date    // date only, no time
+  routeId       String?   @map("route_id")             // AI-generated route ID
+  itineraryData String?   @map("itinerary_data") @db.Text // JSON: DayItinerary[] (includes user edits)
+  routeMeta     String?   @map("route_meta") @db.Text     // JSON: route metadata (badge, highlights, etc.)
 
-  userId    String    // 外键，关联到 User
+  userId    String
   user      User      @relation(fields: [userId], references: [id])
 
-  locations Location[] // 行程可以有多个地点
+  locations Location[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
-  @@map("trips") // 数据库表名为 'trips'
+  @@map("trips")
 }
 
-// 地点模型 (行程中的具体地点)
+// A single location/activity within a trip
 model Location {
   id          String   @id @default(uuid())
   name        String
-  description String?  // 新增：活动描述，可选
+  description String?
   latitude    Float
   longitude   Float
-  notes       String?  // 备注可选
-  order       Int      @default(0) // 地点在行程中的顺序
-  time        String?  // 新增：活动时间段，可选
-  rating      Float?   // 新增：评分，可选
-  price       String?  // 新增：价格 (可以是 "Free" 或数字字符串)，可选
-  imageUrl    String?  // 新增：图片 URL，可选
+  notes       String?
+  order       Int      @default(0)
+  time        String?
+  rating      Float?
+  price       String?  // e.g. "Free" or a price string
+  imageUrl    String?
 
-  tripId      String   // 外键，关联到 Trip
-  trip        Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade) // 添加 onDelete: Cascade
+  tripId      String
+  trip        Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  @@map("locations") // 数据库表名为 'locations'
+  @@map("locations")
 }
 
-// 收藏路线模型
 model FavoriteRoute {
   id        String   @id @default(uuid())
-  routeId   String   @map("route_id") // AI 生成的路线 ID
-  routeData String   @map("route_data") @db.Text // 存储完整的路线 JSON 数据
+  routeId   String   @map("route_id")   // AI-generated route ID
+  routeData String   @map("route_data") @db.Text // full route JSON
 
-  userId    String   @map("user_id") // 外键，关联到 User
+  userId    String   @map("user_id")
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  @@unique([userId, routeId]) // 同一个用户不能重复收藏同一个路线
-  @@map("favorite_routes") // 数据库表名为 'favorite_routes'
+  @@unique([userId, routeId]) // one favorite per user per route
+  @@map("favorite_routes")
+}
+
+// RAG corpus: real points of interest per destination, used for embedding retrieval
+model PointOfInterest {
+  id          String                      @id @default(uuid())
+  destination String                      // normalized slug, e.g. "new-york"
+  name        String
+  description String                      @db.Text
+  category    String?                     // classic / culture / nature / food
+  latitude    Float
+  longitude   Float
+  embedding   Unsupported("vector(3072)") // native pgvector; not readable/writable via Prisma Client, use $queryRaw/$executeRaw
+  source      String                      @default("manual")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt     @map("updated_at")
+
+  @@unique([destination, name])
+  @@index([destination])
+  @@map("points_of_interest")
 }
