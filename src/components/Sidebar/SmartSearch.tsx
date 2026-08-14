@@ -6,6 +6,15 @@ interface SmartSearchProps {
   setQuery: (query: string) => void;
 }
 
+const TAG_PREFIX = "I want to visit places with: ";
+
+function buildCombinedQuery(typedText: string, selectedTags: Set<string>): string {
+  const trimmed = typedText.trim();
+  if (selectedTags.size === 0) return trimmed;
+  const tagsClause = `${TAG_PREFIX}${Array.from(selectedTags).join(", ")}`;
+  return trimmed ? `${trimmed}. ${tagsClause}` : tagsClause;
+}
+
 const SmartSearch: React.FC<SmartSearchProps> = ({
   onSearch,
   query,
@@ -21,29 +30,24 @@ const SmartSearch: React.FC<SmartSearchProps> = ({
     { emoji: "🎬", label: "Film locations" },
   ];
 
+  // Textarea shows only what the user typed; tags merge in separately so
+  // toggling one never overwrites hand-typed text.
+  const [typedText, setTypedText] = useState(query);
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
 
+  useEffect(() => {
+    setQuery(buildCombinedQuery(typedText, selectedTags));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [typedText, selectedTags]);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setQuery(e.target.value);
+    setTypedText(e.target.value);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && e.ctrlKey) {
-      if (query.trim()) onSearch(query);
-      return;
-    }
-    if (e.key === "Backspace" && selectedTags.size > 0) {
-      const cursorPosition = e.currentTarget.selectionStart;
-      if (cursorPosition === e.currentTarget.value.length) {
-        e.preventDefault();
-        const tagsArray = Array.from(selectedTags);
-        const lastTag = tagsArray[tagsArray.length - 1];
-        setSelectedTags((prev) => {
-          const next = new Set(prev);
-          next.delete(lastTag);
-          return next;
-        });
-      }
+      const combined = buildCombinedQuery(typedText, selectedTags);
+      if (combined.trim()) onSearch(combined);
     }
   };
 
@@ -54,14 +58,6 @@ const SmartSearch: React.FC<SmartSearchProps> = ({
       return next;
     });
   };
-
-  useEffect(() => {
-    if (selectedTags.size > 0) {
-      setQuery(`I want to visit places with: ${Array.from(selectedTags).join(", ")}`);
-    } else {
-      setQuery("");
-    }
-  }, [selectedTags, setQuery]);
 
   return (
     <div className="bg-white rounded-2xl border border-[#e2ddd8] overflow-hidden mb-5">
@@ -78,7 +74,7 @@ const SmartSearch: React.FC<SmartSearchProps> = ({
         className="w-full px-4 py-3 border-b border-[#e2ddd8] text-[13px] text-[#1a1a1a]
                    placeholder:text-[#8a8a8a] resize-none focus:outline-none bg-white"
         placeholder={"Describe your ideal trip in your own words...\ne.g. Greek islands with local food and some hiking"}
-        value={query}
+        value={typedText}
         onChange={handleInputChange}
         onKeyDown={handleKeyDown}
         rows={3}

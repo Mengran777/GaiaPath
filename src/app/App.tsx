@@ -1,7 +1,7 @@
 // src/app/App.tsx (MAJOR REWRITE)
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import PageContainer from "../components/Layout/PageContainer";
@@ -99,6 +99,8 @@ const App: React.FC = () => {
     destination: "",
     travelStartDate: "",
     travelEndDate: "",
+    arrivalTime: "afternoon",
+    departureTime: "afternoon",
     budget: "",
     travelers: "2",
     travelType: [],
@@ -134,8 +136,11 @@ const App: React.FC = () => {
   // ⭐ Favorites feature state ⭐
   const [favoriteRoutes, setFavoriteRoutes] = useState<Set<string>>(new Set());
 
-  // ⭐ Save state ⭐
-  const [isSavingItinerary, setIsSavingItinerary] = useState(false);
+  // (no DB-save state needed — itinerary changes are session-only)
+
+  // ⭐ Dev quick-fill hook — ref is initialized null to avoid TDZ; ⭐
+  // the no-dep effect below keeps it pointing to the latest function.
+  const generateRef = useRef<((p?: typeof preferences) => void) | null>(null);
 
   // ⭐ Sync user identity from NextAuth session ⭐
   useEffect(() => {
@@ -251,40 +256,22 @@ const App: React.FC = () => {
     }
   };
 
-  // ⭐ Save itinerary handler ⭐
-  const handleSaveItinerary = async (itinerary: DayItinerary[]) => {
-    if (!selectedRouteId || !selectedRoute) return;
-    setIsSavingItinerary(true);
-    try {
-      const response = await fetch("/api/trips/save-itinerary", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          routeId: selectedRouteId,
-          name: selectedRoute.title,
-          startDate: itinerary[0]?.date ?? preferences.travelStartDate,
-          endDate: itinerary[itinerary.length - 1]?.date ?? preferences.travelEndDate,
-          itinerary,
-          routeMeta: {
-            badge: selectedRoute.badge,
-            badgeColor: selectedRoute.badgeColor,
-            description: selectedRoute.description,
-            highlights: selectedRoute.highlights,
-            days: selectedRoute.days,
-            estimatedBudget: selectedRoute.estimatedBudget,
-            intensity: selectedRoute.intensity,
-          },
-        }),
-      });
-      if (!response.ok) throw new Error("Save failed");
-      await response.json();
-      // Reset the baseline so hasChanges goes false
-      setItinerary(itinerary);
-    } catch {
-      showToast("Failed to save itinerary. Please try again.", "error");
-    } finally {
-      setIsSavingItinerary(false);
-    }
+  // ⭐ Save itinerary handler — session-only (no DB) ⭐
+  // Persists edits in-memory so they survive navigating back to the route list.
+  // Only favoriting writes to the DB.
+  const handleSaveItinerary = (updatedItinerary: DayItinerary[]) => {
+    if (!selectedRouteId) return;
+    setItinerary(updatedItinerary); // reset hasChanges baseline in ItineraryPanel
+    setRouteOptions((prev) =>
+      prev.map((r) =>
+        r.id === selectedRouteId ? { ...r, itinerary: updatedItinerary } : r
+      )
+    );
+    setMyItineraries((prev) =>
+      prev.map((r) =>
+        r.id === selectedRouteId ? { ...r, itinerary: updatedItinerary } : r
+      )
+    );
   };
 
   // ⭐ Tab switch handler ⭐
@@ -311,52 +298,25 @@ const App: React.FC = () => {
           setRouteOptions([]);
         }
       } else if (tab === "My Itineraries") {
+        // Session-only: just show whatever was generated this session
         setStage("routes");
-        // Load saved trips from DB and merge with in-memory unsaved ones
-        const response = await fetch("/api/trips");
-        if (response.ok) {
-          const trips = await response.json();
-          const dbRoutes: RouteOption[] = trips
-            .filter((t: any) => t.routeId && t.itineraryData)
-            .map((t: any) => {
-              const meta = t.routeMeta ? JSON.parse(t.routeMeta) : {};
-              const itinerary: DayItinerary[] = JSON.parse(t.itineraryData);
-              return {
-                id: t.routeId,
-                title: t.name,
-                itinerary,
-                badge: meta.badge ?? "",
-                badgeColor: meta.badgeColor,
-                description: meta.description ?? "",
-                highlights: meta.highlights ?? [],
-                days: meta.days ?? itinerary.length,
-                estimatedBudget: meta.estimatedBudget,
-                intensity: meta.intensity,
-              } as RouteOption;
-            });
-          // Merge: DB routes first, then unsaved in-memory ones
-          const dbRouteIds = new Set(dbRoutes.map((r) => r.id));
-          const unsaved = myItineraries.filter((r) => !dbRouteIds.has(r.id));
-          setRouteOptions([...dbRoutes, ...unsaved]);
-        } else {
-          setRouteOptions(myItineraries);
-        }
+        setRouteOptions(myItineraries);
       }
     } catch (error) {
       console.error("Error switching tab:", error);
-      setRouteOptions([]);
     } finally {
       setIsTabSwitching(false);
     }
   };
 
   // ⭐ Generate multiple routes ⭐
-  const handleGenerateItinerary = async () => {
-    if (!preferences.destination.trim()) {
+  const handleGenerateItinerary = async (prefOverride?: typeof preferences) => {
+    const prefs = prefOverride ?? preferences;
+    if (!prefs.destination.trim()) {
       showToast("Please enter a destination before generating.", "error");
       return;
     }
-    if (!preferences.travelStartDate || !preferences.travelEndDate) {
+    if (!prefs.travelStartDate || !prefs.travelEndDate) {
       showToast("Please select your travel dates before generating.", "error");
       return;
     }
@@ -377,8 +337,8 @@ const App: React.FC = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          ...preferences,
-          userRequest: smartSearchQuery, // ⭐ Added: send user's custom request
+          ...prefs,
+          userRequest: smartSearchQuery,
           userId: currentUserId,
         }),
       });
@@ -412,6 +372,17 @@ const App: React.FC = () => {
       setIsLoading(false);
     }
   };
+
+  // Keep ref pointing to the latest handleGenerateItinerary after every render
+  useEffect(() => { generateRef.current = handleGenerateItinerary; });
+  useEffect(() => {
+    if (process.env.NODE_ENV !== "development") return;
+    (window as any).__gaiaFill = (p: typeof preferences) => {
+      setPreferences(p);
+      generateRef.current?.(p);
+    };
+    return () => { delete (window as any).__gaiaFill; };
+  }, []);
 
   // ⭐ Select a route ⭐
   const handleSelectRoute = useCallback(
@@ -597,7 +568,7 @@ const App: React.FC = () => {
           {/* Sticky generate button */}
           <div className="sticky bottom-0 px-4 pb-4 pt-2 bg-gradient-to-t from-[#f5f2ee] to-transparent flex-shrink-0">
             <GenerateButton
-              onClick={handleGenerateItinerary}
+              onClick={() => handleGenerateItinerary()}
               isLoading={isLoading}
             />
           </div>
@@ -671,8 +642,9 @@ const App: React.FC = () => {
                   onToggleFavorite={() => toggleFavorite(selectedRouteId)}
                   onBackToRoutes={handleBackToRoutes}
                   destination={preferences.destination}
+                  transportationModes={preferences.transportation}
                   onSave={handleSaveItinerary}
-                  isSaving={isSavingItinerary}
+                  isSaving={false}
                 />
               )}
             </div>

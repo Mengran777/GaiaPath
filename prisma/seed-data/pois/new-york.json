@@ -1,0 +1,402 @@
+[
+  {
+    "name": "Metropolitan Museum of Art",
+    "description": "The Metropolitan Museum of Art, colloquially referred to as the Met, is an encyclopedic art museum in New York City. By floor area, it is the fourth-largest museum in the world and the largest art museum in the Americas.",
+    "category": "culture",
+    "latitude": 40.779444444,
+    "longitude": -73.963333333,
+    "source": "wikidata"
+  },
+  {
+    "name": "Museum of Modern Art",
+    "description": "The Museum of Modern Art (MoMA) is an art museum located in Midtown Manhattan, New York City, on 53rd Street between Fifth and Sixth Avenues.",
+    "category": "culture",
+    "latitude": 40.761444444,
+    "longitude": -73.977611111,
+    "source": "wikidata"
+  },
+  {
+    "name": "National September 11 Memorial & Museum",
+    "description": "The National September 11 Memorial & Museum is a memorial and museum that are part of the World Trade Center complex, in New York City, created for remembering the September 11, 2001, terrorist attacks which killed 2,977…",
+    "category": "culture",
+    "latitude": 40.711388888,
+    "longitude": -74.013611111,
+    "source": "wikidata"
+  },
+  {
+    "name": "The Morgan Library & Museum",
+    "description": "The Morgan Library & Museum is a museum and research library in New York City, New York, United States. Completed in 1906 as the private library of the banker J. P.",
+    "category": "culture",
+    "latitude": 40.748803,
+    "longitude": -73.981556,
+    "source": "wikidata"
+  },
+  {
+    "name": "Cooper Hewitt, Smithsonian Design Museum",
+    "description": "Cooper Hewitt, Smithsonian Design Museum is a design museum at the Andrew Carnegie Mansion in Manhattan, New York City, along the Upper East Side's Museum Mile.",
+    "category": "culture",
+    "latitude": 40.78472222,
+    "longitude": -73.95805556,
+    "source": "wikidata"
+  },
+  {
+    "name": "Museum of the Moving Image",
+    "description": "The Museum of the Moving Image (MoMI) is a time-based media museum located in a former building of the historic Astoria Studios, in the Astoria neighborhood of Queens in New York City.",
+    "category": "culture",
+    "latitude": 40.75621111,
+    "longitude": -73.92396389,
+    "source": "wikidata"
+  },
+  {
+    "name": "Gracie Mansion",
+    "description": "Gracie Mansion is the official residence of the mayor of New York City. Built in 1799, it is located in Carl Schurz Park, at East End Avenue and 88th Street in the Yorkville neighborhood of Manhattan.",
+    "category": "culture",
+    "latitude": 40.776111111,
+    "longitude": -73.943055555,
+    "source": "wikidata"
+  },
+  {
+    "name": "Barnum's American Museum",
+    "description": "Barnum's American Museum was a dime museum located at the corner of Broadway, Park Row, and Ann Street in what is now the Financial District of Manhattan, New York City, from 1841 to 1865.",
+    "category": "culture",
+    "latitude": 40.71102,
+    "longitude": -74.00852,
+    "source": "wikidata"
+  },
+  {
+    "name": "New York Historical",
+    "description": "The New York Historical is an American history museum and library on the Upper West Side of Manhattan in New York City. The society was founded in 1804 as New York's first museum.",
+    "category": "culture",
+    "latitude": 40.779166666,
+    "longitude": -73.974166666,
+    "source": "wikidata"
+  },
+  {
+    "name": "Museum of Chinese in America",
+    "description": "The Museum of Chinese in America is a museum in Chinatown, Manhattan, New York City, which exhibits Chinese American history.",
+    "category": "culture",
+    "latitude": 40.718658333,
+    "longitude": -74.000027777,
+    "source": "wikidata"
+  },
+  {
+    "name": "Master Apartments",
+    "description": "The Master Apartments, officially known as the Master Building, is a 27-story Art Deco skyscraper at 310 Riverside Drive, on the Upper West Side of Manhattan in New York City, New York, US.",
+    "category": "culture",
+    "latitude": 40.8004,
+    "longitude": -73.97105,
+    "source": "wikidata"
+  },
+  {
+    "name": "The Shed",
+    "description": "The Shed is a cultural center in Hudson Yards, Manhattan, New York City. Opened on April 5, 2019, the Shed commissions, produces, and presents a wide range of activities in performing arts, visual arts, and pop culture.",
+    "category": "culture",
+    "latitude": 40.7533,
+    "longitude": -74.0029,
+    "source": "wikidata"
+  },
+  {
+    "name": "Andrew Carnegie Mansion",
+    "description": "The Andrew Carnegie Mansion is a historic house and a museum building at 2 East 91st Street, along the east side of Fifth Avenue, on the Upper East Side of Manhattan in New York City.",
+    "category": "culture",
+    "latitude": 40.784444444,
+    "longitude": -73.957777777,
+    "source": "wikidata"
+  },
+  {
+    "name": "Times Square",
+    "description": "Times Square is one of the world's busiest pedestrian intersections, tourist destinations, and entertainment hubs.",
+    "category": "classic",
+    "latitude": 40.7575,
+    "longitude": -73.985833333,
+    "source": "wikidata"
+  },
+  {
+    "name": "Trump Tower",
+    "description": "Trump Tower is a 58-story, 664-foot-tall (202 m) mixed-use condominium skyscraper at 721–725 Fifth Avenue in the Midtown Manhattan neighborhood of New York City, between East 56th and 57th Streets.",
+    "category": "classic",
+    "latitude": 40.7625,
+    "longitude": -73.974166666,
+    "source": "wikidata"
+  },
+  {
+    "name": "7 World Trade Center",
+    "description": "7 World Trade Center is an office building constructed as part of the new World Trade Center in Lower Manhattan, New York City.",
+    "category": "classic",
+    "latitude": 40.7133,
+    "longitude": -74.012,
+    "source": "wikidata"
+  },
+  {
+    "name": "New York Times Building",
+    "description": "The New York Times Building is a 52-story skyscraper at 620 Eighth Avenue, between 40th and 41st Streets near Times Square, on the west side of Midtown Manhattan in New York City, New York, U.S.",
+    "category": "classic",
+    "latitude": 40.756111111,
+    "longitude": -73.99,
+    "source": "wikidata"
+  },
+  {
+    "name": "Woolworth Building",
+    "description": "The Woolworth Building is a 792-foot-tall (241 m) residential building and early skyscraper at 233 Broadway in the Tribeca neighborhood of Lower Manhattan in New York City, United States.",
+    "category": "classic",
+    "latitude": 40.7124,
+    "longitude": -74.00822,
+    "source": "wikidata"
+  },
+  {
+    "name": "Bank of America Tower",
+    "description": "The Bank of America Tower, also known as 1 Bryant Park, is a 55-story skyscraper in the Midtown Manhattan neighborhood of New York City, New York, U.S.",
+    "category": "classic",
+    "latitude": 40.755278,
+    "longitude": -73.984167,
+    "source": "wikidata"
+  },
+  {
+    "name": "Metropolitan Life Insurance Company Tower",
+    "description": "The Metropolitan Life Insurance Company Tower is a skyscraper occupying a full block in the Flatiron District of Manhattan in New York City, New York, United States.",
+    "category": "classic",
+    "latitude": 40.741111111,
+    "longitude": -73.9875,
+    "source": "wikidata"
+  },
+  {
+    "name": "MetLife Building",
+    "description": "The MetLife Building is a skyscraper at Park Avenue and 45th Street, north of Grand Central Terminal, in the Midtown Manhattan neighborhood of New York City, New York, U.S.",
+    "category": "classic",
+    "latitude": 40.753333333,
+    "longitude": -73.976666666,
+    "source": "wikidata"
+  },
+  {
+    "name": "3 World Trade Center",
+    "description": "3 World Trade Center is a skyscraper constructed as part of the new World Trade Center in Lower Manhattan, New York City. The tower is located on Greenwich Street along the eastern side of the World Trade Center site.",
+    "category": "classic",
+    "latitude": 40.710923,
+    "longitude": -74.011608,
+    "source": "wikidata"
+  },
+  {
+    "name": "432 Park Avenue",
+    "description": "432 Park Avenue is a residential skyscraper at 57th Street and Park Avenue in the Midtown Manhattan neighborhood of New York City, New York, U.S. The 1,396-foot-tall (425.",
+    "category": "classic",
+    "latitude": 40.761666666,
+    "longitude": -73.971944444,
+    "source": "wikidata"
+  },
+  {
+    "name": "Citigroup Center",
+    "description": "The Citigroup Center is an office skyscraper in the Midtown Manhattan neighborhood of New York City, New York, U.S. Built in 1977 for Citibank, it is 915 feet (279 m) tall and has 1.",
+    "category": "classic",
+    "latitude": 40.758611111,
+    "longitude": -73.970277777,
+    "source": "wikidata"
+  },
+  {
+    "name": "Seagram Building",
+    "description": "The Seagram Building is a skyscraper at 375 Park Avenue, between 52nd and 53rd streets, in the Midtown Manhattan neighborhood of New York City, New York, United States.",
+    "category": "classic",
+    "latitude": 40.758444444,
+    "longitude": -73.972138888,
+    "source": "wikidata"
+  },
+  {
+    "name": "Singer Building",
+    "description": "The Singer Building was an office building and early skyscraper at the northwestern corner of Liberty Street and Broadway in the Financial District of Lower Manhattan, New York City, United States.",
+    "category": "classic",
+    "latitude": 40.70953,
+    "longitude": -74.01078,
+    "source": "wikidata"
+  },
+  {
+    "name": "Riverside Park",
+    "description": "Riverside Park is a scenic waterfront public park along the Hudson River on the West Side of the borough of Manhattan in New York City. The park measures 4 miles (6.",
+    "category": "nature",
+    "latitude": 40.804,
+    "longitude": -73.97,
+    "source": "wikidata"
+  },
+  {
+    "name": "Grand Army Plaza",
+    "description": "The Grand Army Plaza station is a local station on the IRT Eastern Parkway Line of the New York City Subway.",
+    "category": "nature",
+    "latitude": 40.76444,
+    "longitude": -73.97361,
+    "source": "wikidata"
+  },
+  {
+    "name": "Tompkins Square Park",
+    "description": "Tompkins Square Park is a 10.5-acre (4.2 ha) public park in the Alphabet City portion of East Village, Manhattan, New York City.",
+    "category": "nature",
+    "latitude": 40.726111111,
+    "longitude": -73.981388888,
+    "source": "wikidata"
+  },
+  {
+    "name": "East River Park",
+    "description": "The East River is a saltwater tidal estuary in New York City. The waterway, which despite its name is a tidal strait, not a river, connects Upper New York Bay on its south end to Long Island Sound on its north end.",
+    "category": "nature",
+    "latitude": 40.7175,
+    "longitude": -73.974166666,
+    "source": "wikidata"
+  },
+  {
+    "name": "Cadman Plaza",
+    "description": "Cadman Plaza is a park located on the border of the Brooklyn Heights and Downtown Brooklyn neighborhoods in Brooklyn, New York City.",
+    "category": "nature",
+    "latitude": 40.698121,
+    "longitude": -73.990431,
+    "source": "wikidata"
+  },
+  {
+    "name": "Brooklyn Bridge Park",
+    "description": "The Brooklyn Bridge is a cable-stayed suspension bridge in New York City, spanning the East River between the boroughs of Manhattan and Brooklyn.",
+    "category": "nature",
+    "latitude": 40.697777777,
+    "longitude": -73.998333333,
+    "source": "wikidata"
+  },
+  {
+    "name": "Dante Park",
+    "description": "Dante Park is a public park in Manhattan, New York City, located on the Upper West Side in front of Lincoln Center near Central Park.",
+    "category": "nature",
+    "latitude": 40.77167,
+    "longitude": -73.98306,
+    "source": "wikidata"
+  },
+  {
+    "name": "Verdi Square",
+    "description": "Verdi Square is a 0.1-acre (400 m2) park on a trapezoidal traffic island on the Upper West Side of Manhattan in New York City.",
+    "category": "nature",
+    "latitude": 40.779,
+    "longitude": -73.9817,
+    "source": "wikidata"
+  },
+  {
+    "name": "Skyscraper Museum",
+    "description": "The Skyscraper Museum is an architecture museum in the Battery Park City neighborhood of Manhattan in New York City, founded in 1996.",
+    "category": "culture",
+    "latitude": 40.705555555,
+    "longitude": -74.0175,
+    "source": "wikidata"
+  },
+  {
+    "name": "Museum of Jewish Heritage",
+    "description": "The Museum of Jewish Heritage, located on Edmond J. Safra Plaza in the Battery Park City neighborhood of Manhattan, New York City, is a historical museum and a memorial to those murdered in The Holocaust.",
+    "category": "culture",
+    "latitude": 40.70621,
+    "longitude": -74.01875,
+    "source": "wikidata"
+  },
+  {
+    "name": "Tenement Museum",
+    "description": "The Lower East Side Tenement Museum is a museum and National Historic Site located at 97 and 103 Orchard Street on the Lower East Side of Manhattan in New York City, United States.",
+    "category": "culture",
+    "latitude": 40.7185,
+    "longitude": -73.990139,
+    "source": "wikidata"
+  },
+  {
+    "name": "Museum of American Finance",
+    "description": "The Museum of American Finance is an independent public museum dedicated to preserving, exhibiting and teaching about American finance and financial history. It is an affiliate of the Smithsonian Institution.",
+    "category": "culture",
+    "latitude": 40.7064,
+    "longitude": -74.0092,
+    "source": "wikidata"
+  },
+  {
+    "name": "Empire State Building",
+    "description": "The Empire State Building is a 102-story, supertall skyscraper in the Midtown South neighborhood of Manhattan, New York City, United States.",
+    "category": "classic",
+    "latitude": 40.748333333,
+    "longitude": -73.985555555,
+    "source": "wikidata"
+  },
+  {
+    "name": "Chrysler Building",
+    "description": "The Chrysler Building is a 1,046-foot-tall (319 m), Art Deco skyscraper in the East Midtown neighborhood of Manhattan, New York City, United States.",
+    "category": "classic",
+    "latitude": 40.751430555,
+    "longitude": -73.975719444,
+    "source": "wikidata"
+  },
+  {
+    "name": "One World Trade Center",
+    "description": "One World Trade Center, also known as One WTC and the Freedom Tower, is the main building of the rebuilt World Trade Center complex in Lower Manhattan, New York City.",
+    "category": "classic",
+    "latitude": 40.713,
+    "longitude": -74.0135,
+    "source": "wikidata"
+  },
+  {
+    "name": "40 Wall Street",
+    "description": "Wall Street is a street in the Financial District of Lower Manhattan in New York City.",
+    "category": "classic",
+    "latitude": 40.706944444,
+    "longitude": -74.009722222,
+    "source": "wikidata"
+  },
+  {
+    "name": "30 Rockefeller Plaza",
+    "description": "30 Rockefeller Plaza is a skyscraper that forms the centerpiece of Rockefeller Center in the Midtown Manhattan neighborhood of New York City, New York.",
+    "category": "classic",
+    "latitude": 40.75897222,
+    "longitude": -73.97938889,
+    "source": "wikidata"
+  },
+  {
+    "name": "70 Pine Street",
+    "description": "70 Pine Street is a 67-story, 952-foot (290 m) residential skyscraper in the Financial District of Lower Manhattan, New York City, New York, U.S.",
+    "category": "classic",
+    "latitude": 40.706388888,
+    "longitude": -74.0075,
+    "source": "wikidata"
+  },
+  {
+    "name": "U Thant Island",
+    "description": "U Thant Island is a small artificial island or islet in New York City's East River, within the borough of Manhattan.",
+    "category": "nature",
+    "latitude": 40.746597222,
+    "longitude": -73.964386111,
+    "source": "wikidata"
+  },
+  {
+    "name": "Hudson River Park",
+    "description": "The Hudson River is a 315-mile (507 km) river that flows from north to south largely through eastern New York state.",
+    "category": "nature",
+    "latitude": 40.733158,
+    "longitude": -74.010767,
+    "source": "wikidata"
+  },
+  {
+    "name": "Morningside Park",
+    "description": "Morningside Park is a 30-acre (12-hectare) public park in Upper Manhattan in New York City, New York, United States.",
+    "category": "nature",
+    "latitude": 40.8062,
+    "longitude": -73.9586,
+    "source": "wikidata"
+  },
+  {
+    "name": "Sakura Park",
+    "description": "Sakura Park is a public park located in the Morningside Heights neighborhood in Manhattan, New York City, north of West 122nd Street between Riverside Drive and Claremont Avenue.",
+    "category": "nature",
+    "latitude": 40.813055555,
+    "longitude": -73.962222222,
+    "source": "wikidata"
+  },
+  {
+    "name": "City Hall Park",
+    "description": "New York City Hall is the seat of New York City government, located at the center of City Hall Park in the Civic Center area of Lower Manhattan, between Broadway, Park Row, and Chambers Street.",
+    "category": "nature",
+    "latitude": 40.71259,
+    "longitude": -74.00626,
+    "source": "wikidata"
+  },
+  {
+    "name": "Central Park",
+    "description": "Central Park is an urban park between the Upper West Side and Upper East Side neighborhoods of Manhattan in New York City, and the first landscaped park in the United States. It is the sixth-largest park in the city, containing 843 acres, and the most visited urban park in the United States.",
+    "category": "nature",
+    "latitude": 40.7827725,
+    "longitude": -73.9653627,
+    "source": "manual"
+  }
+]

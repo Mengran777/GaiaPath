@@ -1,0 +1,274 @@
+[
+  {
+    "name": "Fundació Joan Miró",
+    "description": "The Fundació Joan Miró is a modern art museum honoring the life and work of the Spanish artist Joan Miró, located on the hill called Montjuïc in Barcelona, Catalonia (Spain).",
+    "category": "culture",
+    "latitude": 41.368611111,
+    "longitude": 2.16,
+    "source": "wikidata"
+  },
+  {
+    "name": "Museu Picasso",
+    "description": "The Museu Picasso is an art museum in Barcelona, in Catalonia, Spain. It houses an extensive collection of artworks by the twentieth-century Spanish artist Pablo Picasso, with a total of 4251 of his works.",
+    "category": "culture",
+    "latitude": 41.385216,
+    "longitude": 2.180893,
+    "source": "wikidata"
+  },
+  {
+    "name": "Hash Marihuana & Hemp Museum",
+    "description": "The Hash, Marihuana & Hemp Museum is a museum located in De Wallen, Amsterdam, Netherlands. According to the museum, more than two million visitors have visited the exhibition since it opened in 1985.",
+    "category": "culture",
+    "latitude": 41.380801346,
+    "longitude": 2.180133656,
+    "source": "wikidata"
+  },
+  {
+    "name": "Museu Frederic Marès",
+    "description": "The Museu Frederic Marès is an art and sculpture museum in the Palau Reial Major in Barcelona, Spain.",
+    "category": "culture",
+    "latitude": 41.3844,
+    "longitude": 2.17667,
+    "source": "wikidata"
+  },
+  {
+    "name": "Centre de Documentació i Museu de les Arts Escèniques",
+    "description": "The Centre de Documentació i Museu de les Arts Escèniques, also known as MAE, is a centre for information and research on the performing arts in Catalonia, Spain.",
+    "category": "culture",
+    "latitude": 41.37119722,
+    "longitude": 2.15775,
+    "source": "wikidata"
+  },
+  {
+    "name": "Museu de les Arts Decoratives",
+    "description": "The Museu de les Arts Decoratives, in English Decorative Arts Museum, is a museum opened in 1932 and located in the Palau Reial de Pedralbes in Barcelona.",
+    "category": "culture",
+    "latitude": 41.388388888,
+    "longitude": 2.117027777,
+    "source": "wikidata"
+  },
+  {
+    "name": "Gabinet de les Arts Gràfiques",
+    "description": "The Gabinet de les Arts Gràfiques, in English Graphic Arts Cabinet, is a museum opened in 1942 and located in the Palau Reial de Pedralbes in Barcelona.",
+    "category": "culture",
+    "latitude": 41.388388888,
+    "longitude": 2.117027777,
+    "source": "wikidata"
+  },
+  {
+    "name": "Perfume Museum",
+    "description": "The  Perfume Museum of Barcelona, officially known in Catalan as Museu del Perfum, was founded in 1961 to exhibit an evolution of perfume vessels throughout the ages.",
+    "category": "culture",
+    "latitude": 41.391333333,
+    "longitude": 2.165,
+    "source": "wikidata"
+  },
+  {
+    "name": "Museu Tèxtil i d'Indumentària",
+    "description": "The Museu Tèxtil i d'Indumentària, in English Textile and Clothing Museum, was a museum opened on 1982 and located in the Palau Reial de Pedralbes in Barcelona.",
+    "category": "culture",
+    "latitude": 41.385058333,
+    "longitude": 2.180886111,
+    "source": "wikidata"
+  },
+  {
+    "name": "Basilica and Expiatory Church of the Holy Family",
+    "description": "Holy Family Church, or other variations on the name, may refer to:",
+    "category": "classic",
+    "latitude": 41.40369,
+    "longitude": 2.17433,
+    "source": "wikidata"
+  },
+  {
+    "name": "Columbus Monument",
+    "description": "The Columbus Monument is a 60 m (197 ft) tall monument to Christopher Columbus at the lower end of La Rambla, Barcelona, Catalonia, Spain.",
+    "category": "classic",
+    "latitude": 41.37580278,
+    "longitude": 2.17776111,
+    "source": "wikidata"
+  },
+  {
+    "name": "Plaça d'Espanya",
+    "description": "Plaça d'Espanya is one of Barcelona's most important squares, built on the occasion of the 1929 Barcelona International Exposition, held at the foot of Montjuïc, in the Sants-Montjuïc district.",
+    "category": "classic",
+    "latitude": 41.375038,
+    "longitude": 2.149108,
+    "source": "wikidata"
+  },
+  {
+    "name": "Hotel Arts",
+    "description": "The Hotel Arts is a 44-storey, 483 room luxury hotel on the seafront of Barcelona, in Catalonia, Spain. It is operated by Ritz-Carlton.",
+    "category": "classic",
+    "latitude": 41.386666666,
+    "longitude": 2.196111111,
+    "source": "wikidata"
+  },
+  {
+    "name": "plaça de les Glòries Catalanes",
+    "description": "Plaça de les Glòries Catalanes, most often shortened to Glòries, is a large square in Barcelona, first designed by Ildefons Cerdà to serve as the city centre in his original urban plan, but nowadays relegated to quite a…",
+    "category": "classic",
+    "latitude": 41.40333333,
+    "longitude": 2.18694444,
+    "source": "wikidata"
+  },
+  {
+    "name": "Basilica of Our Lady of Mercy",
+    "description": "The Basilica of Our Lady of Mercy is a Baroque-style basilica in Barcelona, Catalonia. Our Lady of Mercy has been the patron saint of the city of Barcelona since 1687.",
+    "category": "classic",
+    "latitude": 41.37952,
+    "longitude": 2.17958,
+    "source": "wikidata"
+  },
+  {
+    "name": "Hotel Sky",
+    "description": "The Hotel Meliá Barcelona Sky is a skyscraper designed by Dominique Perrault located in Barcelona, Catalonia, Spain. The building is 116 metres (381 ft) tall and has 31 floors and 258 rooms.",
+    "category": "classic",
+    "latitude": 41.40617778,
+    "longitude": 2.20079444,
+    "source": "wikidata"
+  },
+  {
+    "name": "Fossar de les Moreres",
+    "description": "\n\nThe Fossar de les Moreres is a memorial square in Barcelona, adjacent to the basilica of Santa Maria del Mar.",
+    "category": "classic",
+    "latitude": 41.383684,
+    "longitude": 2.182433,
+    "source": "wikidata"
+  },
+  {
+    "name": "Hotel Porta Fira",
+    "description": "Hotel Porta Fira is a 28-storey, 113 m (371 ft) skyscraper hotel designed by Toyo Ito on the Plaza de Europa in the district of Granvia l'Hospitalet in L'Hospitalet de Llobregat, a suburb of Barcelona, Catalonia, Spain.",
+    "category": "classic",
+    "latitude": 41.35489,
+    "longitude": 2.12554,
+    "source": "wikidata"
+  },
+  {
+    "name": "Plaça de la Universitat",
+    "description": "The Plaça de la Universitat is one of Barcelona's central squares, at the border between the districts of Eixample and Ciutat Vella.",
+    "category": "classic",
+    "latitude": 41.385644,
+    "longitude": 2.164048,
+    "source": "wikidata"
+  },
+  {
+    "name": "Park Güell",
+    "description": "Park Güell is a complex of parks and gardens in Barcelona with architectural elements, located in the La Salut neighborhood of the Gràcia district in Barcelona, Catalonia, Spain.",
+    "category": "nature",
+    "latitude": 41.413611111,
+    "longitude": 2.152777777,
+    "source": "wikidata"
+  },
+  {
+    "name": "Parc del Fòrum",
+    "description": "Parc del Fòrum is a public park located between the district of Sant Martí in Barcelona and Sant Adrià de Besòs.",
+    "category": "nature",
+    "latitude": 41.4114,
+    "longitude": 2.225,
+    "source": "wikidata"
+  },
+  {
+    "name": "Parc de Cervantes",
+    "description": "The Parc de Cervantes is located in the Pedralbes neighborhood, belonging to the Les Corts district, in Barcelona, Catalonia, Spain.",
+    "category": "nature",
+    "latitude": 41.384392,
+    "longitude": 2.105749,
+    "source": "wikidata"
+  },
+  {
+    "name": "Bellesguard",
+    "description": "Bellesguard, also known as Casa Figueras, is a modernist manor house designed by Catalan architect Antoni Gaudí, which was constructed between 1900 and 1909.",
+    "category": "culture",
+    "latitude": 41.409563,
+    "longitude": 2.126863,
+    "source": "wikidata"
+  },
+  {
+    "name": "Torre Glòries",
+    "description": "The Torre Glòries, formerly known as Torre Agbar, is a 38-story skyscraper located between Avinguda Diagonal and Carrer Badajoz, near Plaça de les Glòries Catalanes, which marks the gateway to the new technological distr…",
+    "category": "classic",
+    "latitude": 41.403489,
+    "longitude": 2.189519,
+    "source": "wikidata"
+  },
+  {
+    "name": "Plaça de Catalunya",
+    "description": "Plaça de Catalunya is a large square in central Barcelona that is generally considered to be both its city centre and the place where the old city and the 19th century-built Eixample meet.",
+    "category": "classic",
+    "latitude": 41.387031,
+    "longitude": 2.170079,
+    "source": "wikidata"
+  },
+  {
+    "name": "Montjuïc Castle",
+    "description": "Montjuïc Castle is an old military fortress, with roots dating back from 1640, built on top of Montjuïc hill in Barcelona, Catalonia, Spain. It currently serves as a Barcelona municipal facility.",
+    "category": "classic",
+    "latitude": 41.36342,
+    "longitude": 2.16617,
+    "source": "wikidata"
+  },
+  {
+    "name": "Plaça Sant Jaume",
+    "description": "The Plaça de Sant Jaume is a square at the center of the Old City of Barcelona and the administrative heart of both the city and surrounding Catalonia.",
+    "category": "classic",
+    "latitude": 41.3825,
+    "longitude": 2.176944444,
+    "source": "wikidata"
+  },
+  {
+    "name": "plaça del Rei",
+    "description": "Plaça del Rei is a 14th-century medieval public square in the Barri Gòtic of Barcelona, Catalonia, Spain.",
+    "category": "classic",
+    "latitude": 41.38413,
+    "longitude": 2.17744,
+    "source": "wikidata"
+  },
+  {
+    "name": "Parc de Joan Miró",
+    "description": "The Parc de Joan Miró is a park located in the Eixample of Barcelona, near the Plaça d'Espanya, from which it is separated by the Les Arenes bullring.",
+    "category": "nature",
+    "latitude": 41.3779,
+    "longitude": 2.14837,
+    "source": "wikidata"
+  },
+  {
+    "name": "Plaça de Tetuan",
+    "description": "Plaça de Tetuan, known in Spanish as Plaza de Tetuán, is a major square in Barcelona.",
+    "category": "nature",
+    "latitude": 41.394921,
+    "longitude": 2.175507,
+    "source": "wikidata"
+  },
+  {
+    "name": "Creueta del Coll Park",
+    "description": "Parc de la Creueta del Coll is a park in the Gràcia and Horta districts of Barcelona, Catalonia, Spain.",
+    "category": "nature",
+    "latitude": 41.4189,
+    "longitude": 2.14667,
+    "source": "wikidata"
+  },
+  {
+    "name": "Parc de Sant Martí",
+    "description": "Sant Martí, is a district of Barcelona located on its eastern side, usually numbered 10 out of the ten districts of the city.",
+    "category": "nature",
+    "latitude": 41.419703,
+    "longitude": 2.19807,
+    "source": "wikidata"
+  },
+  {
+    "name": "Sagrada Família",
+    "description": "Basílica i Temple Expiatori de la Sagrada Família, or simply Sagrada Família, is a Catholic church under construction in the Eixample district of Barcelona, Catalonia, Spain. Designed by the Catalan architect Antoni Gaudí, it is the tallest church in the world.",
+    "category": "classic",
+    "latitude": 41.4035046,
+    "longitude": 2.1744283,
+    "source": "manual"
+  },
+  {
+    "name": "Casa Batlló",
+    "description": "Casa Batlló is a building in the center of Barcelona, Spain. It was designed by Antoni Gaudí, and is considered one of his masterpieces. A remodel of a previously built house, it was redesigned in 1904 by Gaudí and has been refurbished several times since.",
+    "category": "classic",
+    "latitude": 41.3915446,
+    "longitude": 2.1646961,
+    "source": "manual"
+  }
+]

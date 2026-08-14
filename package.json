@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "npx prisma generate && next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "fetch:pois": "node --env-file=.env scripts/fetch-pois.js",
+    "seed:pois": "node --env-file=.env scripts/seed-pois.js",
+    "test:retrieval": "node --env-file=.env scripts/test-retrieval.js"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

@@ -186,7 +186,7 @@ const RouteCard: React.FC<RouteCardProps> = ({
                      bg-[#0d3d38] text-white text-xs font-medium flex-shrink-0
                      hover:bg-[#1a6b5e] transition-colors duration-150"
         >
-          View route <span className="text-[#2d9e8a]">→</span>
+          View route
         </button>
       </div>
     </div>

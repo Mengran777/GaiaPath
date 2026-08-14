@@ -23,6 +23,7 @@ interface ItineraryPanelProps {
   onToggleFavorite?: () => void;
   onBackToRoutes?: () => void;
   destination?: string;
+  transportationModes?: string[];
   onSave?: (itinerary: DayItinerary[]) => void;
   isSaving?: boolean;
 }
@@ -41,6 +42,8 @@ interface DraggableCardProps {
   descriptionLoading?: boolean;
   onOpenLightbox?: (images: string[], index: number) => void;
   destination?: string;
+  isEnriching?: boolean;
+  onEdit?: () => void;
 }
 
 // ── Lightbox ───────────────────────────────────────────────────────────────────
@@ -142,6 +145,21 @@ function toHdUrl(url: string): string {
   return url;
 }
 
+function hasValidCoords(activity: Activity): boolean {
+  return (
+    typeof activity.latitude === "number" &&
+    typeof activity.longitude === "number" &&
+    activity.latitude !== 0 &&
+    activity.longitude !== 0
+  );
+}
+
+function transitDirectionsUrl(from: Activity, to: Activity): string {
+  const origin = `${from.latitude},${from.longitude}`;
+  const destination = `${to.latitude},${to.longitude}`;
+  return `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&travelmode=transit`;
+}
+
 // ── DraggableCard ──────────────────────────────────────────────────────────────
 
 const DraggableCard: React.FC<DraggableCardProps> = ({
@@ -157,6 +175,8 @@ const DraggableCard: React.FC<DraggableCardProps> = ({
   descriptionLoading = false,
   onOpenLightbox,
   destination = "",
+  isEnriching = false,
+  onEdit,
 }) => {
   const [hovered, setHovered] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -333,13 +353,15 @@ const DraggableCard: React.FC<DraggableCardProps> = ({
 
         {/* Content */}
         <div className="flex flex-1 items-center gap-3 p-3 min-w-0">
-          {activity.imageUrl && (
+          {activity.imageUrl ? (
             <img
               src={activity.imageUrl}
               alt={activity.title}
               className="w-14 h-14 object-cover rounded-lg flex-shrink-0 shadow-sm"
             />
-          )}
+          ) : isEnriching ? (
+            <div className="w-14 h-14 rounded-lg bg-gray-100 animate-pulse flex-shrink-0" />
+          ) : null}
           <div className="flex-1 min-w-0">
             <h3 className="text-sm font-bold text-[#0d3d38] mb-1 truncate">
               {activity.title}
@@ -367,19 +389,27 @@ const DraggableCard: React.FC<DraggableCardProps> = ({
           </div>
         </div>
 
-        {/* Remove button */}
+        {/* Edit + Remove buttons — slide in during edit mode */}
         <div
           className={`
-            flex items-center justify-center flex-shrink-0 bg-red-50 border-l border-red-100
-            overflow-hidden transition-all duration-300 ease-out
-            ${removeMode ? "w-11 opacity-100" : "w-0 opacity-0"}
+            flex items-stretch flex-shrink-0 overflow-hidden transition-all duration-300 ease-out
+            ${removeMode ? "w-[88px] opacity-100" : "w-0 opacity-0"}
           `}
         >
           <button
+            onClick={(e) => { e.stopPropagation(); onEdit?.(); }}
+            className="w-11 flex items-center justify-center text-gray-400
+                       bg-gray-50 border-l border-gray-100
+                       hover:text-[#0d3d38] hover:bg-[#e8f7f5] transition-colors duration-150"
+            title="Edit activity"
+          >
+            ✎
+          </button>
+          <button
             onClick={(e) => { e.stopPropagation(); onRemove(); }}
-            className="w-full h-full flex items-center justify-center text-xl font-light
-                       text-red-400 hover:text-white hover:bg-red-400
-                       transition-colors duration-150"
+            className="w-11 flex items-center justify-center text-xl font-light
+                       text-red-400 bg-red-50 border-l border-red-100
+                       hover:text-white hover:bg-red-400 transition-colors duration-150"
             title="Remove activity"
           >
             ×
@@ -468,7 +498,7 @@ const DraggableCard: React.FC<DraggableCardProps> = ({
             </div>
 
             {/* AI description */}
-            {descriptionLoading && !drawerDescription ? (
+            {(descriptionLoading && !drawerDescription) || (isEnriching && !drawerDescription && !activity.description) ? (
               <div className="space-y-1.5 mb-2.5">
                 <div className="h-2.5 bg-gray-100 rounded animate-pulse w-full" />
                 <div className="h-2.5 bg-gray-100 rounded animate-pulse w-4/5" />
@@ -509,6 +539,340 @@ const DraggableCard: React.FC<DraggableCardProps> = ({
   );
 };
 
+// ── ActivityForm ───────────────────────────────────────────────────────────────
+
+interface LocationHit {
+  name: string;
+  displayName: string;
+  lat: number;
+  lon: number;
+}
+
+function parseTimePreset(time: string): {
+  preset: "morning" | "afternoon" | "evening" | "custom" | null;
+  customStart: string;
+  customEnd: string;
+} {
+  if (!time) return { preset: null, customStart: "09:00", customEnd: "12:00" };
+  if (time === "08:00-12:00") return { preset: "morning", customStart: "08:00", customEnd: "12:00" };
+  if (time === "12:00-17:00") return { preset: "afternoon", customStart: "12:00", customEnd: "17:00" };
+  if (time === "17:00-21:00") return { preset: "evening", customStart: "17:00", customEnd: "21:00" };
+  const m = time.match(/^(\d{2}:\d{2})-(\d{2}:\d{2})$/);
+  if (m) return { preset: "custom", customStart: m[1], customEnd: m[2] };
+  return { preset: "custom", customStart: "09:00", customEnd: "12:00" };
+}
+
+interface ActivityFormProps {
+  onSubmit: (activity: Activity, locationName: string) => void;
+  onCancel: () => void;
+  initialActivity?: Activity;
+  isEditing?: boolean;
+}
+
+const ActivityForm: React.FC<ActivityFormProps> = ({
+  onSubmit,
+  onCancel,
+  initialActivity,
+  isEditing = false,
+}) => {
+  const initTime = parseTimePreset(initialActivity?.time ?? "");
+  const [title, setTitle] = useState(initialActivity?.title ?? "");
+  const [description, setDescription] = useState(initialActivity?.description ?? "");
+  const [timePreset, setTimePreset] = useState<"morning" | "afternoon" | "evening" | "custom" | null>(initTime.preset);
+  const [customStart, setCustomStart] = useState(initTime.customStart);
+  const [customEnd, setCustomEnd] = useState(initTime.customEnd);
+  const [price, setPrice] = useState(initialActivity?.price ?? "");
+
+  const TIME_PRESETS = {
+    morning:   { label: "08:00 – 12:00", value: "08:00-12:00" },
+    afternoon: { label: "12:00 – 17:00", value: "12:00-17:00" },
+    evening:   { label: "17:00 – 21:00", value: "17:00-21:00" },
+  } as const;
+  const getTimeValue = () => {
+    if (!timePreset) return "";
+    if (timePreset === "custom") return `${customStart}-${customEnd}`;
+    return TIME_PRESETS[timePreset].value;
+  };
+  const getTimeLabel = () => {
+    if (!timePreset) return "";
+    if (timePreset === "custom") return `${customStart} – ${customEnd}`;
+    return TIME_PRESETS[timePreset].label;
+  };
+  const [locationQuery, setLocationQuery] = useState("");
+  const [selectedLocationName, setSelectedLocationName] = useState("");
+  const [suggestions, setSuggestions] = useState<LocationHit[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [loadingLoc, setLoadingLoc] = useState(false);
+  const [lat, setLat] = useState(initialActivity?.latitude ?? 0);
+  const [lon, setLon] = useState(initialActivity?.longitude ?? 0);
+  const locWrapperRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (locWrapperRef.current && !locWrapperRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  useEffect(() => {
+    if (locationQuery.trim().length < 2) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setLoadingLoc(true);
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(locationQuery)}&limit=5`,
+          { headers: { Accept: "application/json", "User-Agent": "GaiaPath-TravelApp/1.0" } }
+        );
+        const data = await res.json();
+        const hits: LocationHit[] = data.slice(0, 5).map((item: any) => ({
+          name: item.name || item.display_name.split(",")[0],
+          displayName: item.display_name,
+          lat: parseFloat(item.lat),
+          lon: parseFloat(item.lon),
+        }));
+        setSuggestions(hits);
+        setShowSuggestions(hits.length > 0);
+      } catch {
+        /* silent */
+      } finally {
+        setLoadingLoc(false);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [locationQuery]);
+
+  const handleSelectLocation = (hit: LocationHit) => {
+    setLocationQuery(hit.name);
+    setSelectedLocationName(hit.name);
+    setLat(hit.lat);
+    setLon(hit.lon);
+    setShowSuggestions(false);
+    setSuggestions([]);
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title.trim()) return;
+    onSubmit(
+      {
+        title: title.trim(),
+        description: description.trim(),
+        time: getTimeValue(),
+        price: price.trim() || undefined,
+        latitude: lat,
+        longitude: lon,
+        imageUrl: initialActivity?.imageUrl,
+      },
+      selectedLocationName
+    );
+  };
+
+  const hasCoords = (initialActivity?.latitude ?? 0) !== 0 || (initialActivity?.longitude ?? 0) !== 0;
+
+  return (
+    <form
+      onSubmit={handleSubmit}
+      onClick={(e) => e.stopPropagation()}
+      className="mt-2 p-4 bg-white rounded-2xl border-2 border-[#cde8e4] shadow-sm space-y-3"
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-semibold text-[#0d3d38] tracking-wide uppercase">
+          {isEditing ? "Edit activity" : "Add activity"}
+        </span>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 hover:bg-gray-200 transition-colors text-sm"
+        >
+          ×
+        </button>
+      </div>
+
+      <div>
+        <label className="block text-xs font-semibold text-[#0d3d38] mb-1 uppercase tracking-wide">
+          Activity name <span className="text-red-400">*</span>
+        </label>
+        <input
+          type="text"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="e.g. Visit Eiffel Tower"
+          required
+          autoFocus={!isEditing}
+          className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl outline-none
+                     focus:border-[#2d9e8a] focus:ring-2 focus:ring-[#2d9e8a]/20 transition-all"
+        />
+      </div>
+
+      <div>
+        <label className="block text-xs font-semibold text-[#0d3d38] mb-1 uppercase tracking-wide">Description</label>
+        <input
+          type="text"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Optional short description"
+          className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl outline-none
+                     focus:border-[#2d9e8a] focus:ring-2 focus:ring-[#2d9e8a]/20 transition-all"
+        />
+      </div>
+
+      {/* Time picker */}
+      <div>
+        <label className="block text-xs font-semibold text-[#0d3d38] mb-2 tracking-wide uppercase">Time</label>
+        <div className="flex flex-wrap gap-2">
+          {([
+            { key: "morning",   icon: "🌄", label: "Morning"   },
+            { key: "afternoon", icon: "☀️",  label: "Afternoon" },
+            { key: "evening",   icon: "🌆", label: "Evening"   },
+            { key: "custom",    icon: "🕐", label: "Custom"    },
+          ] as const).map(({ key, icon, label }) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setTimePreset(timePreset === key ? null : key)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-150
+                ${timePreset === key
+                  ? "bg-[#e8f7f5] border-[#2d9e8a] text-[#0d3d38] font-semibold"
+                  : "bg-white border-gray-200 text-gray-500 hover:border-[#2d9e8a] hover:text-[#0d3d38]"
+                }`}
+            >
+              <span>{icon}</span>
+              <span>{label}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Custom time range inputs */}
+        {timePreset === "custom" && (
+          <div className="mt-2 flex items-center gap-2">
+            <input
+              type="time"
+              value={customStart}
+              onChange={(e) => setCustomStart(e.target.value)}
+              className="flex-1 px-3 py-1.5 text-sm border border-gray-200 rounded-xl outline-none
+                         focus:border-[#2d9e8a] focus:ring-2 focus:ring-[#2d9e8a]/20 transition-all"
+            />
+            <span className="text-gray-400 text-sm flex-shrink-0">–</span>
+            <input
+              type="time"
+              value={customEnd}
+              onChange={(e) => setCustomEnd(e.target.value)}
+              className="flex-1 px-3 py-1.5 text-sm border border-gray-200 rounded-xl outline-none
+                         focus:border-[#2d9e8a] focus:ring-2 focus:ring-[#2d9e8a]/20 transition-all"
+            />
+          </div>
+        )}
+
+        {/* Selected time hint */}
+        {timePreset && (
+          <p className="mt-1.5 text-xs text-gray-400">Selected: {getTimeLabel()}</p>
+        )}
+      </div>
+
+      {/* Price */}
+      <div>
+        <label className="block text-xs font-semibold text-[#0d3d38] mb-1 uppercase tracking-wide">Price</label>
+        <input
+          type="text"
+          value={price}
+          onChange={(e) => setPrice(e.target.value)}
+          placeholder="Free / €10"
+          className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl outline-none
+                     focus:border-[#2d9e8a] focus:ring-2 focus:ring-[#2d9e8a]/20 transition-all"
+        />
+      </div>
+
+      <div ref={locWrapperRef} className="relative">
+        <label className="block text-xs font-semibold text-[#0d3d38] mb-1 uppercase tracking-wide">Location</label>
+        {isEditing && hasCoords && !selectedLocationName && (
+          <div className="mb-1.5 flex items-center gap-1.5 px-3 py-2 bg-[#f0faf8] rounded-xl border border-[#cde8e4]">
+            <span className="text-[#2d9e8a] text-sm">📍</span>
+            <div className="min-w-0">
+              <p className="text-xs text-[#0d3d38] font-medium">Current location saved</p>
+              <p className="text-xs text-gray-400">{initialActivity!.latitude!.toFixed(4)}, {initialActivity!.longitude!.toFixed(4)}</p>
+            </div>
+          </div>
+        )}
+        <div className="relative">
+          <input
+            type="text"
+            value={locationQuery}
+            onChange={(e) => {
+              setLocationQuery(e.target.value);
+              setSelectedLocationName("");
+              if (!isEditing) { setLat(0); setLon(0); }
+            }}
+            placeholder={isEditing ? "Search to change location…" : "Search a place…"}
+            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl outline-none
+                       focus:border-[#2d9e8a] focus:ring-2 focus:ring-[#2d9e8a]/20 transition-all pr-8"
+          />
+          {loadingLoc && (
+            <svg
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 animate-spin h-4 w-4 text-gray-400"
+              xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+            >
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            </svg>
+          )}
+          {selectedLocationName && !loadingLoc && (
+            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#2d9e8a] text-xs font-bold">✓</span>
+          )}
+        </div>
+        {isEditing && (
+          <p className="mt-1 text-xs text-gray-400">Change location to refresh image and description</p>
+        )}
+        {showSuggestions && suggestions.length > 0 && (
+          <div className="absolute z-50 mt-1 w-full bg-white rounded-xl shadow-lg border border-gray-200 max-h-48 overflow-y-auto">
+            {suggestions.map((s, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => handleSelectLocation(s)}
+                className="w-full text-left px-3 py-2 text-sm hover:bg-[#f0faf8] transition-colors
+                           border-b border-gray-100 last:border-b-0 flex items-start gap-2"
+              >
+                <span className="mt-0.5 text-base leading-none">📍</span>
+                <div className="min-w-0">
+                  <div className="font-medium text-gray-800">{s.name}</div>
+                  <div className="text-xs text-gray-500 truncate">{s.displayName}</div>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="flex justify-end gap-2 pt-1">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="text-xs font-medium px-3 py-1.5 rounded-full border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          disabled={!title.trim()}
+          className="text-xs font-semibold px-4 py-1.5 rounded-full bg-[#0d3d38] text-white
+                     hover:bg-[#1a6b5e] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          {isEditing ? "Save changes" : "Add"}
+        </button>
+      </div>
+    </form>
+  );
+};
+
 // ── Main Panel ─────────────────────────────────────────────────────────────────
 
 const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
@@ -520,9 +884,11 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
   onToggleFavorite,
   onBackToRoutes,
   destination = "",
+  transportationModes = [],
   onSave,
   isSaving = false,
 }) => {
+  const showTransitLinks = transportationModes.includes("public_transport");
   const [localItinerary, setLocalItinerary] = useState<DayItinerary[]>(itinerary);
   const [removeMode, setRemoveMode] = useState(false);
   const [removingKeys, setRemovingKeys] = useState<Set<string>>(new Set());
@@ -532,6 +898,9 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
     index: number;
     activity: Activity;
   }[]>([]);
+  const [addingDay, setAddingDay] = useState<number | null>(null);
+  const [editingKey, setEditingKey] = useState<string | null>(null);
+  const [enrichingKeys, setEnrichingKeys] = useState<Set<string>>(new Set());
   const panelRef = useRef<HTMLDivElement>(null);
 
   // Drawer state (shared across all cards)
@@ -553,6 +922,9 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
     setSelectedActivity(null);
     setEditSnapshot(null);
     setUndoStack([]);
+    setAddingDay(null);
+    setEditingKey(null);
+    setEnrichingKeys(new Set());
   }, [itinerary]);
 
   // Fade-in animation for day sections
@@ -703,6 +1075,8 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
     setRemoveMode(false);
     setEditSnapshot(null);
     setUndoStack([]);
+    setAddingDay(null);
+    setEditingKey(null);
   }, []);
 
   // Discard all edits and restore snapshot
@@ -711,7 +1085,158 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
     setRemoveMode(false);
     setEditSnapshot(null);
     setUndoStack([]);
+    setAddingDay(null);
+    setEditingKey(null);
   }, [editSnapshot]);
+
+  const handleAddActivity = useCallback((dayNumber: number, activity: Activity, locationName: string) => {
+    setLocalItinerary((prev) =>
+      prev.map((d) =>
+        d.day === dayNumber ? { ...d, activities: [...d.activities, activity] } : d
+      )
+    );
+    setAddingDay(null);
+    setEditingKey(null);
+
+    // Background enrichment: image + description
+    const enrichKey = `${dayNumber}:${activity.title}`;
+    setEnrichingKeys((prev) => new Set(prev).add(enrichKey));
+    const userHasDescription = !!activity.description?.trim();
+
+    Promise.all([
+      fetch("/api/activity-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: activity.title, destination, locationName }),
+      })
+        .then((r) => r.json())
+        .catch(() => ({ imageUrl: null })),
+
+      userHasDescription
+        ? Promise.resolve({ description: null })
+        : fetch("/api/generate-activity-description", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ title: activity.title, locationName }),
+          })
+            .then((r) => r.json())
+            .catch(() => ({ description: null })),
+    ])
+      .then(([imgData, descData]) => {
+        const imageUrl: string | null = imgData?.imageUrl ?? null;
+        const description: string | null = descData?.description ?? null;
+
+        // Pre-populate descriptionCache so the drawer shows it immediately on open
+        if (description) {
+          setDescriptionCache((prev) => new Map(prev).set(activity.title, description));
+        }
+
+        if (imageUrl || (!userHasDescription && description)) {
+          setLocalItinerary((prev) =>
+            prev.map((d) => {
+              if (d.day !== dayNumber) return d;
+              return {
+                ...d,
+                activities: d.activities.map((a) =>
+                  a.title === activity.title && a.time === activity.time
+                    ? {
+                        ...a,
+                        ...(imageUrl ? { imageUrl } : {}),
+                        ...(!userHasDescription && description ? { description } : {}),
+                      }
+                    : a
+                ),
+              };
+            })
+          );
+        }
+      })
+      .finally(() => {
+        setEnrichingKeys((prev) => {
+          const next = new Set(prev);
+          next.delete(enrichKey);
+          return next;
+        });
+      });
+  }, [destination]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleSaveActivity = useCallback((
+    dayNumber: number,
+    index: number,
+    activity: Activity,
+    locationName: string,
+  ) => {
+    setLocalItinerary((prev) =>
+      prev.map((d) => {
+        if (d.day !== dayNumber) return d;
+        const acts = [...d.activities];
+        acts[index] = activity;
+        return { ...d, activities: acts };
+      })
+    );
+    setEditingKey(null);
+
+    if (!locationName) return;
+
+    const enrichKey = `${dayNumber}:${activity.title}`;
+    setEnrichingKeys((prev) => new Set(prev).add(enrichKey));
+    const userHasDescription = !!activity.description?.trim();
+
+    Promise.all([
+      fetch("/api/activity-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: activity.title, destination, locationName }),
+      })
+        .then((r) => r.json())
+        .catch(() => ({ imageUrl: null })),
+
+      userHasDescription
+        ? Promise.resolve({ description: null })
+        : fetch("/api/generate-activity-description", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ title: activity.title, locationName }),
+          })
+            .then((r) => r.json())
+            .catch(() => ({ description: null })),
+    ])
+      .then(([imgData, descData]) => {
+        const imageUrl: string | null = imgData?.imageUrl ?? null;
+        const description: string | null = descData?.description ?? null;
+
+        if (description) {
+          setDescriptionCache((prev) => new Map(prev).set(activity.title, description));
+        }
+
+        if (imageUrl || (!userHasDescription && description)) {
+          setLocalItinerary((prev) =>
+            prev.map((d) => {
+              if (d.day !== dayNumber) return d;
+              return {
+                ...d,
+                activities: d.activities.map((a) =>
+                  a.title === activity.title && a.time === activity.time
+                    ? {
+                        ...a,
+                        ...(imageUrl ? { imageUrl } : {}),
+                        ...(!userHasDescription && description ? { description } : {}),
+                      }
+                    : a
+                ),
+              };
+            })
+          );
+        }
+      })
+      .finally(() => {
+        setEnrichingKeys((prev) => {
+          const next = new Set(prev);
+          next.delete(enrichKey);
+          return next;
+        });
+      });
+  }, [destination]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Undo last deletion
   const handleUndo = useCallback(() => {
@@ -831,23 +1356,18 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
                 >
                   ✕ Discard
                 </button>
-                {onSave && hasChanges && (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); onSave(localItinerary); }}
-                    disabled={isSaving}
-                    className={`flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all duration-200
-                      bg-[#0d3d38] text-white border-[#0d3d38] hover:bg-[#1a6b5e]
-                      ${isSaving ? "opacity-60 cursor-not-allowed" : ""}
-                    `}
-                  >
-                    {isSaving ? "Saving…" : "Save"}
-                  </button>
-                )}
                 <button
-                  onClick={(e) => { e.stopPropagation(); exitEditMode(); }}
-                  className="flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all duration-200 bg-red-500 text-white border-red-500 shadow-sm hover:bg-red-600"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (hasChanges && onSave) onSave(localItinerary);
+                    exitEditMode();
+                  }}
+                  disabled={isSaving}
+                  className={`flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all duration-200 bg-[#0d3d38] text-white border-[#0d3d38] shadow-sm hover:bg-[#1a6b5e]
+                    ${isSaving ? "opacity-60 cursor-not-allowed" : ""}
+                  `}
                 >
-                  ✓ Done
+                  {isSaving ? "Saving…" : "✓ Done"}
                 </button>
               </>
             ) : (
@@ -965,6 +1485,7 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
                       ) : (
                         dayItem.activities.map((activity, index) => {
                           const removeKey = `${dayItem.day}-${index}`;
+                          const editKey = `${dayItem.day}:${index}`;
                           const isSelected =
                             selectedActivity?.title === activity.title &&
                             selectedActivity?.time === activity.time;
@@ -972,39 +1493,73 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
                             ? (descriptionCache.get(activity.title) ?? null)
                             : null;
 
+                          const prevActivity = index > 0 ? dayItem.activities[index - 1] : null;
+                          const showTransitLink =
+                            showTransitLinks &&
+                            prevActivity &&
+                            hasValidCoords(prevActivity) &&
+                            hasValidCoords(activity);
+
                           return (
-                            <Draggable
-                              key={`${dayItem.day}-${activity.title}-${index}`}
-                              draggableId={`${dayItem.day}-${activity.title}-${index}`}
-                              index={index}
-                            >
-                              {(provided, snapshot) => (
-                                <div
-                                  ref={provided.innerRef}
-                                  {...provided.draggableProps}
+                            <React.Fragment key={`${dayItem.day}-${activity.title}-${index}`}>
+                              {showTransitLink && (
+                                <a
+                                  href={transitDirectionsUrl(prevActivity!, activity)}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
                                   onClick={(e) => e.stopPropagation()}
+                                  className="flex items-center justify-center gap-1 py-1 text-[11px] text-[#2d9e8a] hover:text-[#1a6b5e] hover:underline"
                                 >
-                                  <DraggableCard
-                                    activity={activity}
-                                    dragHandleProps={provided.dragHandleProps}
-                                    isDragging={snapshot.isDragging}
-                                    removeMode={removeMode}
-                                    isRemoving={removingKeys.has(removeKey)}
-                                    isSelected={isSelected}
-                                    onRemove={() =>
-                                      handleRemoveActivity(dayItem.day, index)
-                                    }
-                                    onCardClick={() => handleCardClick(activity)}
-                                    drawerDescription={drawerDescription}
-                                    descriptionLoading={
-                                      isSelected ? descriptionLoading : false
-                                    }
-                                    onOpenLightbox={openLightbox}
-                                    destination={destination}
-                                  />
-                                </div>
+                                  🚌 Public transit directions
+                                </a>
                               )}
-                            </Draggable>
+                              <Draggable
+                                draggableId={`${dayItem.day}-${activity.title}-${index}`}
+                                index={index}
+                              >
+                                {(provided, snapshot) => (
+                                  <div
+                                    ref={provided.innerRef}
+                                    {...provided.draggableProps}
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <DraggableCard
+                                      activity={activity}
+                                      dragHandleProps={provided.dragHandleProps}
+                                      isDragging={snapshot.isDragging}
+                                      removeMode={removeMode}
+                                      isRemoving={removingKeys.has(removeKey)}
+                                      isSelected={isSelected}
+                                      onRemove={() =>
+                                        handleRemoveActivity(dayItem.day, index)
+                                      }
+                                      onCardClick={() => handleCardClick(activity)}
+                                      drawerDescription={drawerDescription}
+                                      descriptionLoading={
+                                        isSelected ? descriptionLoading : false
+                                      }
+                                      onOpenLightbox={openLightbox}
+                                      destination={destination}
+                                      isEnriching={enrichingKeys.has(`${dayItem.day}:${activity.title}`)}
+                                      onEdit={() => {
+                                        setEditingKey(editKey === editingKey ? null : editKey);
+                                        setAddingDay(null);
+                                      }}
+                                    />
+                                  </div>
+                                )}
+                              </Draggable>
+                              {editingKey === editKey && (
+                                <ActivityForm
+                                  isEditing
+                                  initialActivity={activity}
+                                  onSubmit={(updated, locName) =>
+                                    handleSaveActivity(dayItem.day, index, updated, locName)
+                                  }
+                                  onCancel={() => setEditingKey(null)}
+                                />
+                              )}
+                            </React.Fragment>
                           );
                         })
                       )}
@@ -1012,6 +1567,26 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
                     </div>
                   )}
                 </Droppable>
+
+                {/* Add activity — only visible in edit mode */}
+                {removeMode && (
+                  addingDay === dayItem.day ? (
+                    <ActivityForm
+                      onSubmit={(activity, locationName) => handleAddActivity(dayItem.day, activity, locationName)}
+                      onCancel={() => setAddingDay(null)}
+                    />
+                  ) : (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setAddingDay(dayItem.day); setEditingKey(null); }}
+                      className="mt-2 w-full flex items-center justify-center gap-1.5 py-2
+                                 text-xs font-medium text-[#2d9e8a] rounded-xl border border-dashed
+                                 border-[#2d9e8a]/40 hover:border-[#2d9e8a] hover:bg-[#f0faf8]
+                                 transition-all duration-150"
+                    >
+                      + Add activity
+                    </button>
+                  )
+                )}
               </div>
             ))}
           </div>
