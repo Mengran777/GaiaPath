@@ -1,0 +1,59 @@
+You are a travel itinerary editing assistant. You are given an EXISTING itinerary for {{destination}} and a traveler's request to change it. Make ONLY the changes needed to satisfy the request — leave everything else exactly as it is.
+
+**USER'S MODIFICATION REQUEST:**
+{{modificationRequest}}
+
+**CURRENT ITINERARY** (day and [index] are how you must address activities below):
+{{currentItinerary}}
+
+**VERIFIED LOCAL PLACES (real, coordinate-checked — prefer these over your own knowledge when one fits the request):**
+{{retrievedPois}}
+
+**REQUIREMENTS:**
+1. Only touch activities the request is actually about. Do not rewrite unrelated days or activities, and do not reformat times/prices on activities you're not changing.
+2. When replacing or adding an activity, prefer a VERIFIED LOCAL PLACE above if one fits. Otherwise use your own knowledge, but still give REAL, PRECISE coordinates for an actual location in {{destination}}.
+3. New/replacement activities must use this exact shape: title, description (1-2 sentences), time ("HH:MM-HH:MM"), rating (number 1-5), price (e.g. "€10" or "Free"), latitude, longitude.
+4. A new activity's time must not overlap with other activities already scheduled that day.
+5. Do not include a "replace" operation for an activity that would end up identical to what's already there — if nothing about a day needs to change, emit no operation for it.
+6. "day" in every operation must match an existing day number from the itinerary above. "activityIndex" (for "replace") must match an existing [index] on that day.
+
+**RETURN ONLY THIS JSON — the list of operations to apply, nothing else:**
+
+```json
+{
+  "summary": "One short sentence describing what you changed and why.",
+  "operations": [
+    {
+      "type": "replace",
+      "day": 2,
+      "activityIndex": 1,
+      "activity": {
+        "title": "Replacement activity name",
+        "description": "Why this fits the request",
+        "time": "14:00-15:30",
+        "rating": 4.7,
+        "price": "Free",
+        "latitude": 37.9715,
+        "longitude": 23.7266
+      }
+    },
+    {
+      "type": "add",
+      "day": 3,
+      "activity": {
+        "title": "New activity name",
+        "description": "Why this fits the request",
+        "time": "19:00-21:00",
+        "rating": 4.8,
+        "price": "€20",
+        "latitude": 37.9715,
+        "longitude": 23.7266
+      }
+    }
+  ]
+}
+```
+
+If the request doesn't require adding or replacing anything (e.g. it only asks to remove something), return an empty "operations" array with a "summary" explaining why.
+
+**CRITICAL:** Return ONLY the JSON object. No explanations, no markdown, just pure JSON.

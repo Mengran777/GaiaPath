@@ -58,3 +58,15 @@ export async function retrievePois(
     LIMIT ${topK}
   `;
 }
+
+// Shared prompt-formatting helper — used by both the first-generation route
+// and the modify-itinerary route, so grounding text reads identically in
+// both prompts.
+export function formatPoisForPrompt(pois: RetrievedPoi[]): string {
+  if (pois.length === 0) {
+    return "(No verified local place data available for this destination — use your own knowledge, but still be as accurate as possible with real place names and coordinates.)";
+  }
+  return pois
+    .map((p) => `- ${p.name} [${p.category ?? "general"}] (${p.latitude}, ${p.longitude}): ${p.description}`)
+    .join("\n");
+}

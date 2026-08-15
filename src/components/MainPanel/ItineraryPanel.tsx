@@ -24,6 +24,7 @@ interface ItineraryPanelProps {
   onBackToRoutes?: () => void;
   destination?: string;
   transportationModes?: string[];
+  userId?: string | null;
   onSave?: (itinerary: DayItinerary[]) => void;
   isSaving?: boolean;
 }
@@ -44,6 +45,25 @@ interface DraggableCardProps {
   destination?: string;
   isEnriching?: boolean;
   onEdit?: () => void;
+  // AI-modify state — set when this exact activity was touched by the AI composer
+  isAiTouched?: boolean;
+  aiBadgeText?: string;
+  aiWasLine?: string;
+  onUndoAiChange?: () => void;
+}
+
+// Returned by POST /api/modify-itinerary — matches the ItineraryPanel-side
+// application logic in handleAiSubmit below.
+interface ModifyOperation {
+  type: "replace" | "add";
+  day: number;
+  activityIndex?: number;
+  activity: Activity;
+}
+
+interface TouchedInfo {
+  wasActivity: Activity | null; // null for "add" operations — nothing to revert to but removal
+  addedByAI: boolean;
 }
 
 // ── Lightbox ───────────────────────────────────────────────────────────────────
@@ -160,6 +180,14 @@ function transitDirectionsUrl(from: Activity, to: Activity): string {
   return `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&travelmode=transit`;
 }
 
+// Quick-start prompts for the AI composer — each is a complete, directly
+// submittable request (the model picks which day/activity fits best).
+const AI_SUGGESTIONS = [
+  "Too much walking — swap something for a relaxed spot",
+  "Add more local food stops",
+  "Feels too crowded — find quieter alternatives",
+];
+
 // ── DraggableCard ──────────────────────────────────────────────────────────────
 
 const DraggableCard: React.FC<DraggableCardProps> = ({
@@ -177,6 +205,10 @@ const DraggableCard: React.FC<DraggableCardProps> = ({
   destination = "",
   isEnriching = false,
   onEdit,
+  isAiTouched = false,
+  aiBadgeText,
+  aiWasLine,
+  onUndoAiChange,
 }) => {
   const [hovered, setHovered] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -319,14 +351,16 @@ const DraggableCard: React.FC<DraggableCardProps> = ({
       style={
         isDragging
           ? { borderStyle: "dashed", borderColor: "#2d9e8a", borderWidth: 2 }
-          : { borderColor: isSelected ? "#2d9e8a" : hovered ? "#2d9e8a" : "transparent" }
+          : { borderColor: isAiTouched ? "#8b5fbf" : isSelected ? "#2d9e8a" : hovered ? "#2d9e8a" : "transparent" }
       }
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
       {/* ── Card row ── */}
       <div
-        className="flex items-stretch bg-white cursor-pointer"
+        className={`flex items-stretch cursor-pointer ${
+          isAiTouched ? "bg-gradient-to-b from-[#f3e8fd] to-white" : "bg-white"
+        }`}
         onClick={onCardClick}
       >
         {/* Drag handle */}
@@ -363,9 +397,19 @@ const DraggableCard: React.FC<DraggableCardProps> = ({
             <div className="w-14 h-14 rounded-lg bg-gray-100 animate-pulse flex-shrink-0" />
           ) : null}
           <div className="flex-1 min-w-0">
-            <h3 className="text-sm font-bold text-[#0d3d38] mb-1 truncate">
-              {activity.title}
-            </h3>
+            <div className="flex items-baseline gap-2 flex-wrap mb-1">
+              <h3 className="text-sm font-bold text-[#0d3d38] truncate">
+                {activity.title}
+              </h3>
+              {isAiTouched && (
+                <span className="text-[10px] font-bold uppercase tracking-wide text-[#6e3fa3] bg-[#f3e8fd] border border-[#e2caf7] px-2 py-0.5 rounded-full flex-shrink-0">
+                  ✨ {aiBadgeText ?? "AI updated"}
+                </span>
+              )}
+            </div>
+            {aiWasLine && (
+              <p className="text-[11px] text-gray-400 line-through mb-1">was: {aiWasLine}</p>
+            )}
             <div className="flex items-center gap-3 text-xs text-gray-500 flex-wrap">
               {activity.time && (
                 <span className="flex items-center gap-0.5">
@@ -389,11 +433,11 @@ const DraggableCard: React.FC<DraggableCardProps> = ({
           </div>
         </div>
 
-        {/* Edit + Remove buttons — slide in during edit mode */}
+        {/* Edit + Undo(AI) + Remove buttons — slide in during edit mode */}
         <div
           className={`
             flex items-stretch flex-shrink-0 overflow-hidden transition-all duration-300 ease-out
-            ${removeMode ? "w-[88px] opacity-100" : "w-0 opacity-0"}
+            ${removeMode ? (isAiTouched ? "w-[132px]" : "w-[88px]") + " opacity-100" : "w-0 opacity-0"}
           `}
         >
           <button
@@ -405,6 +449,17 @@ const DraggableCard: React.FC<DraggableCardProps> = ({
           >
             ✎
           </button>
+          {isAiTouched && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onUndoAiChange?.(); }}
+              className="w-11 flex items-center justify-center text-[#6e3fa3]
+                         bg-[#f3e8fd] border-l border-[#e2caf7]
+                         hover:text-white hover:bg-[#8b5fbf] transition-colors duration-150"
+              title={aiWasLine ? "Undo this AI change" : "Remove this AI addition"}
+            >
+              ↺
+            </button>
+          )}
           <button
             onClick={(e) => { e.stopPropagation(); onRemove(); }}
             className="w-11 flex items-center justify-center text-xl font-light
@@ -885,6 +940,7 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
   onBackToRoutes,
   destination = "",
   transportationModes = [],
+  userId,
   onSave,
   isSaving = false,
 }) => {
@@ -892,7 +948,10 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
   const [localItinerary, setLocalItinerary] = useState<DayItinerary[]>(itinerary);
   const [removeMode, setRemoveMode] = useState(false);
   const [removingKeys, setRemovingKeys] = useState<Set<string>>(new Set());
-  const [editSnapshot, setEditSnapshot] = useState<DayItinerary[] | null>(null);
+  const [editSnapshot, setEditSnapshot] = useState<{
+    itinerary: DayItinerary[];
+    touched: Map<string, TouchedInfo>;
+  } | null>(null);
   const [undoStack, setUndoStack] = useState<{
     dayNumber: number;
     index: number;
@@ -902,6 +961,14 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [enrichingKeys, setEnrichingKeys] = useState<Set<string>>(new Set());
   const panelRef = useRef<HTMLDivElement>(null);
+
+  // AI-modify state: which activities the AI composer has touched this edit
+  // session (keyed by "day:currentTitle"), plus the composer's own UI state.
+  const [touched, setTouched] = useState<Map<string, TouchedInfo>>(new Map());
+  const [aiInput, setAiInput] = useState("");
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiStatusText, setAiStatusText] = useState("");
+  const [aiError, setAiError] = useState<string | null>(null);
 
   // Drawer state (shared across all cards)
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
@@ -925,6 +992,9 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
     setAddingDay(null);
     setEditingKey(null);
     setEnrichingKeys(new Set());
+    setTouched(new Map());
+    setAiInput("");
+    setAiError(null);
   }, [itinerary]);
 
   // Fade-in animation for day sections
@@ -1066,10 +1136,20 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
 
   // Enter / exit edit mode
   const enterEditMode = useCallback(() => {
-    setEditSnapshot(localItinerary.map((d) => ({ ...d, activities: [...d.activities] })));
+    setEditSnapshot({
+      itinerary: localItinerary.map((d) => ({ ...d, activities: [...d.activities] })),
+      touched: new Map(touched),
+    });
     setUndoStack([]);
     setRemoveMode(true);
-  }, [localItinerary]);
+  }, [localItinerary, touched]);
+
+  // Called right before an AI edit lands, if we're not already mid-edit —
+  // snapshots first so Discard still reverts cleanly, then flips into edit
+  // mode automatically so the change is visible right away.
+  const ensureEditMode = useCallback(() => {
+    if (!removeMode) enterEditMode();
+  }, [removeMode, enterEditMode]);
 
   const exitEditMode = useCallback(() => {
     setRemoveMode(false);
@@ -1079,15 +1159,112 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
     setEditingKey(null);
   }, []);
 
-  // Discard all edits and restore snapshot
+  // Discard all edits (manual AND AI) and restore snapshot
   const handleDiscard = useCallback(() => {
-    if (editSnapshot) setLocalItinerary(editSnapshot);
+    if (editSnapshot) {
+      setLocalItinerary(editSnapshot.itinerary);
+      setTouched(editSnapshot.touched);
+    }
     setRemoveMode(false);
     setEditSnapshot(null);
     setUndoStack([]);
     setAddingDay(null);
     setEditingKey(null);
+    setAiError(null);
   }, [editSnapshot]);
+
+  const AI_STATUS_MESSAGES = ["Reading your itinerary…", "Checking real places nearby…", "Working out the details…"];
+
+  const handleAiSubmit = useCallback(async (promptText: string) => {
+    const text = promptText.trim();
+    if (!text || aiBusy) return;
+
+    setAiBusy(true);
+    setAiError(null);
+    let statusIdx = 0;
+    setAiStatusText(AI_STATUS_MESSAGES[0]);
+    const statusInterval = setInterval(() => {
+      statusIdx = (statusIdx + 1) % AI_STATUS_MESSAGES.length;
+      setAiStatusText(AI_STATUS_MESSAGES[statusIdx]);
+    }, 1400);
+
+    try {
+      const response = await fetch("/api/modify-itinerary", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          destination,
+          currentItinerary: localItinerary,
+          modificationRequest: text,
+          userId,
+        }),
+      });
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || "Failed to modify itinerary.");
+      }
+
+      const data: { summary: string; operations: ModifyOperation[] } = await response.json();
+
+      ensureEditMode(); // snapshot BEFORE mutating, only takes effect if not already editing
+
+      const nextItinerary = localItinerary.map((d) => ({ ...d, activities: [...d.activities] }));
+      const nextTouched = new Map(touched);
+
+      for (const op of data.operations) {
+        const day = nextItinerary.find((d) => d.day === op.day);
+        if (!day || !op.activity) continue;
+
+        if (op.type === "replace" && typeof op.activityIndex === "number") {
+          const old = day.activities[op.activityIndex];
+          if (!old) continue;
+          day.activities[op.activityIndex] = op.activity;
+          nextTouched.set(`${op.day}:${op.activity.title}`, { wasActivity: old, addedByAI: false });
+        } else if (op.type === "add") {
+          day.activities.push(op.activity);
+          nextTouched.set(`${op.day}:${op.activity.title}`, { wasActivity: null, addedByAI: true });
+        }
+      }
+
+      setLocalItinerary(nextItinerary);
+      setTouched(nextTouched);
+      setAiInput("");
+    } catch (error: any) {
+      setAiError(error.message || "Something went wrong — try rephrasing your request.");
+    } finally {
+      clearInterval(statusInterval);
+      setAiBusy(false);
+      setAiStatusText("");
+    }
+  }, [aiBusy, destination, localItinerary, touched, userId, ensureEditMode]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Reverts just this one AI change (swap back, or remove an AI addition),
+  // leaving every other AI edit and manual edit untouched.
+  const handleUndoTouch = useCallback((key: string, dayNumber: number) => {
+    const info = touched.get(key);
+    if (!info) return;
+
+    setLocalItinerary((prev) =>
+      prev.map((d) => {
+        if (d.day !== dayNumber) return d;
+        if (info.addedByAI) {
+          return { ...d, activities: d.activities.filter((a) => `${dayNumber}:${a.title}` !== key) };
+        }
+        return {
+          ...d,
+          activities: d.activities.map((a) =>
+            `${dayNumber}:${a.title}` === key && info.wasActivity ? info.wasActivity : a
+          ),
+        };
+      })
+    );
+    setTouched((prev) => {
+      const next = new Map(prev);
+      next.delete(key);
+      return next;
+    });
+  }, [touched]);
 
   const handleAddActivity = useCallback((dayNumber: number, activity: Activity, locationName: string) => {
     setLocalItinerary((prev) =>
@@ -1382,6 +1559,64 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
         </div>
       </div>
 
+      {/* AI composer — always available, not gated behind Edit */}
+      <div className="mb-4 rounded-2xl border border-[#e2caf7] bg-gradient-to-b from-[#f3e8fd] to-[#faf5fe] p-4">
+        <p className="text-[10.5px] font-bold tracking-widest uppercase text-[#6e3fa3] mb-2.5">
+          ✨ Ask AI to adjust this trip
+        </p>
+        <div className="flex flex-wrap gap-1.5 mb-2.5">
+          {AI_SUGGESTIONS.map((s) => (
+            <button
+              key={s}
+              type="button"
+              disabled={aiBusy}
+              onClick={() => handleAiSubmit(s)}
+              className="text-xs px-3 py-1.5 rounded-full border border-[#e2caf7] bg-white text-[#6e3fa3]
+                         hover:bg-[#8b5fbf] hover:text-white hover:border-[#8b5fbf] transition-colors
+                         disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-end gap-2">
+          <textarea
+            value={aiInput}
+            onChange={(e) => setAiInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                handleAiSubmit(aiInput);
+              }
+            }}
+            disabled={aiBusy}
+            rows={1}
+            placeholder="e.g. Swap Day 2's afternoon for something more relaxed"
+            className="flex-1 text-sm px-3 py-2.5 rounded-xl border border-[#e2caf7] bg-white
+                       outline-none focus:ring-2 focus:ring-[#8b5fbf]/20 resize-none
+                       disabled:bg-[#f0ede8] transition-colors"
+          />
+          <button
+            type="button"
+            disabled={aiBusy || !aiInput.trim()}
+            onClick={() => handleAiSubmit(aiInput)}
+            className="flex-shrink-0 text-sm font-semibold px-4 py-2.5 rounded-xl bg-[#8b5fbf] text-white
+                       hover:bg-[#6e3fa3] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            Ask AI
+          </button>
+        </div>
+        {aiBusy && (
+          <div className="flex items-center gap-2 mt-2.5 text-xs text-[#6e3fa3]">
+            <span className="w-3 h-3 rounded-full border-2 border-[#e2caf7] border-t-[#6e3fa3] animate-spin flex-shrink-0" />
+            {aiStatusText}
+          </div>
+        )}
+        {aiError && (
+          <p className="mt-2.5 text-xs text-red-500">{aiError}</p>
+        )}
+      </div>
+
       {/* Drag hint */}
       <div className="mb-4 flex items-center gap-2 px-3 py-2 rounded-xl bg-[#e8f7f5] border border-[#cde8e4] text-xs text-[#2d9e8a]">
         <span className="text-base leading-none select-none">⠿</span>
@@ -1500,6 +1735,9 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
                             hasValidCoords(prevActivity) &&
                             hasValidCoords(activity);
 
+                          const touchKey = `${dayItem.day}:${activity.title}`;
+                          const touchInfo = touched.get(touchKey);
+
                           return (
                             <React.Fragment key={`${dayItem.day}-${activity.title}-${index}`}>
                               {showTransitLink && (
@@ -1545,6 +1783,14 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
                                         setEditingKey(editKey === editingKey ? null : editKey);
                                         setAddingDay(null);
                                       }}
+                                      isAiTouched={!!touchInfo}
+                                      aiBadgeText={touchInfo?.addedByAI ? "Added by AI" : "AI updated"}
+                                      aiWasLine={
+                                        touchInfo && !touchInfo.addedByAI && touchInfo.wasActivity
+                                          ? `${touchInfo.wasActivity.title} · ${touchInfo.wasActivity.time}`
+                                          : undefined
+                                      }
+                                      onUndoAiChange={() => handleUndoTouch(touchKey, dayItem.day)}
                                     />
                                   </div>
                                 )}

@@ -6,7 +6,7 @@ import { authenticateRequest } from "@/lib/auth";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { promises as fs } from "fs";
 import path from "path";
-import { retrievePois, RetrievedPoi } from "@/lib/ai/poiRetrieval";
+import { retrievePois, RetrievedPoi, formatPoisForPrompt } from "@/lib/ai/poiRetrieval";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const UNSPLASH_ACCESS_KEY = process.env.UNSPLASH_ACCESS_KEY;
@@ -136,15 +136,6 @@ function selectPoisForTheme(pois: RetrievedPoi[], theme: string): RetrievedPoi[]
   const primary = pois.filter((p) => p.category === preferredCategory);
   const rest = pois.filter((p) => p.category !== preferredCategory);
   return [...primary, ...rest].slice(0, MAX_POIS_PER_PROMPT);
-}
-
-function formatPoisForPrompt(pois: RetrievedPoi[]): string {
-  if (pois.length === 0) {
-    return "(No verified local place data available for this destination — use your own knowledge, but still be as accurate as possible with real place names and coordinates.)";
-  }
-  return pois
-    .map((p) => `- ${p.name} [${p.category ?? "general"}] (${p.latitude}, ${p.longitude}): ${p.description}`)
-    .join("\n");
 }
 
 export async function POST(request: NextRequest) {
