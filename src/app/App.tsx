@@ -643,6 +643,7 @@ const App: React.FC = () => {
                   onBackToRoutes={handleBackToRoutes}
                   destination={preferences.destination}
                   transportationModes={preferences.transportation}
+                  userId={currentUserId}
                   onSave={handleSaveItinerary}
                   isSaving={false}
                 />
