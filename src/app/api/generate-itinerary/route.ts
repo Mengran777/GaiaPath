@@ -30,27 +30,36 @@ function getUnsplashKeywords(badge: string, destination: string): string {
 
 async function fetchUnsplashCover(
   keywords: string,
+  destination: string,
   excludeUrls: Set<string>,
 ): Promise<string | null> {
   if (!UNSPLASH_ACCESS_KEY) return null;
-  const tryFetch = async (query: string): Promise<string | null> => {
+  const tryFetch = async (query: string, allowDuplicate = false): Promise<string | null> => {
     try {
       const res = await fetch(
-        `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=3&orientation=landscape`,
+        `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=10&orientation=landscape`,
         { headers: { Authorization: `Client-ID ${UNSPLASH_ACCESS_KEY}` } },
       );
       if (!res.ok) return null;
       const data = await res.json();
       for (const result of data?.results ?? []) {
         const url: string | undefined = result?.urls?.regular;
-        if (url && !excludeUrls.has(url)) return url;
+        if (!url) continue;
+        if (allowDuplicate || !excludeUrls.has(url)) return url;
       }
       return null;
     } catch {
       return null;
     }
   };
-  return (await tryFetch(keywords)) ?? (await tryFetch(keywords + " scenic"));
+  // Widen the pool if the badge-keyword bucket is already exhausted by earlier
+  // routes, then as a last resort accept a duplicate — a repeated cover beats none.
+  return (
+    (await tryFetch(keywords)) ??
+    (await tryFetch(keywords + " scenic")) ??
+    (await tryFetch(destination)) ??
+    (await tryFetch(keywords, true))
+  );
 }
 
 // Module-level cache — survives across requests in the same server process
@@ -490,7 +499,7 @@ export async function POST(request: NextRequest) {
       const usedCoverUrls = new Set<string>();
       for (const route of generatedItineraryData) {
         const keywords = getUnsplashKeywords(route.badge, destination);
-        const coverUrl = await fetchUnsplashCover(keywords, usedCoverUrls);
+        const coverUrl = await fetchUnsplashCover(keywords, destination, usedCoverUrls);
         route.coverImageUrl = coverUrl ?? null;
         if (coverUrl) usedCoverUrls.add(coverUrl);
       }
