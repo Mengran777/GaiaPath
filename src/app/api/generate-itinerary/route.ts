@@ -7,6 +7,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { promises as fs } from "fs";
 import path from "path";
 import { retrievePois, RetrievedPoi, formatPoisForPrompt } from "@/lib/ai/poiRetrieval";
+import { selectUnsplashPhoto, UnsplashPhoto } from "@/lib/unsplash";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const UNSPLASH_ACCESS_KEY = process.env.UNSPLASH_ACCESS_KEY;
@@ -32,9 +33,9 @@ async function fetchUnsplashCover(
   keywords: string,
   destination: string,
   excludeUrls: Set<string>,
-): Promise<string | null> {
+): Promise<UnsplashPhoto | null> {
   if (!UNSPLASH_ACCESS_KEY) return null;
-  const tryFetch = async (query: string, allowDuplicate = false): Promise<string | null> => {
+  const tryFetch = async (query: string, allowDuplicate = false): Promise<UnsplashPhoto | null> => {
     try {
       const res = await fetch(
         `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=10&orientation=landscape`,
@@ -45,7 +46,10 @@ async function fetchUnsplashCover(
       for (const result of data?.results ?? []) {
         const url: string | undefined = result?.urls?.regular;
         if (!url) continue;
-        if (allowDuplicate || !excludeUrls.has(url)) return url;
+        if (!allowDuplicate && excludeUrls.has(url)) continue;
+        // selectUnsplashPhoto fires the required download-trigger ping — only
+        // call it once we've committed to this exact result, not per-candidate.
+        return selectUnsplashPhoto(result, "regular", UNSPLASH_ACCESS_KEY!);
       }
       return null;
     } catch {
@@ -63,7 +67,7 @@ async function fetchUnsplashCover(
 }
 
 // Module-level cache — survives across requests in the same server process
-const unsplashImageCache = new Map<string, string>();
+const unsplashImageCache = new Map<string, UnsplashPhoto>();
 
 const STOPWORDS = new Set([
   "the", "and", "of", "at", "in", "a", "an", "to", "for",
@@ -80,7 +84,7 @@ function buildActivityKeywords(title: string, destination: string): string {
   return [...words, destination].join(" ");
 }
 
-async function fetchUnsplashImage(keywords: string): Promise<string | undefined> {
+async function fetchUnsplashImage(keywords: string): Promise<UnsplashPhoto | undefined> {
   if (!UNSPLASH_ACCESS_KEY) return undefined;
   if (unsplashImageCache.has(keywords)) return unsplashImageCache.get(keywords);
   try {
@@ -90,9 +94,11 @@ async function fetchUnsplashImage(keywords: string): Promise<string | undefined>
     );
     if (!res.ok) return undefined;
     const data = await res.json();
-    const url: string | undefined = data?.results?.[0]?.urls?.small;
-    if (url) unsplashImageCache.set(keywords, url);
-    return url;
+    const result = data?.results?.[0];
+    if (!result) return undefined;
+    const photo = selectUnsplashPhoto(result, "small", UNSPLASH_ACCESS_KEY) ?? undefined;
+    if (photo) unsplashImageCache.set(keywords, photo);
+    return photo;
   } catch {
     return undefined;
   }
@@ -106,6 +112,7 @@ interface Activity {
   rating?: number;
   price?: string;
   imageUrl?: string;
+  imageAttribution?: { photographerName: string; photographerUrl: string } | null;
   latitude?: number;
   longitude?: number;
 }
@@ -488,8 +495,11 @@ export async function POST(request: NextRequest) {
 
     // Assign from cache
     for (const { activity, keywords } of activityEntries) {
-      const url = unsplashImageCache.get(keywords);
-      if (url) activity.imageUrl = url;
+      const photo = unsplashImageCache.get(keywords);
+      if (photo) {
+        activity.imageUrl = photo.url;
+        activity.imageAttribution = { photographerName: photo.photographerName, photographerUrl: photo.photographerUrl };
+      }
     }
     console.log("✅ All Unsplash activity images fetched!");
 
@@ -499,14 +509,20 @@ export async function POST(request: NextRequest) {
       const usedCoverUrls = new Set<string>();
       for (const route of generatedItineraryData) {
         const keywords = getUnsplashKeywords(route.badge, destination);
-        const coverUrl = await fetchUnsplashCover(keywords, destination, usedCoverUrls);
-        route.coverImageUrl = coverUrl ?? null;
-        if (coverUrl) usedCoverUrls.add(coverUrl);
+        const cover = await fetchUnsplashCover(keywords, destination, usedCoverUrls);
+        route.coverImageUrl = cover?.url ?? null;
+        route.coverImageAttribution = cover
+          ? { photographerName: cover.photographerName, photographerUrl: cover.photographerUrl }
+          : null;
+        if (cover) usedCoverUrls.add(cover.url);
       }
       console.log("✅ Unsplash cover images fetched!");
     } else {
       console.warn("⚠️ UNSPLASH_ACCESS_KEY not set — skipping cover images");
-      for (const route of generatedItineraryData) route.coverImageUrl = null;
+      for (const route of generatedItineraryData) {
+        route.coverImageUrl = null;
+        route.coverImageAttribution = null;
+      }
     }
 
     // ============ Temporarily commented out database saving ============

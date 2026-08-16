@@ -10,6 +10,7 @@ import {
   DraggableProvidedDragHandleProps,
 } from "@hello-pangea/dnd";
 import { DayItinerary, Activity, Location } from "../../types/itinerary";
+import UnsplashCredit from "../UI/UnsplashCredit";
 
 // ── Props ──────────────────────────────────────────────────────────────────────
 
@@ -41,7 +42,7 @@ interface DraggableCardProps {
   // Inline accordion drawer data (only populated when isSelected)
   drawerDescription?: string | null;
   descriptionLoading?: boolean;
-  onOpenLightbox?: (images: string[], index: number) => void;
+  onOpenLightbox?: (images: string[], index: number, attributions?: ({ photographerName: string; photographerUrl: string } | null)[]) => void;
   destination?: string;
   isEnriching?: boolean;
   onEdit?: () => void;
@@ -71,12 +72,13 @@ interface TouchedInfo {
 interface LightboxProps {
   images: string[];
   fallbackImages?: string[];
+  attributions?: ({ photographerName: string; photographerUrl: string } | null)[];
   index: number;
   onClose: () => void;
   onChange: (i: number) => void;
 }
 
-const Lightbox: React.FC<LightboxProps> = ({ images, fallbackImages, index, onClose, onChange }) => {
+const Lightbox: React.FC<LightboxProps> = ({ images, fallbackImages, attributions, index, onClose, onChange }) => {
   const prev = () => onChange((index - 1 + images.length) % images.length);
   const next = () => onChange((index + 1) % images.length);
 
@@ -138,6 +140,16 @@ const Lightbox: React.FC<LightboxProps> = ({ images, fallbackImages, index, onCl
       {images.length > 1 && (
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/60 text-sm">
           {index + 1} / {images.length}
+        </div>
+      )}
+
+      {attributions?.[index] && (
+        <div className="absolute bottom-4 left-4">
+          <UnsplashCredit
+            photographerName={attributions[index]!.photographerName}
+            photographerUrl={attributions[index]!.photographerUrl}
+            className="text-xs"
+          />
         </div>
       )}
     </div>
@@ -335,6 +347,15 @@ const DraggableCard: React.FC<DraggableCardProps> = ({
     return imgs;
   }, [activity.imageUrl, wikiImages]);
 
+  // Parallel to galleryImages — only the main image can carry Unsplash
+  // attribution (wiki images never do), so every other slot is null.
+  const galleryAttributions = useMemo(() => {
+    const attrs: ({ photographerName: string; photographerUrl: string } | null)[] = [];
+    if (activity.imageUrl) attrs.push(activity.imageAttribution ?? null);
+    wikiImages.forEach(() => attrs.push(null));
+    return attrs;
+  }, [activity.imageUrl, activity.imageAttribution, wikiImages]);
+
   return (
     <div
       ref={containerRef}
@@ -491,7 +512,7 @@ const DraggableCard: React.FC<DraggableCardProps> = ({
               <button
                 className="flex-shrink-0 rounded-lg overflow-hidden focus:outline-none"
                 style={{ width: 160, height: 120 }}
-                onClick={() => onOpenLightbox?.(galleryImages, 0)}
+                onClick={() => onOpenLightbox?.(galleryImages, 0, galleryAttributions)}
               >
                 <img
                   src={activity.imageUrl}
@@ -520,7 +541,7 @@ const DraggableCard: React.FC<DraggableCardProps> = ({
                   key={src}
                   className="flex-shrink-0 rounded-lg overflow-hidden focus:outline-none"
                   style={{ width: 90, height: 120 }}
-                  onClick={() => onOpenLightbox?.(galleryImages, i + (activity.imageUrl ? 1 : 0))}
+                  onClick={() => onOpenLightbox?.(galleryImages, i + (activity.imageUrl ? 1 : 0), galleryAttributions)}
                 >
                   <img src={src} alt="" className="w-full h-full object-cover" />
                 </button>
@@ -978,6 +999,7 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
   // Lightbox state (panel-level so fixed overlay isn't clipped)
   const [lightboxImages, setLightboxImages] = useState<string[]>([]);
   const [lightboxFallbackImages, setLightboxFallbackImages] = useState<string[]>([]);
+  const [lightboxAttributions, setLightboxAttributions] = useState<({ photographerName: string; photographerUrl: string } | null)[]>([]);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
@@ -1106,9 +1128,10 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
     []
   );
 
-  const openLightbox = useCallback((imgs: string[], idx: number) => {
+  const openLightbox = useCallback((imgs: string[], idx: number, attributions?: ({ photographerName: string; photographerUrl: string } | null)[]) => {
     setLightboxFallbackImages(imgs);
     setLightboxImages(imgs.map(toHdUrl));
+    setLightboxAttributions(attributions ?? []);
     setLightboxIndex(idx);
     setLightboxOpen(true);
   }, []);
@@ -1301,6 +1324,7 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
     ])
       .then(([imgData, descData]) => {
         const imageUrl: string | null = imgData?.imageUrl ?? null;
+        const imageAttribution = imgData?.imageAttribution ?? null;
         const description: string | null = descData?.description ?? null;
 
         // Pre-populate descriptionCache so the drawer shows it immediately on open
@@ -1318,7 +1342,7 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
                   a.title === activity.title && a.time === activity.time
                     ? {
                         ...a,
-                        ...(imageUrl ? { imageUrl } : {}),
+                        ...(imageUrl ? { imageUrl, imageAttribution } : {}),
                         ...(!userHasDescription && description ? { description } : {}),
                       }
                     : a
@@ -1844,6 +1868,7 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
         <Lightbox
           images={lightboxImages}
           fallbackImages={lightboxFallbackImages}
+          attributions={lightboxAttributions}
           index={lightboxIndex}
           onClose={() => setLightboxOpen(false)}
           onChange={setLightboxIndex}

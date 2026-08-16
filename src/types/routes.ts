@@ -25,6 +25,7 @@ export interface RouteOption {
   intensity?: "easy" | "moderate" | "high";
   itinerary: DayItinerary[]; // Full itinerary data
   coverImageUrl?: string | null; // Unsplash cover image for RouteCard
+  coverImageAttribution?: { photographerName: string; photographerUrl: string } | null;
 }
 
 /**
