@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { RouteOption } from "@/types/routes";
+import UnsplashCredit from "@/components/UI/UnsplashCredit";
 
 interface RouteCardProps {
   route: RouteOption;
@@ -9,6 +10,7 @@ interface RouteCardProps {
   isFavorite?: boolean;
   onToggleFavorite?: (routeId: string) => void;
   coverImageUrl?: string | null;
+  coverImageAttribution?: { photographerName: string; photographerUrl: string } | null;
 }
 
 // Derive accent color + badge pill theme from badge text
@@ -42,6 +44,7 @@ const RouteCard: React.FC<RouteCardProps> = ({
   isFavorite = false,
   onToggleFavorite,
   coverImageUrl,
+  coverImageAttribution,
 }) => {
   const theme = getBadgeTheme(route.badge);
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -89,6 +92,14 @@ const RouteCard: React.FC<RouteCardProps> = ({
             />
             {/* Bottom gradient mask for badge readability */}
             <div className="absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-black/55 to-transparent" />
+            {coverImageAttribution && (
+              <div className="absolute bottom-2.5 right-3 z-10">
+                <UnsplashCredit
+                  photographerName={coverImageAttribution.photographerName}
+                  photographerUrl={coverImageAttribution.photographerUrl}
+                />
+              </div>
+            )}
           </>
         ) : (
           /* Placeholder: deep green gradient */

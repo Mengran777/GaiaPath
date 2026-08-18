@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { selectUnsplashPhoto } from "@/lib/unsplash";
 
 const UNSPLASH_ACCESS_KEY = process.env.UNSPLASH_ACCESS_KEY;
 
@@ -36,9 +37,15 @@ export async function POST(req: NextRequest) {
     );
     if (!res.ok) return NextResponse.json({ imageUrl: null });
     const data = await res.json();
-    const imageUrl: string | null = data?.results?.[0]?.urls?.small ?? null;
-    return NextResponse.json({ imageUrl });
+    const result = data?.results?.[0];
+    const photo = result ? selectUnsplashPhoto(result, "small", UNSPLASH_ACCESS_KEY) : null;
+    return NextResponse.json({
+      imageUrl: photo?.url ?? null,
+      imageAttribution: photo
+        ? { photographerName: photo.photographerName, photographerUrl: photo.photographerUrl }
+        : null,
+    });
   } catch {
-    return NextResponse.json({ imageUrl: null });
+    return NextResponse.json({ imageUrl: null, imageAttribution: null });
   }
 }

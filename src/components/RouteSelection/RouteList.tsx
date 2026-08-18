@@ -111,19 +111,22 @@ const RouteList: React.FC<RouteListProps> = ({
 
       <div className="px-6 pb-6 pt-4 grid grid-cols-1 gap-3">
         {(() => {
-          // Prefer route-level Unsplash cover; fall back to first unique Wikipedia activity image
+          // Prefer route-level Unsplash cover; fall back to first unique Wikipedia activity image.
+          // Attribution only ever accompanies the Unsplash cover, never the Wikipedia fallback.
           const usedImages = new Set<string>();
           const coverImages = routes.map((route) => {
-            if (route.coverImageUrl !== undefined) return route.coverImageUrl;
+            if (route.coverImageUrl !== undefined) {
+              return { url: route.coverImageUrl, attribution: route.coverImageAttribution ?? null };
+            }
             for (const day of route.itinerary ?? []) {
               for (const activity of day.activities ?? []) {
                 if (activity.imageUrl && !usedImages.has(activity.imageUrl)) {
                   usedImages.add(activity.imageUrl);
-                  return activity.imageUrl;
+                  return { url: activity.imageUrl, attribution: null };
                 }
               }
             }
-            return null;
+            return { url: null, attribution: null };
           });
 
           return routes.map((route, index) => (
@@ -139,7 +142,8 @@ const RouteList: React.FC<RouteListProps> = ({
                 onSelect={onSelectRoute}
                 isFavorite={favoriteRoutes.has(route.id)}
                 onToggleFavorite={onToggleFavorite}
-                coverImageUrl={coverImages[index]}
+                coverImageUrl={coverImages[index].url}
+                coverImageAttribution={coverImages[index].attribution}
               />
             </div>
           ));

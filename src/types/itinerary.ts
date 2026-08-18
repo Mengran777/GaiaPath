@@ -15,6 +15,7 @@ export interface Activity {
   rating?: number; // optional
   price?: string; // optional, can be "Free" or a specific amount
   imageUrl?: string; // optional
+  imageAttribution?: { photographerName: string; photographerUrl: string } | null; // set only when imageUrl is from Unsplash
   latitude?: number; // latitude of the activity location
   longitude?: number; // longitude of the activity location
 }
