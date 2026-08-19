@@ -41,15 +41,22 @@ async function fetchUnsplashCover(
         `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=10&orientation=landscape`,
         { headers: { Authorization: `Client-ID ${UNSPLASH_ACCESS_KEY}` } },
       );
-      if (!res.ok) return null;
+      if (!res.ok) {
+        console.warn(
+          `Unsplash cover search failed (${res.status}) for query "${query}" ` +
+          `(rate limit remaining: ${res.headers.get("x-ratelimit-remaining") ?? "n/a"})`,
+        );
+        return null;
+      }
       const data = await res.json();
       for (const result of data?.results ?? []) {
         const url: string | undefined = result?.urls?.regular;
         if (!url) continue;
         if (!allowDuplicate && excludeUrls.has(url)) continue;
-        // selectUnsplashPhoto fires the required download-trigger ping — only
-        // call it once we've committed to this exact result, not per-candidate.
-        return selectUnsplashPhoto(result, "regular", UNSPLASH_ACCESS_KEY!);
+        // Only commits (and fires the download-trigger ping) once a candidate
+        // actually has usable attribution — otherwise keep trying the rest.
+        const photo = selectUnsplashPhoto(result, "regular", UNSPLASH_ACCESS_KEY!);
+        if (photo) return photo;
       }
       return null;
     } catch {
@@ -92,7 +99,10 @@ async function fetchUnsplashImage(keywords: string): Promise<UnsplashPhoto | und
       `https://api.unsplash.com/search/photos?query=${encodeURIComponent(keywords)}&per_page=1&orientation=landscape`,
       { headers: { Authorization: `Client-ID ${UNSPLASH_ACCESS_KEY}` } },
     );
-    if (!res.ok) return undefined;
+    if (!res.ok) {
+      console.warn(`Unsplash activity image search failed (${res.status}) for "${keywords}"`);
+      return undefined;
+    }
     const data = await res.json();
     const result = data?.results?.[0];
     if (!result) return undefined;
