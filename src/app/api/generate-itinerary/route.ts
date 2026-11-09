@@ -1,22 +1,20 @@
 // src/app/api/generate-itinerary/route.ts
 import { RouteOption } from "@/types/routes";
+import { Activity } from "@/types/itinerary";
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/lib/db";
 import { authenticateRequest } from "@/lib/auth";
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { promises as fs } from "fs";
 import path from "path";
 import { retrievePois, RetrievedPoi, formatPoisForPrompt } from "@/lib/ai/poiRetrieval";
+import { generateJson, routeSchema } from "@/lib/ai/gemini";
+import { validateCoordinates } from "@/lib/ai/geo";
 import { selectUnsplashPhoto, UnsplashPhoto } from "@/lib/unsplash";
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const UNSPLASH_ACCESS_KEY = process.env.UNSPLASH_ACCESS_KEY;
 
-if (!GEMINI_API_KEY) {
+if (!process.env.GEMINI_API_KEY) {
   console.error("GEMINI_API_KEY is not set in environment variables.");
 }
-
-const genAI = new GoogleGenerativeAI(GEMINI_API_KEY || "");
 
 function getUnsplashKeywords(badge: string, destination: string): string {
   const b = badge.toLowerCase();
@@ -114,33 +112,6 @@ async function fetchUnsplashImage(keywords: string): Promise<UnsplashPhoto | und
   }
 }
 
-// Type definitions (consistent with src/app/types/itinerary.ts)
-interface Activity {
-  title: string;
-  description: string;
-  time?: string;
-  rating?: number;
-  price?: string;
-  imageUrl?: string;
-  imageAttribution?: { photographerName: string; photographerUrl: string } | null;
-  latitude?: number;
-  longitude?: number;
-}
-
-interface DayItinerary {
-  day: number;
-  title: string;
-  date: string;
-  activities: Activity[];
-}
-
-interface GeneratedItinerary {
-  name: string;
-  startDate: string;
-  endDate: string;
-  itineraryDays: DayItinerary[];
-}
-
 async function getPromptFromFile(filename: string): Promise<string> {
   const filePath = path.join(process.cwd(), "src", "prompts", filename);
   const fileContent = await fs.readFile(filePath, "utf-8");
@@ -172,7 +143,6 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    console.log("Backend received raw request body:", body);
 
     const {
       destination,
@@ -180,30 +150,14 @@ export async function POST(request: NextRequest) {
       travelEndDate,
       arrivalTime,
       departureTime,
-      // budget,
       travelers,
       travelType,
       transportation,
       activityIntensity,
       specialNeeds,
-      userRequest, // ⭐ New: user's custom request
+      userRequest, // free-text request from SmartSearch
       userId,
     } = body;
-
-    console.log("Backend preferences extracted:");
-    console.log("   destination:", destination);
-    console.log("   travelStartDate:", travelStartDate);
-    console.log("   travelEndDate:", travelEndDate);
-    console.log("   arrivalTime:", arrivalTime);
-    console.log("   departureTime:", departureTime);
-    // console.log("   budget:", budget);
-    console.log("   travelers:", travelers);
-    console.log("   travelType:", travelType);
-    console.log("   transportation:", transportation);
-    console.log("   activityIntensity:", activityIntensity);
-    console.log("   specialNeeds:", specialNeeds);
-    console.log("   userRequest:", userRequest); // ⭐ New log
-    console.log("   userId:", userId);
 
     const missingFields = [];
     if (!destination) missingFields.push("destination");
@@ -226,11 +180,6 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       );
     }
-
-    console.log("=== PARALLEL GENERATION STARTED ===");
-    console.log("Destination:", destination);
-    console.log("Generating 3 routes in parallel with real images...");
-    console.log("=== === === === === === === ===");
 
     // Retrieve once per request, not per theme — themes split this shared
     // pool by category below. Destinations outside the corpus just get an
@@ -310,94 +259,24 @@ export async function POST(request: NextRequest) {
         .replaceAll("{{themeDescription}}", routeTheme.description)
         .replaceAll("{{routeId}}", routeTheme.id);
 
-      // Retry function (with exponential backoff)
-      const generateWithRetry = async (maxRetries = 3) => {
-        for (let attempt = 1; attempt <= maxRetries; attempt++) {
-          let responseText = ""; // Defined outside so it's accessible in catch
-          try {
-            const model = genAI.getGenerativeModel({
-              model: "gemini-3.1-flash-lite-preview",
-              generationConfig: {
-                temperature: 0.7, // Lower = faster, more focused
-                maxOutputTokens: 8192, // Further increased to ensure complete JSON
-              },
-            });
-
-            const result = await model.generateContent(routePrompt);
-            responseText = result.response.text();
-
-            console.log(
-              `✅ Generated route: ${routeTheme.theme} (attempt ${attempt})`,
-            );
-            console.log(
-              `📝 Response length: ${responseText.length} characters`,
-            );
-
-            // Extract JSON
-            let jsonString = responseText.trim();
-            const jsonMatch = jsonString.match(/```json\s*([\s\S]*?)\s*```/);
-            if (jsonMatch) {
-              jsonString = jsonMatch[1].trim();
-            }
-            if (!jsonString.startsWith("{")) {
-              const objectMatch = jsonString.match(/\{[\s\S]*\}/);
-              if (objectMatch) {
-                jsonString = objectMatch[0];
-              }
-            }
-
-            // Validate JSON is complete
-            if (!jsonString || jsonString.length < 10) {
-              throw new Error(
-                `JSON string too short or empty: "${jsonString.substring(0, 100)}..."`,
-              );
-            }
-
-            // Check if JSON ends with } (complete object)
-            if (!jsonString.trim().endsWith("}")) {
-              console.warn(`⚠️ JSON may be incomplete for ${routeTheme.theme}`);
-              console.log(
-                `Last 200 chars: ...${responseText.substring(responseText.length - 200)}`,
-              );
-            }
-
-            return JSON.parse(jsonString);
-          } catch (error: any) {
-            const isOverloaded =
-              error?.message?.includes("503") ||
-              error?.message?.includes("overloaded");
-            const isJSONError =
-              error?.message?.includes("JSON") || error?.name === "SyntaxError";
-
-            // If JSON error, print more debug info
-            if (isJSONError && responseText) {
-              console.error(`🔍 JSON Parse Error for ${routeTheme.theme}:`);
-              console.log(`First 300 chars: ${responseText.substring(0, 300)}`);
-              console.log(
-                `Last 300 chars: ...${responseText.substring(Math.max(0, responseText.length - 300))}`,
-              );
-            }
-
-            // Retry for 503 errors or JSON errors
-            if ((isOverloaded || isJSONError) && attempt < maxRetries) {
-              const waitTime = Math.pow(2, attempt) * 1000; // 2s, 4s, 8s
-              console.log(
-                `⏳ Retrying ${routeTheme.theme} in ${waitTime / 1000}s... (attempt ${attempt}/${maxRetries})`,
-              );
-              await new Promise((resolve) => setTimeout(resolve, waitTime));
-            } else {
-              console.error(
-                `❌ Failed to generate route ${routeTheme.theme} after ${attempt} attempts:`,
-                error,
-              );
-              return null;
-            }
-          }
-        }
+      try {
+        const route = await generateJson<RouteOption>(routePrompt, {
+          schema: routeSchema,
+          temperature: 0.7,
+          maxOutputTokens: 8192,
+          label: routeTheme.theme,
+        });
+        // The model echoes these from the prompt; enforce them so route ids
+        // stay unique (favorites are keyed by id) and badges stay consistent.
+        route.id = routeTheme.id;
+        route.badge = routeTheme.theme;
+        if (!Array.isArray(route.itinerary)) route.itinerary = [];
+        console.log(`✅ Generated route: ${routeTheme.theme}`);
+        return route;
+      } catch (error) {
+        console.error(`❌ Failed to generate route ${routeTheme.theme}:`, error);
         return null;
-      };
-
-      return await generateWithRetry();
+      }
     });
 
     // Wait for all routes to finish generating
@@ -467,7 +346,7 @@ export async function POST(request: NextRequest) {
       `✅ Successfully generated ${generatedItineraryData.length} routes in parallel`,
     );
 
-    // Collect activities and normalise coordinates
+    // Collect activities (for coordinate validation and image lookup)
     type ActivityWithKeywords = { activity: Activity; keywords: string };
     const activityEntries: ActivityWithKeywords[] = [];
 
@@ -476,10 +355,6 @@ export async function POST(request: NextRequest) {
       for (const day of route.itinerary) {
         if (!day.activities || !Array.isArray(day.activities)) continue;
         for (const activity of day.activities) {
-          activity.latitude =
-            typeof activity.latitude === "number" ? activity.latitude : 0;
-          activity.longitude =
-            typeof activity.longitude === "number" ? activity.longitude : 0;
           activityEntries.push({
             activity,
             keywords: buildActivityKeywords(activity.title, destination),
@@ -497,11 +372,17 @@ export async function POST(request: NextRequest) {
       ),
     ];
 
-    console.log(
-      `📸 Fetching ${uniqueKeywords.length} unique Unsplash activity images ` +
-      `(${activityEntries.length} total activities, cache saves the rest)...`,
-    );
-    await Promise.all(uniqueKeywords.map((kw) => fetchUnsplashImage(kw)));
+    // Coordinate validation runs alongside image fetching — they touch
+    // different fields, so neither waits on the other.
+    const [coordStats] = await Promise.all([
+      validateCoordinates(
+        activityEntries.map((e) => e.activity),
+        destination,
+        retrievedPois,
+      ),
+      ...uniqueKeywords.map((kw) => fetchUnsplashImage(kw)),
+    ]);
+    console.log("📍 Coordinate validation:", coordStats);
 
     // Assign from cache
     for (const { activity, keywords } of activityEntries) {
@@ -511,11 +392,9 @@ export async function POST(request: NextRequest) {
         activity.imageAttribution = { photographerName: photo.photographerName, photographerUrl: photo.photographerUrl };
       }
     }
-    console.log("✅ All Unsplash activity images fetched!");
 
     // Fetch Unsplash cover images sequentially to allow deduplication
     if (UNSPLASH_ACCESS_KEY) {
-      console.log("🖼️ Fetching Unsplash cover images...");
       const usedCoverUrls = new Set<string>();
       for (const route of generatedItineraryData) {
         const keywords = getUnsplashKeywords(route.badge, destination);
@@ -526,7 +405,6 @@ export async function POST(request: NextRequest) {
           : null;
         if (cover) usedCoverUrls.add(cover.url);
       }
-      console.log("✅ Unsplash cover images fetched!");
     } else {
       console.warn("⚠️ UNSPLASH_ACCESS_KEY not set — skipping cover images");
       for (const route of generatedItineraryData) {
@@ -535,73 +413,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // ============ Temporarily commented out database saving ============
-    // Reason: now returning multiple routes, save after user selects
-    /*
-    // 4. Save AI-generated itinerary to the database
-    const tripName = generatedItineraryData.name;
-
-    // Parse date/time - handle possible format issues
-    let tripStartDate: Date;
-    let tripEndDate: Date;
-
-    try {
-      // Try to parse the date returned by AI
-      tripStartDate = new Date(generatedItineraryData.startDate);
-      tripEndDate = new Date(generatedItineraryData.endDate);
-
-      // If parsing fails, use user-input dates
-      if (isNaN(tripStartDate.getTime())) {
-        console.warn("AI returned invalid start date, using user input");
-        tripStartDate = new Date(travelStartDate);
-      }
-
-      if (isNaN(tripEndDate.getTime())) {
-        console.warn("AI returned invalid end date, using user input");
-        tripEndDate = new Date(travelEndDate);
-      }
-
-      console.log("Parsed trip dates:");
-      console.log("  Start:", tripStartDate.toISOString());
-      console.log("  End:", tripEndDate.toISOString());
-    } catch (dateError) {
-      console.error("Error parsing trip dates:", dateError);
-      // Fall back to user-input dates
-      tripStartDate = new Date(travelStartDate);
-      tripEndDate = new Date(travelEndDate);
-    }
-
-    const newTrip = await prisma.trip.create({
-      data: {
-        name: tripName,
-        startDate: tripStartDate,
-        endDate: tripEndDate,
-        userId: authResult.userId,
-        locations: {
-          create: generatedItineraryData.itineraryDays.flatMap(
-            (day: DayItinerary) =>
-              day.activities.map((activity: Activity, index: number) => ({
-                name: activity.title,
-                description: activity.description,
-                latitude: activity.latitude || 0,
-                longitude: activity.longitude || 0,
-                order: day.day * 1000 + index,
-                time: activity.time || "",
-                rating: activity.rating || 0,
-                price: activity.price || "",
-                imageUrl: activity.imageUrl || null,
-              }))
-          ),
-        },
-      },
-      include: {
-        locations: true,
-      },
-    });
-    */
-    // ============ Database saving end ============
-
-    // 5. Return AI-generated routes to the frontend
+    // Routes are not saved here — only favorites are persisted (see /api/favorites)
     return NextResponse.json(generatedItineraryData, {
       status: 200,
     });

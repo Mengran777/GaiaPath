@@ -116,11 +116,6 @@ const App: React.FC = () => {
   const [myItineraries, setMyItineraries] = useState<RouteOption[]>([]); // Store generated routes
   const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
 
-  // ⭐ Currently selected route and itinerary ⭐
-  const selectedRoute = useMemo(() => {
-    return routeOptions.find((route) => route.id === selectedRouteId) || null;
-  }, [routeOptions, selectedRouteId]);
-
   const [itinerary, setItinerary] = useState<DayItinerary[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -256,11 +251,36 @@ const App: React.FC = () => {
     }
   };
 
-  // ⭐ Save itinerary handler — session-only (no DB) ⭐
-  // Persists edits in-memory so they survive navigating back to the route list.
-  // Only favoriting writes to the DB.
+  // ⭐ Save itinerary handler ⭐
+  // Edits always update the session copy (My Itineraries). If the route is
+  // favorited, the stored favorite is updated too — favorites are the only
+  // thing persisted to the DB.
   const handleSaveItinerary = (updatedItinerary: DayItinerary[]) => {
     if (!selectedRouteId) return;
+    const routeId = selectedRouteId;
+
+    if (favoriteRoutes.has(routeId)) {
+      const route = routeOptions.find((r) => r.id === routeId);
+      if (route) {
+        fetch("/api/favorites", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            routeId,
+            routeData: { ...route, itinerary: updatedItinerary },
+            action: "add",
+          }),
+        })
+          .then((res) => {
+            if (!res.ok) throw new Error(res.statusText);
+          })
+          .catch((error) => {
+            console.error("Error updating favorite:", error);
+            showToast("Couldn't save your edits to Favorites. Please try again.", "error");
+          });
+      }
+    }
+
     setItinerary(updatedItinerary); // reset hasChanges baseline in ItineraryPanel
     setRouteOptions((prev) =>
       prev.map((r) =>

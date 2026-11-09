@@ -1454,16 +1454,12 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
     setUndoStack((prev) => prev.slice(0, -1));
   }, [undoStack]);
 
-  // Detect whether localItinerary differs from the original itinerary prop
-  const hasChanges = useMemo(() => {
-    if (localItinerary.length !== itinerary.length) return true;
-    return localItinerary.some((day, di) => {
-      const orig = itinerary[di];
-      if (!orig || day.day !== orig.day) return true;
-      if (day.activities.length !== orig.activities.length) return true;
-      return day.activities.some((act, ai) => act.title !== orig.activities[ai]?.title);
-    });
-  }, [localItinerary, itinerary]);
+  // Detect whether localItinerary differs from the original itinerary prop.
+  // Compares full content so edits to time/description/price also count.
+  const hasChanges = useMemo(
+    () => JSON.stringify(localItinerary) !== JSON.stringify(itinerary),
+    [localItinerary, itinerary]
+  );
 
   // Remove activity
   const handleRemoveActivity = (dayNumber: number, activityIndex: number) => {

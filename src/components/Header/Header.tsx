@@ -1,7 +1,7 @@
 // src/components/Header/Header.tsx
 "use client"; // This is a client component
 
-import React, { useState } from "react";
+import React from "react";
 import NavItem from "./NavItem"; // Import NavItem
 
 interface HeaderProps {
@@ -26,12 +26,6 @@ const Header: React.FC<HeaderProps> = ({
   };
 
   const isOnAuthPage = pathname?.startsWith("/auth") || false;
-  console.log("Header Render - currentUserId:", currentUserId); // This will show "Mona" on the later renders
-  console.log("Header Render - isOnAuthPage:", isOnAuthPage);
-  console.log(
-    "Header Render - Should show user info:",
-    currentUserId && !isOnAuthPage
-  );
 
   return (
     <header

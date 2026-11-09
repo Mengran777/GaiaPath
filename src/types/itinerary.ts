@@ -27,10 +27,3 @@ export interface DayItinerary {
   activities: Activity[];
 }
 
-export interface GeneratedItinerary {
-  id?: string; // if the backend saves the itinerary and returns an ID
-  name: string; // overall itinerary name, e.g., "European Cultural Tour"
-  startDate: string; // itinerary start date "YYYY-MM-DD"
-  endDate: string; // itinerary end date "YYYY-MM-DD"
-  itineraryDays: DayItinerary[];
-}
