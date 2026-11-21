@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import ReactDOM from "react-dom";
+import { MapPin, Search } from "lucide-react";
 
 interface LocationSuggestion {
   name: string;
@@ -209,14 +210,14 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
               onMouseEnter={() => setHighlightedIndex(index)}
               className={`w-full text-left px-4 py-3 transition-colors duration-150
                 ${index === highlightedIndex
-                  ? "bg-[#f0faf8] border-l-4 border-[#1a6b5e]"
+                  ? "bg-brand-50 border-l-4 border-brand-700"
                   : "hover:bg-gray-50 border-l-4 border-transparent"
                 }
                 ${index !== suggestions.length - 1 ? "border-b border-gray-100" : ""}
               `}
             >
               <div className="flex items-center space-x-3">
-                <span className="text-2xl">📍</span>
+                <MapPin size={20} className="text-brand-500 flex-shrink-0" aria-hidden="true" />
                 <div className="flex-1">
                   <div className="font-semibold text-gray-800">{suggestion.name}</div>
                   <div className="text-sm text-gray-500">{suggestion.displayName}</div>
@@ -228,7 +229,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
       ) : !isLoading && value.trim().length >= 2 ? (
         <div className="bg-white rounded-xl shadow-2xl border border-gray-200 px-4 py-3">
           <div className="text-center text-gray-500">
-            <span className="text-2xl block mb-1">🔍</span>
+            <Search size={20} className="mx-auto mb-1 text-ink-faint" aria-hidden="true" />
             No locations found
           </div>
         </div>
@@ -257,7 +258,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
           }}
           placeholder={placeholder}
           className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl
-                   focus:border-[#2d9e8a] focus:ring-2 focus:ring-[#2d9e8a]/20
+                   focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20
                    transition-all duration-300 outline-none text-gray-800"
           autoComplete="off"
         />

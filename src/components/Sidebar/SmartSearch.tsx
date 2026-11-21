@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Camera, Sunrise, Castle, Coffee, Drama, ShoppingBasket, Clapperboard } from "lucide-react";
 
 interface SmartSearchProps {
   onSearch: (query: string) => void;
@@ -21,13 +22,13 @@ const SmartSearch: React.FC<SmartSearchProps> = ({
   setQuery,
 }) => {
   const suggestions = [
-    { emoji: "📸", label: "Instagram spots" },
-    { emoji: "🌅", label: "Sunrise views" },
-    { emoji: "🏰", label: "Historic sites" },
-    { emoji: "☕", label: "Coffee culture" },
-    { emoji: "🎭", label: "Local festivals" },
-    { emoji: "🛒", label: "Local markets" },
-    { emoji: "🎬", label: "Film locations" },
+    { icon: Camera, label: "Instagram spots" },
+    { icon: Sunrise, label: "Sunrise views" },
+    { icon: Castle, label: "Historic sites" },
+    { icon: Coffee, label: "Coffee culture" },
+    { icon: Drama, label: "Local festivals" },
+    { icon: ShoppingBasket, label: "Local markets" },
+    { icon: Clapperboard, label: "Film locations" },
   ];
 
   // Textarea shows only what the user typed; tags merge in separately so
@@ -60,10 +61,10 @@ const SmartSearch: React.FC<SmartSearchProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-[#e2ddd8] overflow-hidden mb-5">
+    <div className="bg-white rounded-2xl border border-line overflow-hidden mb-5">
       {/* Section label */}
       <div className="px-4 pt-4 pb-1">
-        <p className="text-[10.5px] font-semibold tracking-widest uppercase text-[#8a8a8a]">
+        <p className="text-[10.5px] font-semibold tracking-widest uppercase text-ink-muted">
           YOUR VISION
         </p>
       </div>
@@ -71,8 +72,8 @@ const SmartSearch: React.FC<SmartSearchProps> = ({
       {/* Textarea */}
       <textarea
         id="smart-search-textarea"
-        className="w-full px-4 py-3 border-b border-[#e2ddd8] text-[13px] text-[#1a1a1a]
-                   placeholder:text-[#8a8a8a] resize-none focus:outline-none bg-white"
+        className="w-full px-4 py-3 border-b border-line text-[13px] text-ink
+                   placeholder:text-ink-muted resize-none focus:outline-none bg-white"
         placeholder={"Describe your ideal trip in your own words...\ne.g. Greek islands with local food and some hiking"}
         value={typedText}
         onChange={handleInputChange}
@@ -81,27 +82,28 @@ const SmartSearch: React.FC<SmartSearchProps> = ({
       />
 
       {/* Hint */}
-      <p className="px-4 pt-2 text-[10.5px] text-[#8a8a8a]">
-        💡 Or pick from quick tags below
+      <p className="px-4 pt-2 text-[10.5px] text-ink-muted">
+        Or pick from quick tags below
       </p>
 
       {/* Tags */}
       <div className="px-4 pb-3 pt-2 flex flex-wrap gap-1.5">
-        {suggestions.map(({ emoji, label }) => {
-          const tag = `${emoji} ${label}`;
+        {suggestions.map(({ icon: Icon, label }) => {
+          const tag = label;
           const isSelected = selectedTags.has(tag);
           return (
             <button
               key={tag}
               type="button"
               onClick={() => handleTagClick(tag)}
-              className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
                 isSelected
-                  ? "bg-[#0d3d38] text-white"
-                  : "bg-[#f0ede8] text-[#4a4a4a] hover:bg-[#e5e1db]"
+                  ? "bg-brand-900 text-white"
+                  : "bg-surface-dim text-ink-soft hover:bg-line"
               }`}
             >
-              {emoji} {label}
+              <Icon size={13} aria-hidden="true" />
+              {label}
             </button>
           );
         })}

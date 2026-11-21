@@ -1,28 +1,9 @@
-/* Correct Tailwind CSS directives - ONLY ONCE */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 html {
   font-size: clamp(14px, 1.1vw, 16px);
-}
-
-/* Float animation for auth page destination tags */
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50%       { transform: translateY(-8px); }
-}
-
-.animate-float {
-  animation: float 6s ease-in-out infinite;
-}
-
-@keyframes progress-fill {
-  0%   { width: 0%; }
-  100% { width: 90%; }
-}
-.animate-progress-fill {
-  animation: progress-fill 35s ease-out forwards;
 }
 
 @keyframes card-enter {
@@ -33,50 +14,19 @@ html {
   animation: card-enter 0.35s ease-out both;
 }
 
-@keyframes pulse-glow-eis {
-  0%, 100% { transform: scale(1);    opacity: 0.65; }
-  50%       { transform: scale(1.18); opacity: 0.28; }
-}
-
-@keyframes shimmer-sweep {
-  0%   { transform: translateX(-60%); }
-  100% { transform: translateX(140%); }
-}
-
-@keyframes card-glow-pulse {
-  0%, 100% { opacity: 0.45; transform: scale(1); }
-  50%       { opacity: 0.78; transform: scale(1.08); }
-}
-
-@keyframes orbit-spin {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
+/* Respect the OS "reduce motion" setting */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* Mapbox GL JS CSS */
 @import "mapbox-gl/dist/mapbox-gl.css";
-
-/* Global CSS Variables and Styles */
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-html,
-body {
-  /* Next.js 14 recommended body style, no need to manually set height: 100vh; */
-  min-height: 100vh;
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
-}
 
 /* Custom CSS for scrollbar */
 .custom-scrollbar::-webkit-scrollbar {

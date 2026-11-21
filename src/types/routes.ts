@@ -7,7 +7,7 @@ import { DayItinerary } from "./itinerary";
  */
 export interface RouteHighlight {
   label: string;
-  icon?: string;
+  icon?: string; // legacy: older saved favorites may still carry an emoji; not rendered
 }
 
 /**
@@ -15,7 +15,7 @@ export interface RouteHighlight {
  */
 export interface RouteOption {
   id: string;
-  badge: string; // e.g., "🏛️ Classic Route"
+  badge: string; // route theme, e.g. "Classic Route"
   badgeColor?: string; // e.g., "#667eea"
   title: string;
   description: string;

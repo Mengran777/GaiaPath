@@ -4,6 +4,7 @@ import React from "react";
 import { RouteOption } from "@/types/routes";
 import RouteCard from "./RouteCard";
 import EmptyItineraryState from "./EmptyItineraryState";
+import { Star, Map as MapIcon, ArrowRight } from "lucide-react";
 
 interface RouteListProps {
   routes: RouteOption[];
@@ -45,22 +46,22 @@ const RouteList: React.FC<RouteListProps> = ({
     if (showFavoritesOnly) {
       return (
         <div className="flex items-center justify-center h-full p-6">
-          <div className="w-full max-w-sm bg-white rounded-2xl shadow-sm border border-[#e8e4df] p-10 flex flex-col items-center text-center">
-            <div className="w-20 h-20 rounded-full bg-[#fdf3e3] border-2 border-[#e8d9b8] flex items-center justify-center mb-5">
-              <span className="text-4xl leading-none text-[#c9a96e]">☆</span>
+          <div className="w-full max-w-sm bg-white rounded-2xl shadow-sm border border-line p-10 flex flex-col items-center text-center">
+            <div className="w-20 h-20 rounded-full bg-gold-50 border-2 border-gold-200 flex items-center justify-center mb-5">
+              <Star size={34} className="text-gold-500" aria-hidden="true" />
             </div>
-            <h3 className="text-xl font-bold text-[#0d3d38] mb-2">No favourites yet</h3>
-            <p className="text-[#8a8a8a] text-sm mb-6 leading-relaxed">
+            <h3 className="text-xl font-bold text-brand-900 mb-2">No favourites yet</h3>
+            <p className="text-ink-muted text-sm mb-6 leading-relaxed">
               Star a route to save it here and revisit it anytime.
             </p>
             {onExploreRoutes && (
               <button
                 onClick={onExploreRoutes}
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full
-                           bg-[#0d3d38] text-white text-sm font-medium
-                           hover:bg-[#1a6b5e] transition-colors duration-150"
+                           bg-brand-900 text-white text-sm font-medium
+                           hover:bg-brand-700 transition-colors duration-150"
               >
-                Explore routes <span className="text-[#2d9e8a]">→</span>
+                Explore routes <ArrowRight size={15} className="text-brand-300" aria-hidden="true" />
               </button>
             )}
           </div>
@@ -70,8 +71,8 @@ const RouteList: React.FC<RouteListProps> = ({
     return (
       <div className="flex items-center justify-center h-full">
         <div className="text-center">
-          <div className="text-6xl mb-4">🗺️</div>
-          <p className="text-[#8a8a8a] text-base">
+          <MapIcon size={48} strokeWidth={1.5} className="text-ink-faint mx-auto mb-4" aria-hidden="true" />
+          <p className="text-ink-muted text-base">
             No routes available. Please try generating again.
           </p>
         </div>
@@ -103,10 +104,10 @@ const RouteList: React.FC<RouteListProps> = ({
   return (
     <div className="h-full overflow-y-auto custom-scrollbar">
       <div className="px-6 pt-6 pb-2">
-        <h2 className="font-display text-2xl font-bold text-[#0d3d38] mb-1">
+        <h2 className="font-display text-2xl font-bold text-brand-900 mb-1">
           {title}
         </h2>
-        <p className="text-[#8a8a8a] text-sm">{description}</p>
+        <p className="text-ink-muted text-sm">{description}</p>
       </div>
 
       <div className="px-6 pb-6 pt-4 grid grid-cols-1 gap-3">

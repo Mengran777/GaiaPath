@@ -287,60 +287,10 @@ export async function POST(request: NextRequest) {
       (route): route is RouteOption => route !== null,
     );
 
-    // ⭐ Fix highlights format ⭐
-    generatedItineraryData = generatedItineraryData.map((route) => {
-      // If highlights is a string array, convert to object array
-      if (route.highlights && route.highlights.length > 0) {
-        const firstHighlight = route.highlights[0];
-        // Check if it's a string (needs conversion)
-        if (typeof firstHighlight === "string") {
-          // Add a suitable icon for each highlight
-          const iconMap: { [key: string]: string } = {
-            museum: "🏛️",
-            food: "🍽️",
-            nature: "🌳",
-            beach: "🏖️",
-            mountain: "⛰️",
-            shopping: "🛍️",
-            art: "🎨",
-            history: "📜",
-            culture: "🎭",
-            adventure: "🎒",
-            restaurant: "🍴",
-            cafe: "☕",
-            park: "🌲",
-            church: "⛪",
-            castle: "🏰",
-            palace: "👑",
-            market: "🏪",
-            lake: "🌊",
-            sunset: "🌅",
-            sunrise: "🌄",
-          };
-
-          route.highlights = (route.highlights as unknown as string[]).map(
-            (highlight: string) => {
-              // Try to match keywords to find a suitable icon
-              const lowerHighlight = highlight.toLowerCase();
-              let icon = "✨"; // Default icon
-
-              for (const [keyword, emoji] of Object.entries(iconMap)) {
-                if (lowerHighlight.includes(keyword)) {
-                  icon = emoji;
-                  break;
-                }
-              }
-
-              return {
-                label: highlight,
-                icon: icon,
-              };
-            },
-          );
-        }
-      }
-      return route;
-    });
+    // The schema returns highlights as plain strings; the frontend expects { label }
+    for (const route of generatedItineraryData) {
+      route.highlights = ((route.highlights ?? []) as unknown as string[]).map((label) => ({ label }));
+    }
 
     console.log(
       `✅ Successfully generated ${generatedItineraryData.length} routes in parallel`,

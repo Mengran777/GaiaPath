@@ -3,6 +3,8 @@
 import React, { useState } from "react";
 import { RouteOption } from "@/types/routes";
 import UnsplashCredit from "@/components/UI/UnsplashCredit";
+import palette from "@/styles/palette";
+import { Star, CalendarDays } from "lucide-react";
 
 interface RouteCardProps {
   route: RouteOption;
@@ -20,15 +22,15 @@ const getBadgeTheme = (badge: string) => {
     b.includes("culinar") || b.includes("food") ||
     b.includes("culture") || b.includes("art") || b.includes("local")
   ) {
-    return { bar: "#c9a96e", pillText: "#9a6f30" };
+    return { bar: palette.gold[500], pillText: palette.gold[700] };
   }
   if (
     b.includes("nature") || b.includes("hidden") ||
     b.includes("garden") || b.includes("eco") || b.includes("green")
   ) {
-    return { bar: "#2d9e8a", pillText: "#1a6b5e" };
+    return { bar: palette.brand[500], pillText: palette.brand[700] };
   }
-  return { bar: "#0d3d38", pillText: "#0d3d38" };
+  return { bar: palette.brand[900], pillText: palette.brand[900] };
 };
 
 const intensityLabel = (intensity?: string) => {
@@ -62,14 +64,12 @@ const RouteCard: React.FC<RouteCardProps> = ({
   return (
     <div
       onClick={() => onSelect(route.id)}
-      className="relative bg-white rounded-2xl overflow-hidden cursor-pointer
-                 border border-[#e8e4df] shadow-sm
-                 hover:shadow-md hover:border-[#2d9e8a]
-                 transition-all duration-200 active:scale-[0.99]"
+      className="relative bg-white rounded-xl overflow-hidden cursor-pointer
+                 border border-line hover:border-brand-500 transition-colors"
     >
       {/* Left accent bar */}
       <div
-        className="absolute left-0 top-0 bottom-0 w-1 rounded-l-2xl z-10"
+        className="absolute left-0 top-0 bottom-0 w-1 z-10"
         style={{ background: theme.bar }}
       />
 
@@ -103,7 +103,7 @@ const RouteCard: React.FC<RouteCardProps> = ({
           </>
         ) : (
           /* Placeholder: deep green gradient */
-          <div className="absolute inset-0 bg-gradient-to-br from-[#0d3d38] via-[#1a6b5e] to-[#2d9e8a] flex items-center justify-center">
+          <div className="absolute inset-0 bg-brand-900 flex items-center justify-center">
             <span className="text-white/60 text-sm font-medium text-center px-6 leading-snug">
               {route.title}
             </span>
@@ -132,11 +132,11 @@ const RouteCard: React.FC<RouteCardProps> = ({
             className={`absolute top-2.5 right-3 z-10 w-8 h-8 rounded-full flex items-center justify-center
                        text-base leading-none transition-all duration-150
                        ${isFavorite
-                         ? "bg-[#c9a96e] border-[1.5px] border-[#c9a96e] text-white"
-                         : "bg-white/80 backdrop-blur-sm border-[1.5px] border-white/60 text-[#b0b0b0] hover:border-[#c9a96e]"
+                         ? "bg-gold-500 border-[1.5px] border-gold-500 text-white"
+                         : "bg-white/80 backdrop-blur-sm border-[1.5px] border-white/60 text-ink-faint hover:border-gold-500"
                        }`}
           >
-            {isFavorite ? "★" : "☆"}
+            <Star size={16} fill={isFavorite ? "currentColor" : "none"} aria-hidden="true" />
           </button>
         )}
       </div>
@@ -144,12 +144,12 @@ const RouteCard: React.FC<RouteCardProps> = ({
       {/* Card body */}
       <div className="pl-6 pr-5 pt-4 pb-4">
         {/* Title */}
-        <h3 className="font-display text-xl font-bold text-[#0d3d38] mb-2 leading-snug pr-2">
+        <h3 className="font-display text-xl font-bold text-brand-900 mb-2 leading-snug pr-2">
           {route.title}
         </h3>
 
         {/* Description */}
-        <p className="text-[#6b6b6b] text-sm leading-relaxed mb-4 line-clamp-2">
+        <p className="text-ink-soft text-sm leading-relaxed mb-4 line-clamp-2">
           {route.description}
         </p>
 
@@ -160,9 +160,8 @@ const RouteCard: React.FC<RouteCardProps> = ({
               <span
                 key={i}
                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full
-                           text-xs text-[#4a4a4a] bg-[#f5f2ee] border border-[#e8e4df]"
+                           text-xs text-ink-soft bg-surface border border-line"
               >
-                {h.icon && <span>{h.icon}</span>}
                 {h.label}
               </span>
             ))}
@@ -171,18 +170,18 @@ const RouteCard: React.FC<RouteCardProps> = ({
       </div>
 
       {/* Footer */}
-      <div className="border-t border-[#e8e4df] px-6 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-2 text-xs text-[#8a8a8a] flex-wrap">
-          <span>📅 {route.days} {route.days === 1 ? "Day" : "Days"}</span>
+      <div className="border-t border-line px-6 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-2 text-xs text-ink-muted flex-wrap">
+          <span className="inline-flex items-center gap-1"><CalendarDays size={13} aria-hidden="true" />{route.days} {route.days === 1 ? "Day" : "Days"}</span>
           {pace && (
             <>
-              <span className="text-[#d0ccc8]">·</span>
+              <span className="text-line-strong">·</span>
               <span>{pace}</span>
             </>
           )}
           {dateRange && (
             <>
-              <span className="text-[#d0ccc8]">·</span>
+              <span className="text-line-strong">·</span>
               <span>{dateRange}</span>
             </>
           )}
@@ -194,8 +193,8 @@ const RouteCard: React.FC<RouteCardProps> = ({
             onSelect(route.id);
           }}
           className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full
-                     bg-[#0d3d38] text-white text-xs font-medium flex-shrink-0
-                     hover:bg-[#1a6b5e] transition-colors duration-150"
+                     bg-brand-900 text-white text-xs font-medium flex-shrink-0
+                     hover:bg-brand-700 transition-colors duration-150"
         >
           View route
         </button>

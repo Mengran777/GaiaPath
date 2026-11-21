@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import Map from "react-map-gl/mapbox";
+import { MapPin } from "lucide-react";
 import {
   Marker,
   NavigationControl,
@@ -233,7 +234,7 @@ const MapView: React.FC<MapViewProps> = ({
               >
                 {/* ⭐ MODIFIED: Refined comparison for highlighting ⭐ */}
                 <div
-                  className={`text-2xl drop-shadow-md transition-transform duration-300
+                  className={`drop-shadow-md transition-transform duration-300
                                 ${
                                   highlightedLocation &&
                                   // Compare by a unique identifier or all relevant properties
@@ -242,11 +243,11 @@ const MapView: React.FC<MapViewProps> = ({
                                   highlightedLocation.longitude ===
                                     location.longitude &&
                                   highlightedLocation.name === location.name
-                                    ? "text-[#c9a96e] scale-150 z-10" // Highlighted style + z-index to bring to front
-                                    : "text-red-600 scale-100" // Default style
+                                    ? "text-gold-500 scale-125 z-10" // Highlighted style + z-index to bring to front
+                                    : "text-brand-900 scale-100" // Default style
                                 }`}
                 >
-                  📍
+                  <MapPin size={30} fill="currentColor" stroke="white" strokeWidth={1.5} aria-hidden="true" />
                 </div>
               </Marker>
             ) : null
@@ -290,7 +291,7 @@ const MapView: React.FC<MapViewProps> = ({
       {MAPBOX_TOKEN && !isMapReady && (
         <div className="absolute inset-0 flex items-center justify-center bg-white rounded-2xl">
           <div className="text-center">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#1a6b5e] mb-4"></div>
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-brand-700 mb-4"></div>
             <p className="text-gray-600">Loading map...</p>
           </div>
         </div>

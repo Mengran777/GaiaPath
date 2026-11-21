@@ -1,114 +1,58 @@
 // src/components/Header/Header.tsx
-"use client"; // This is a client component
+"use client";
 
 import React from "react";
-import NavItem from "./NavItem"; // Import NavItem
+import { LogOut } from "lucide-react";
+import NavItem from "./NavItem";
+import Logo from "../UI/Logo";
+
+const TABS = ["Home", "My Itineraries", "Favorites"] as const;
 
 interface HeaderProps {
   onLogout: () => void;
-  currentUserId: string | null; // This prop will now receive either the User ID OR the Username
-  pathname?: string;
+  username: string | null;
   activeTab?: string;
   onTabChange?: (tab: string) => void;
 }
 
-const Header: React.FC<HeaderProps> = ({
-  onLogout,
-  currentUserId,
-  pathname,
-  activeTab = "Discover",
-  onTabChange,
-}) => {
-  const handleNavClick = (label: string) => {
-    if (onTabChange) {
-      onTabChange(label);
-    }
-  };
-
-  const isOnAuthPage = pathname?.startsWith("/auth") || false;
+const Header: React.FC<HeaderProps> = ({ onLogout, username, activeTab = "Home", onTabChange }) => {
+  const initial = username?.trim().charAt(0).toUpperCase() || "?";
 
   return (
-    <header
-      className="bg-white border-b border-[#e2ddd8] py-3 px-8
-                   flex flex-col md:flex-row justify-between items-center gap-4"
-    >
-      <div className="flex items-center space-x-4">
-        <div className="text-2xl font-extrabold text-[#0d3d38] flex items-center gap-2">
-          <span>🌍</span>
-          Gaia
-        </div>
-        <nav className="flex flex-wrap justify-center md:justify-start gap-2 md:gap-4">
-          <NavItem
-            label="Home"
-            to="#"
-            isActive={activeTab === "Home"}
-            onClick={() => handleNavClick("Home")}
-          />
-          <NavItem
-            label="My Itineraries"
-            to="#"
-            isActive={activeTab === "My Itineraries"}
-            onClick={() => handleNavClick("My Itineraries")}
-          />
-          <NavItem
-            label="Favorites"
-            to="#"
-            isActive={activeTab === "Favorites"}
-            onClick={() => handleNavClick("Favorites")}
-          />
+    <header className="bg-white border-b border-line px-4 lg:px-8 h-16 flex items-center justify-between gap-4 flex-shrink-0">
+      <div className="flex items-center gap-8 min-w-0">
+        <Logo />
+        <nav className="flex items-center gap-1" aria-label="Main">
+          {TABS.map((tab) => (
+            <NavItem
+              key={tab}
+              label={tab}
+              isActive={activeTab === tab}
+              onClick={() => onTabChange?.(tab)}
+            />
+          ))}
         </nav>
       </div>
 
-      {currentUserId && !isOnAuthPage ? (
-        <div className="flex items-center space-x-3">
-          {/* REMOVED: User ID: {currentUserId.substring(0, 8)}... */}
-          {/* REPLACED with a clear welcome message using the full currentUserId (which is now the username) */}
-          <span className="text-gray-700 text-base font-medium">
-            Welcome, {currentUserId}!{" "}
-            {/* This will now correctly show "Welcome, Mona!" */}
-          </span>
-
-          <button
-            className="flex items-center space-x-2 bg-gray-100 hover:bg-gray-200 rounded-full p-2 pr-4
-                         transition-colors duration-200 shadow-sm hover:shadow-md"
+      {username && (
+        <div className="flex items-center gap-3 flex-shrink-0">
+          <span
+            className="w-8 h-8 rounded-full bg-brand-100 text-brand-900 text-sm font-semibold flex items-center justify-center"
+            aria-hidden="true"
           >
-            <img
-              src="https://placehold.co/40x40/0d3d38/ffffff?text=U" // Placeholder for user avatar
-              alt="User Avatar"
-              className="w-10 h-10 rounded-full border-2 border-[#2d9e8a]"
-            />
-            {/* You had `currentUserId` here as well, let's keep it simple for now as 'Welcome, [Username]' is enough */}
-            {/* If you want to show username here too, just use currentUserId again */}
-            {/* <span className="text-gray-700 text-base font-medium hidden sm:block">
-              {currentUserId}
-            </span> */}
-          </button>
-          {/* Using a simple button here. If you have shadcn/ui Button, use that. */}
+            {initial}
+          </span>
+          <span className="hidden sm:block text-sm font-medium text-ink">{username}</span>
+          <span className="hidden sm:block w-px h-5 bg-line" aria-hidden="true" />
           <button
             onClick={onLogout}
-            className="px-4 py-1.5 rounded-full border border-[#e2ddd8] bg-white text-[#4a4a4a] text-sm font-medium hover:bg-[#f5f2ee] transition-colors duration-200"
+            className="flex items-center gap-1.5 text-sm text-ink-muted hover:text-ink transition-colors"
           >
-            Logout
+            <LogOut size={16} aria-hidden="true" />
+            Log out
           </button>
         </div>
-      ) : !isOnAuthPage ? (
-        <div className="flex items-center space-x-3">
-          <a
-            href="/auth/login"
-            className="px-5 py-1.5 rounded-full bg-[#0d3d38] text-white text-sm font-medium
-                       hover:bg-[#1a6b5e] transition-colors duration-200"
-          >
-            Login
-          </a>
-          <a
-            href="/auth/register"
-            className="px-5 py-1.5 rounded-full border border-[#e2ddd8] text-[#4a4a4a] text-sm font-medium
-                       hover:bg-[#f5f2ee] transition-colors duration-200"
-          >
-            Sign Up
-          </a>
-        </div>
-      ) : null}
+      )}
     </header>
   );
 };

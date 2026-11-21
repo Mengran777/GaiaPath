@@ -1,11 +1,12 @@
-import React from 'react';
+import React from "react";
 
-const Input: React.FC<React.InputHTMLAttributes<HTMLInputElement>> = ({ className = '', ...props }) => {
+const Input: React.FC<React.InputHTMLAttributes<HTMLInputElement>> = ({ className = "", ...props }) => {
   return (
     <input
-      className={`w-full p-3 border-2 border-gray-200 rounded-xl font-medium text-gray-800
-                  focus:outline-none focus:border-[#2d9e8a] focus:ring-2 focus:ring-[#2d9e8a]/20
-                  transition-all duration-300 bg-white shadow-sm hover:shadow-md ${className}`}
+      className={`w-full h-11 px-3.5 rounded-lg border border-line bg-white text-ink
+                  placeholder:text-ink-faint
+                  focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20
+                  transition-colors disabled:opacity-60 ${className}`}
       {...props}
     />
   );
