@@ -1,6 +1,10 @@
 import React, { useRef, useState, useEffect } from "react";
 import { LocationAutocomplete } from "../UI";
 import DateRangePicker from "../UI/DateRangePicker";
+import {
+  Landmark, UtensilsCrossed, Trees, Palette, Mountain, TreePalm, Heart, Users,
+  Car, Bus, MapPin, CalendarDays, PlaneLanding, PlaneTakeoff,
+} from "lucide-react";
 
 interface PreferenceFormProps {
   preferences: {
@@ -22,7 +26,7 @@ const SectionLabel: React.FC<{ children: React.ReactNode; className?: string }> 
   children,
   className = "",
 }) => (
-  <p className={`text-[10.5px] font-semibold tracking-widest uppercase text-[#8a8a8a] mb-2 ${className}`}>
+  <p className={`text-[10.5px] font-semibold tracking-widest uppercase text-ink-muted mb-2 ${className}`}>
     {children}
   </p>
 );
@@ -77,7 +81,7 @@ const TimeOfDayDropdown: React.FC<{ value: string; onChange: (value: string) => 
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className="flex items-center gap-1 text-[#4a4a4a] text-sm cursor-pointer hover:text-[#0d3d38] transition-colors"
+        className="flex items-center gap-1 text-ink-soft text-sm cursor-pointer hover:text-brand-900 transition-colors"
       >
         {selectedLabel}
         <svg
@@ -89,14 +93,14 @@ const TimeOfDayDropdown: React.FC<{ value: string; onChange: (value: string) => 
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1.5 z-50 bg-white rounded-xl shadow-lg border border-[#e2ddd8] min-w-[140px] py-1">
+        <div className="absolute right-0 top-full mt-1.5 z-50 bg-white rounded-xl shadow-lg border border-line min-w-[140px] py-1">
           {timeOfDayOptions.map((opt) => (
             <button
               key={opt.value}
               type="button"
               onClick={() => { onChange(opt.value); setOpen(false); }}
-              className={`w-full text-left px-3 py-2 text-sm transition-colors hover:bg-[#f0ede8] ${
-                value === opt.value ? "text-[#0d3d38] font-semibold" : "text-[#4a4a4a]"
+              className={`w-full text-left px-3 py-2 text-sm transition-colors hover:bg-surface-dim ${
+                value === opt.value ? "text-brand-900 font-semibold" : "text-ink-soft"
               }`}
             >
               {opt.label}
@@ -136,19 +140,19 @@ const PreferenceForm: React.FC<PreferenceFormProps> = ({
 
   // ── Data ──
   const travelTypes = [
-    { label: "History & Culture", icon: "🏛️", value: "history" },
-    { label: "Food & Dining",     icon: "🍝", value: "food" },
-    { label: "Nature",            icon: "🏞️", value: "nature" },
-    { label: "Art & Shopping",    icon: "🎨", value: "art_shopping" },
-    { label: "Adventure",         icon: "⛰️", value: "adventure" },
-    { label: "Relaxation",        icon: "🏖️", value: "relax" },
-    { label: "Romantic",          icon: "💖", value: "honeymoon" },
-    { label: "Family",            icon: "👨‍👩‍👧‍👦", value: "family" },
+    { label: "History & Culture", icon: Landmark, value: "history" },
+    { label: "Food & Dining",     icon: UtensilsCrossed, value: "food" },
+    { label: "Nature",            icon: Trees, value: "nature" },
+    { label: "Art & Shopping",    icon: Palette, value: "art_shopping" },
+    { label: "Adventure",         icon: Mountain, value: "adventure" },
+    { label: "Relaxation",        icon: TreePalm, value: "relax" },
+    { label: "Romantic",          icon: Heart, value: "honeymoon" },
+    { label: "Family",            icon: Users, value: "family" },
   ];
 
   const transportationTypes = [
-    { label: "Self-drive",     icon: "🚗", value: "car" },
-    { label: "Public Transit", icon: "🚌", value: "public_transport" },
+    { label: "Self-drive",     icon: Car, value: "car" },
+    { label: "Public Transit", icon: Bus, value: "public_transport" },
   ];
 
   const paceOptions = [
@@ -194,14 +198,14 @@ const PreferenceForm: React.FC<PreferenceFormProps> = ({
     if (s && e) {
       return (
         <div className="flex items-center gap-1.5">
-          <span className="bg-[#0d3d38] text-white text-xs font-medium px-3 py-1.5 rounded-full">
+          <span className="bg-brand-900 text-white text-xs font-medium px-3 py-1.5 rounded-full">
             {formatDatePill(s)}
           </span>
-          <span className="text-[#8a8a8a] text-xs">→</span>
-          <span className="bg-[#0d3d38] text-white text-xs font-medium px-3 py-1.5 rounded-full">
+          <span className="text-ink-muted text-xs">→</span>
+          <span className="bg-brand-900 text-white text-xs font-medium px-3 py-1.5 rounded-full">
             {formatDatePill(e)}
           </span>
-          <span className="bg-[#fdf4e7] text-[#c9a96e] text-xs font-semibold px-2.5 py-1 rounded-full">
+          <span className="bg-gold-50 text-gold-500 text-xs font-semibold px-2.5 py-1 rounded-full">
             {calculateNights(s, e)} nights
           </span>
         </div>
@@ -210,14 +214,14 @@ const PreferenceForm: React.FC<PreferenceFormProps> = ({
     if (s) {
       return (
         <div className="flex items-center gap-1.5">
-          <span className="bg-[#0d3d38] text-white text-xs font-medium px-3 py-1.5 rounded-full">
+          <span className="bg-brand-900 text-white text-xs font-medium px-3 py-1.5 rounded-full">
             {formatDatePill(s)}
           </span>
-          <span className="text-[#8a8a8a] text-xs">→ Select end</span>
+          <span className="text-ink-muted text-xs">→ Select end</span>
         </div>
       );
     }
-    return <span className="text-[#8a8a8a] text-sm">Select dates</span>;
+    return <span className="text-ink-muted text-sm">Select dates</span>;
   };
 
   return (
@@ -226,14 +230,14 @@ const PreferenceForm: React.FC<PreferenceFormProps> = ({
       <div>
         <SectionLabel>Where &amp; When</SectionLabel>
         {/* No overflow-hidden so custom dropdowns can escape the card boundary */}
-        <div className="bg-white rounded-2xl border border-[#e2ddd8]">
+        <div className="bg-white rounded-2xl border border-line">
 
           {/* Destination row */}
-          <div className="flex items-center px-4 py-2.5 gap-3 border-b border-[#e2ddd8]">
-            <div className="w-[30px] h-[30px] rounded-[8px] bg-[#e0f5f2] flex items-center justify-center text-[15px] flex-shrink-0">
-              📍
+          <div className="flex items-center px-4 py-2.5 gap-3 border-b border-line">
+            <div className="w-[30px] h-[30px] rounded-[8px] bg-surface text-brand-700 flex items-center justify-center flex-shrink-0">
+              <MapPin size={16} aria-hidden="true" />
             </div>
-            <span className="text-sm font-medium text-[#1a1a1a] min-w-[80px]">Destination</span>
+            <span className="text-sm font-medium text-ink min-w-[80px]">Destination</span>
             <div className="flex-1">
               <LocationAutocomplete
                 id="destination"
@@ -247,13 +251,13 @@ const PreferenceForm: React.FC<PreferenceFormProps> = ({
           {/* Dates row — ref passed to DateRangePicker as anchor for popup position */}
           <div
             ref={dateRowRef}
-            className="flex items-center px-4 py-2.5 gap-3 cursor-pointer select-none border-b border-[#e2ddd8]"
+            className="flex items-center px-4 py-2.5 gap-3 cursor-pointer select-none border-b border-line"
             onClick={() => setShowDatePicker(prev => !prev)}
           >
-            <div className="w-[30px] h-[30px] rounded-[8px] bg-[#fdf4e7] flex items-center justify-center text-[15px] flex-shrink-0">
-              📅
+            <div className="w-[30px] h-[30px] rounded-[8px] bg-surface text-brand-700 flex items-center justify-center flex-shrink-0">
+              <CalendarDays size={16} aria-hidden="true" />
             </div>
-            <span className="text-sm font-medium text-[#1a1a1a] min-w-[80px]">Dates</span>
+            <span className="text-sm font-medium text-ink min-w-[80px]">Dates</span>
             <div className="flex-1 flex justify-end">
               {renderDateDisplay()}
             </div>
@@ -275,11 +279,11 @@ const PreferenceForm: React.FC<PreferenceFormProps> = ({
           )}
 
           {/* Arrival time row */}
-          <div className="flex items-center px-4 py-2.5 gap-3 border-b border-[#e2ddd8]">
-            <div className="w-[30px] h-[30px] rounded-[8px] bg-[#f3e8fd] flex items-center justify-center text-[15px] flex-shrink-0">
-              🛬
+          <div className="flex items-center px-4 py-2.5 gap-3 border-b border-line">
+            <div className="w-[30px] h-[30px] rounded-[8px] bg-surface text-brand-700 flex items-center justify-center flex-shrink-0">
+              <PlaneLanding size={16} aria-hidden="true" />
             </div>
-            <span className="text-sm font-medium text-[#1a1a1a] min-w-[80px]">Arrival</span>
+            <span className="text-sm font-medium text-ink min-w-[80px]">Arrival</span>
             <div className="flex-1 flex justify-end">
               <TimeOfDayDropdown
                 value={preferences.arrivalTime}
@@ -289,11 +293,11 @@ const PreferenceForm: React.FC<PreferenceFormProps> = ({
           </div>
 
           {/* Departure time row */}
-          <div className="flex items-center px-4 py-2.5 gap-3 border-b border-[#e2ddd8]">
-            <div className="w-[30px] h-[30px] rounded-[8px] bg-[#f3e8fd] flex items-center justify-center text-[15px] flex-shrink-0">
-              🛫
+          <div className="flex items-center px-4 py-2.5 gap-3 border-b border-line">
+            <div className="w-[30px] h-[30px] rounded-[8px] bg-surface text-brand-700 flex items-center justify-center flex-shrink-0">
+              <PlaneTakeoff size={16} aria-hidden="true" />
             </div>
-            <span className="text-sm font-medium text-[#1a1a1a] min-w-[80px]">Departure</span>
+            <span className="text-sm font-medium text-ink min-w-[80px]">Departure</span>
             <div className="flex-1 flex justify-end">
               <TimeOfDayDropdown
                 value={preferences.departureTime}
@@ -304,17 +308,17 @@ const PreferenceForm: React.FC<PreferenceFormProps> = ({
 
           {/* Travellers row */}
           <div className="flex items-center px-4 py-2.5 gap-3">
-            <div className="w-[30px] h-[30px] rounded-[8px] bg-[#e8eef8] flex items-center justify-center text-[15px] flex-shrink-0">
-              👥
+            <div className="w-[30px] h-[30px] rounded-[8px] bg-surface text-brand-700 flex items-center justify-center flex-shrink-0">
+              <Users size={16} aria-hidden="true" />
             </div>
-            <span className="text-sm font-medium text-[#1a1a1a] min-w-[80px]">Travellers</span>
+            <span className="text-sm font-medium text-ink min-w-[80px]">Travellers</span>
             <div className="flex-1 flex justify-end">
               {/* Custom dropdown */}
               <div ref={travelersMenuRef} className="relative">
                 <button
                   type="button"
                   onClick={() => setShowTravelersMenu(prev => !prev)}
-                  className="flex items-center gap-1 text-[#4a4a4a] text-sm cursor-pointer hover:text-[#0d3d38] transition-colors"
+                  className="flex items-center gap-1 text-ink-soft text-sm cursor-pointer hover:text-brand-900 transition-colors"
                 >
                   {selectedTravelerLabel}
                   <svg
@@ -326,7 +330,7 @@ const PreferenceForm: React.FC<PreferenceFormProps> = ({
                 </button>
 
                 {showTravelersMenu && (
-                  <div className="absolute right-0 top-full mt-1.5 z-50 bg-white rounded-xl shadow-lg border border-[#e2ddd8] min-w-[140px] py-1">
+                  <div className="absolute right-0 top-full mt-1.5 z-50 bg-white rounded-xl shadow-lg border border-line min-w-[140px] py-1">
                     {travelerOptions.map(opt => (
                       <button
                         key={opt.value}
@@ -335,10 +339,10 @@ const PreferenceForm: React.FC<PreferenceFormProps> = ({
                           onPreferenceChange("travelers", opt.value);
                           setShowTravelersMenu(false);
                         }}
-                        className={`w-full text-left px-3 py-2 text-sm transition-colors hover:bg-[#f0ede8] ${
+                        className={`w-full text-left px-3 py-2 text-sm transition-colors hover:bg-surface-dim ${
                           preferences.travelers === opt.value
-                            ? "text-[#0d3d38] font-semibold"
-                            : "text-[#4a4a4a]"
+                            ? "text-brand-900 font-semibold"
+                            : "text-ink-soft"
                         }`}
                       >
                         {opt.label}
@@ -366,23 +370,23 @@ const PreferenceForm: React.FC<PreferenceFormProps> = ({
                 onClick={() => handleTravelTypeClick(type.value)}
                 className={`rounded-2xl border-[1.5px] p-2 flex items-center gap-1.5 text-[11px] font-medium transition-colors text-left ${
                   isSelected
-                    ? "bg-[#0d3d38] border-[#0d3d38] text-white"
-                    : "bg-white border-[#e2ddd8] text-[#4a4a4a] hover:border-[#c9a96e]"
+                    ? "bg-brand-900 border-brand-900 text-white"
+                    : "bg-white border-line text-ink-soft hover:border-gold-500"
                 }`}
               >
                 <span
-                  className={`w-6 h-6 rounded-[6px] flex items-center justify-center text-[13px] flex-shrink-0 ${
-                    isSelected ? "bg-white/15" : "bg-[#f0ede8]"
+                  className={`w-6 h-6 rounded-[6px] flex items-center justify-center flex-shrink-0 ${
+                    isSelected ? "bg-white/15" : "bg-surface-dim"
                   }`}
                 >
-                  {type.icon}
+                  <type.icon size={14} aria-hidden="true" />
                 </span>
                 {type.label}
               </button>
             );
           })}
         </div>
-        <p className="text-[10.5px] text-[#8a8a8a] text-right mt-1">
+        <p className="text-[10.5px] text-ink-muted text-right mt-1">
           {travelSelected > 0
             ? `${travelSelected} selected · up to ${travelRemaining} more`
             : "Select up to 3"}
@@ -402,16 +406,16 @@ const PreferenceForm: React.FC<PreferenceFormProps> = ({
                 onClick={() => handleTransportClick(type.value)}
                 className={`rounded-2xl border-[1.5px] p-2 flex items-center gap-1.5 text-[11px] font-medium transition-colors text-left ${
                   isSelected
-                    ? "bg-[#0d3d38] border-[#0d3d38] text-white"
-                    : "bg-white border-[#e2ddd8] text-[#4a4a4a] hover:border-[#c9a96e]"
+                    ? "bg-brand-900 border-brand-900 text-white"
+                    : "bg-white border-line text-ink-soft hover:border-gold-500"
                 }`}
               >
                 <span
-                  className={`w-6 h-6 rounded-[6px] flex items-center justify-center text-[13px] flex-shrink-0 ${
-                    isSelected ? "bg-white/15" : "bg-[#f0ede8]"
+                  className={`w-6 h-6 rounded-[6px] flex items-center justify-center flex-shrink-0 ${
+                    isSelected ? "bg-white/15" : "bg-surface-dim"
                   }`}
                 >
-                  {type.icon}
+                  <type.icon size={14} aria-hidden="true" />
                 </span>
                 {type.label}
               </button>
@@ -423,7 +427,7 @@ const PreferenceForm: React.FC<PreferenceFormProps> = ({
       {/* ── DAILY PACE ── */}
       <div>
         <SectionLabel>Daily Pace</SectionLabel>
-        <div className="bg-white rounded-2xl border border-[#e2ddd8] overflow-hidden">
+        <div className="bg-white rounded-2xl border border-line overflow-hidden">
           <div className="flex p-1.5 gap-1">
             {paceOptions.map((pace) => {
               const isSelected = preferences.activityIntensity === pace.value;
@@ -434,21 +438,21 @@ const PreferenceForm: React.FC<PreferenceFormProps> = ({
                   onClick={() => onPreferenceChange("activityIntensity", pace.value)}
                   className={`flex-1 py-1.5 rounded-xl text-center transition-colors ${
                     isSelected
-                      ? "bg-[#0d3d38] text-white"
-                      : "text-[#8a8a8a] hover:bg-[#f0ede8]"
+                      ? "bg-brand-900 text-white"
+                      : "text-ink-muted hover:bg-surface-dim"
                   }`}
                 >
                   <div className="text-xs font-medium">{pace.label}</div>
-                  <div className={`text-[10px] mt-0.5 ${isSelected ? "text-white/70" : "text-[#8a8a8a]"}`}>
+                  <div className={`text-[10px] mt-0.5 ${isSelected ? "text-white/70" : "text-ink-muted"}`}>
                     {pace.sub}
                   </div>
                 </button>
               );
             })}
           </div>
-          <div className="h-1 bg-[#e2ddd8] rounded-full mx-3 mb-3">
+          <div className="h-1 bg-line rounded-full mx-3 mb-3">
             <div
-              className="h-full bg-gradient-to-r from-[#2d9e8a] to-[#c9a96e] rounded-full transition-all duration-300"
+              className="h-full bg-brand-500 rounded-full transition-all duration-300"
               style={{ width: `${progressWidth}%` }}
             />
           </div>

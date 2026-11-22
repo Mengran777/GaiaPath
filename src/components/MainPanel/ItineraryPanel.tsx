@@ -11,6 +11,11 @@ import {
 } from "@hello-pangea/dnd";
 import { DayItinerary, Activity, Location } from "../../types/itinerary";
 import UnsplashCredit from "../UI/UnsplashCredit";
+import palette from "@/styles/palette";
+import {
+  X, Check, Pencil, RotateCcw, Undo2, Clock, Star, MapPin, Landmark, Image as ImageIcon,
+  Sunrise, Sun, Sunset, Map as MapIcon, Bus, Sparkles,
+} from "lucide-react";
 
 // ── Props ──────────────────────────────────────────────────────────────────────
 
@@ -131,10 +136,11 @@ const Lightbox: React.FC<LightboxProps> = ({ images, fallbackImages, attribution
       )}
 
       <button
-        className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/20 text-white flex items-center justify-center hover:bg-white/40 transition-colors text-sm"
+        className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/20 text-white flex items-center justify-center hover:bg-white/40 transition-colors"
         onClick={onClose}
+        aria-label="Close"
       >
-        ✕
+        <X size={18} aria-hidden="true" />
       </button>
 
       {images.length > 1 && (
@@ -371,8 +377,8 @@ const DraggableCard: React.FC<DraggableCardProps> = ({
       `}
       style={
         isDragging
-          ? { borderStyle: "dashed", borderColor: "#2d9e8a", borderWidth: 2 }
-          : { borderColor: isAiTouched ? "#8b5fbf" : isSelected ? "#2d9e8a" : hovered ? "#2d9e8a" : "transparent" }
+          ? { borderStyle: "dashed", borderColor: palette.brand[500], borderWidth: 2 }
+          : { borderColor: isAiTouched ? palette.gold[500] : isSelected || hovered ? palette.brand[500] : "transparent" }
       }
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -380,7 +386,7 @@ const DraggableCard: React.FC<DraggableCardProps> = ({
       {/* ── Card row ── */}
       <div
         className={`flex items-stretch cursor-pointer ${
-          isAiTouched ? "bg-gradient-to-b from-[#f3e8fd] to-white" : "bg-white"
+          isAiTouched ? "bg-gold-50" : "bg-white"
         }`}
         onClick={onCardClick}
       >
@@ -391,7 +397,7 @@ const DraggableCard: React.FC<DraggableCardProps> = ({
           className={`
             flex items-center justify-center w-7 flex-shrink-0
             cursor-grab active:cursor-grabbing
-            text-[#2d9e8a] bg-[#f5faf9] border-r border-[#e8f0ef]
+            text-brand-500 bg-brand-50 border-r border-brand-100
             transition-opacity duration-150
             ${hovered || isDragging ? "opacity-100" : "opacity-0"}
           `}
@@ -419,12 +425,12 @@ const DraggableCard: React.FC<DraggableCardProps> = ({
           ) : null}
           <div className="flex-1 min-w-0">
             <div className="flex items-baseline gap-2 flex-wrap mb-1">
-              <h3 className="text-sm font-bold text-[#0d3d38] truncate">
+              <h3 className="text-sm font-bold text-brand-900 truncate">
                 {activity.title}
               </h3>
               {isAiTouched && (
-                <span className="text-[10px] font-bold uppercase tracking-wide text-[#6e3fa3] bg-[#f3e8fd] border border-[#e2caf7] px-2 py-0.5 rounded-full flex-shrink-0">
-                  ✨ {aiBadgeText ?? "AI updated"}
+                <span className="text-[10px] font-bold uppercase tracking-wide text-gold-700 bg-gold-50 border border-gold-200 px-2 py-0.5 rounded-full flex-shrink-0">
+                  {aiBadgeText ?? "AI updated"}
                 </span>
               )}
             </div>
@@ -433,14 +439,14 @@ const DraggableCard: React.FC<DraggableCardProps> = ({
             )}
             <div className="flex items-center gap-3 text-xs text-gray-500 flex-wrap">
               {activity.time && (
-                <span className="flex items-center gap-0.5">
-                  <span className="text-[#2d9e8a]">⏰</span>
+                <span className="flex items-center gap-1">
+                  <Clock size={12} className="text-brand-500" aria-hidden="true" />
                   {activity.time}
                 </span>
               )}
               {activity.rating != null && (
-                <span className="flex items-center gap-0.5">
-                  <span className="text-yellow-400">★</span>
+                <span className="flex items-center gap-1">
+                  <Star size={12} className="text-gold-500" fill="currentColor" aria-hidden="true" />
                   {activity.rating}
                 </span>
               )}
@@ -465,20 +471,20 @@ const DraggableCard: React.FC<DraggableCardProps> = ({
             onClick={(e) => { e.stopPropagation(); onEdit?.(); }}
             className="w-11 flex items-center justify-center text-gray-400
                        bg-gray-50 border-l border-gray-100
-                       hover:text-[#0d3d38] hover:bg-[#e8f7f5] transition-colors duration-150"
+                       hover:text-brand-900 hover:bg-brand-100 transition-colors duration-150"
             title="Edit activity"
           >
-            ✎
+            <Pencil size={15} aria-hidden="true" />
           </button>
           {isAiTouched && (
             <button
               onClick={(e) => { e.stopPropagation(); onUndoAiChange?.(); }}
-              className="w-11 flex items-center justify-center text-[#6e3fa3]
-                         bg-[#f3e8fd] border-l border-[#e2caf7]
-                         hover:text-white hover:bg-[#8b5fbf] transition-colors duration-150"
+              className="w-11 flex items-center justify-center text-gold-700
+                         bg-gold-50 border-l border-gold-200
+                         hover:text-white hover:bg-brand-900 transition-colors duration-150"
               title={aiWasLine ? "Undo this AI change" : "Remove this AI addition"}
             >
-              ↺
+              <RotateCcw size={15} aria-hidden="true" />
             </button>
           )}
           <button
@@ -522,10 +528,10 @@ const DraggableCard: React.FC<DraggableCardProps> = ({
               </button>
             ) : (
               <div
-                className="flex-shrink-0 rounded-lg bg-[#f0faf8] flex items-center justify-center text-3xl border border-[#cde8e4]"
+                className="flex-shrink-0 rounded-lg bg-brand-50 text-brand-300 flex items-center justify-center border border-brand-200"
                 style={{ width: 160, height: 120 }}
               >
-                🏛️
+                <Landmark size={32} strokeWidth={1.5} aria-hidden="true" />
               </div>
             )}
 
@@ -548,10 +554,10 @@ const DraggableCard: React.FC<DraggableCardProps> = ({
               ))
             ) : (
               <div
-                className="flex-shrink-0 rounded-lg bg-[#f5f2ee] flex items-center justify-center text-2xl border border-[#e8e4df]"
+                className="flex-shrink-0 rounded-lg bg-surface text-ink-faint flex items-center justify-center border border-line"
                 style={{ width: 90, height: 120 }}
               >
-                🌍
+                <ImageIcon size={24} strokeWidth={1.5} aria-hidden="true" />
               </div>
             )}
           </div>
@@ -560,7 +566,7 @@ const DraggableCard: React.FC<DraggableCardProps> = ({
           <div className="px-3 pb-3">
             {/* Title + close */}
             <div className="flex items-center justify-between mb-1.5">
-              <h3 className="text-sm font-bold text-[#0d3d38] truncate flex-1 pr-2">
+              <h3 className="text-sm font-bold text-brand-900 truncate flex-1 pr-2">
                 {activity.title}
               </h3>
               <button
@@ -593,13 +599,15 @@ const DraggableCard: React.FC<DraggableCardProps> = ({
             {/* Pills */}
             <div className="flex items-center gap-1.5 flex-wrap">
               {activity.time && (
-                <span className="flex items-center gap-1 text-xs bg-[#f0faf8] text-[#1a6b5e] px-2 py-0.5 rounded-full border border-[#cde8e4]">
-                  ⏰ {activity.time}
+                <span className="flex items-center gap-1 text-xs bg-brand-50 text-brand-700 px-2 py-0.5 rounded-full border border-brand-200">
+                  <Clock size={12} aria-hidden="true" />
+                  {activity.time}
                 </span>
               )}
               {activity.rating != null && (
-                <span className="flex items-center gap-1 text-xs bg-yellow-50 text-yellow-700 px-2 py-0.5 rounded-full border border-yellow-200">
-                  ★ {activity.rating}
+                <span className="flex items-center gap-1 text-xs bg-gold-50 text-gold-700 px-2 py-0.5 rounded-full border border-gold-200">
+                  <Star size={12} fill="currentColor" aria-hidden="true" />
+                  {activity.rating}
                 </span>
               )}
               {activity.price && (
@@ -756,11 +764,11 @@ const ActivityForm: React.FC<ActivityFormProps> = ({
     <form
       onSubmit={handleSubmit}
       onClick={(e) => e.stopPropagation()}
-      className="mt-2 p-4 bg-white rounded-2xl border-2 border-[#cde8e4] shadow-sm space-y-3"
+      className="mt-2 p-4 bg-white rounded-2xl border-2 border-brand-200 shadow-sm space-y-3"
     >
       {/* Header */}
       <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold text-[#0d3d38] tracking-wide uppercase">
+        <span className="text-xs font-semibold text-brand-900 tracking-wide uppercase">
           {isEditing ? "Edit activity" : "Add activity"}
         </span>
         <button
@@ -773,7 +781,7 @@ const ActivityForm: React.FC<ActivityFormProps> = ({
       </div>
 
       <div>
-        <label className="block text-xs font-semibold text-[#0d3d38] mb-1 uppercase tracking-wide">
+        <label className="block text-xs font-semibold text-brand-900 mb-1 uppercase tracking-wide">
           Activity name <span className="text-red-400">*</span>
         </label>
         <input
@@ -784,43 +792,43 @@ const ActivityForm: React.FC<ActivityFormProps> = ({
           required
           autoFocus={!isEditing}
           className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl outline-none
-                     focus:border-[#2d9e8a] focus:ring-2 focus:ring-[#2d9e8a]/20 transition-all"
+                     focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all"
         />
       </div>
 
       <div>
-        <label className="block text-xs font-semibold text-[#0d3d38] mb-1 uppercase tracking-wide">Description</label>
+        <label className="block text-xs font-semibold text-brand-900 mb-1 uppercase tracking-wide">Description</label>
         <input
           type="text"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Optional short description"
           className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl outline-none
-                     focus:border-[#2d9e8a] focus:ring-2 focus:ring-[#2d9e8a]/20 transition-all"
+                     focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all"
         />
       </div>
 
       {/* Time picker */}
       <div>
-        <label className="block text-xs font-semibold text-[#0d3d38] mb-2 tracking-wide uppercase">Time</label>
+        <label className="block text-xs font-semibold text-brand-900 mb-2 tracking-wide uppercase">Time</label>
         <div className="flex flex-wrap gap-2">
           {([
-            { key: "morning",   icon: "🌄", label: "Morning"   },
-            { key: "afternoon", icon: "☀️",  label: "Afternoon" },
-            { key: "evening",   icon: "🌆", label: "Evening"   },
-            { key: "custom",    icon: "🕐", label: "Custom"    },
-          ] as const).map(({ key, icon, label }) => (
+            { key: "morning",   icon: Sunrise, label: "Morning"   },
+            { key: "afternoon", icon: Sun,     label: "Afternoon" },
+            { key: "evening",   icon: Sunset,  label: "Evening"   },
+            { key: "custom",    icon: Clock,   label: "Custom"    },
+          ] as const).map(({ key, icon: Icon, label }) => (
             <button
               key={key}
               type="button"
               onClick={() => setTimePreset(timePreset === key ? null : key)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-150
                 ${timePreset === key
-                  ? "bg-[#e8f7f5] border-[#2d9e8a] text-[#0d3d38] font-semibold"
-                  : "bg-white border-gray-200 text-gray-500 hover:border-[#2d9e8a] hover:text-[#0d3d38]"
+                  ? "bg-brand-100 border-brand-500 text-brand-900 font-semibold"
+                  : "bg-white border-gray-200 text-gray-500 hover:border-brand-500 hover:text-brand-900"
                 }`}
             >
-              <span>{icon}</span>
+              <Icon size={14} aria-hidden="true" />
               <span>{label}</span>
             </button>
           ))}
@@ -834,7 +842,7 @@ const ActivityForm: React.FC<ActivityFormProps> = ({
               value={customStart}
               onChange={(e) => setCustomStart(e.target.value)}
               className="flex-1 px-3 py-1.5 text-sm border border-gray-200 rounded-xl outline-none
-                         focus:border-[#2d9e8a] focus:ring-2 focus:ring-[#2d9e8a]/20 transition-all"
+                         focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all"
             />
             <span className="text-gray-400 text-sm flex-shrink-0">–</span>
             <input
@@ -842,7 +850,7 @@ const ActivityForm: React.FC<ActivityFormProps> = ({
               value={customEnd}
               onChange={(e) => setCustomEnd(e.target.value)}
               className="flex-1 px-3 py-1.5 text-sm border border-gray-200 rounded-xl outline-none
-                         focus:border-[#2d9e8a] focus:ring-2 focus:ring-[#2d9e8a]/20 transition-all"
+                         focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all"
             />
           </div>
         )}
@@ -855,24 +863,24 @@ const ActivityForm: React.FC<ActivityFormProps> = ({
 
       {/* Price */}
       <div>
-        <label className="block text-xs font-semibold text-[#0d3d38] mb-1 uppercase tracking-wide">Price</label>
+        <label className="block text-xs font-semibold text-brand-900 mb-1 uppercase tracking-wide">Price</label>
         <input
           type="text"
           value={price}
           onChange={(e) => setPrice(e.target.value)}
           placeholder="Free / €10"
           className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl outline-none
-                     focus:border-[#2d9e8a] focus:ring-2 focus:ring-[#2d9e8a]/20 transition-all"
+                     focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all"
         />
       </div>
 
       <div ref={locWrapperRef} className="relative">
-        <label className="block text-xs font-semibold text-[#0d3d38] mb-1 uppercase tracking-wide">Location</label>
+        <label className="block text-xs font-semibold text-brand-900 mb-1 uppercase tracking-wide">Location</label>
         {isEditing && hasCoords && !selectedLocationName && (
-          <div className="mb-1.5 flex items-center gap-1.5 px-3 py-2 bg-[#f0faf8] rounded-xl border border-[#cde8e4]">
-            <span className="text-[#2d9e8a] text-sm">📍</span>
+          <div className="mb-1.5 flex items-center gap-1.5 px-3 py-2 bg-brand-50 rounded-xl border border-brand-200">
+            <MapPin size={14} className="text-brand-500 flex-shrink-0" aria-hidden="true" />
             <div className="min-w-0">
-              <p className="text-xs text-[#0d3d38] font-medium">Current location saved</p>
+              <p className="text-xs text-brand-900 font-medium">Current location saved</p>
               <p className="text-xs text-gray-400">{initialActivity!.latitude!.toFixed(4)}, {initialActivity!.longitude!.toFixed(4)}</p>
             </div>
           </div>
@@ -888,7 +896,7 @@ const ActivityForm: React.FC<ActivityFormProps> = ({
             }}
             placeholder={isEditing ? "Search to change location…" : "Search a place…"}
             className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl outline-none
-                       focus:border-[#2d9e8a] focus:ring-2 focus:ring-[#2d9e8a]/20 transition-all pr-8"
+                       focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all pr-8"
           />
           {loadingLoc && (
             <svg
@@ -901,7 +909,7 @@ const ActivityForm: React.FC<ActivityFormProps> = ({
             </svg>
           )}
           {selectedLocationName && !loadingLoc && (
-            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#2d9e8a] text-xs font-bold">✓</span>
+            <Check size={14} strokeWidth={2.5} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-brand-500" aria-hidden="true" />
           )}
         </div>
         {isEditing && (
@@ -914,10 +922,10 @@ const ActivityForm: React.FC<ActivityFormProps> = ({
                 key={i}
                 type="button"
                 onClick={() => handleSelectLocation(s)}
-                className="w-full text-left px-3 py-2 text-sm hover:bg-[#f0faf8] transition-colors
+                className="w-full text-left px-3 py-2 text-sm hover:bg-brand-50 transition-colors
                            border-b border-gray-100 last:border-b-0 flex items-start gap-2"
               >
-                <span className="mt-0.5 text-base leading-none">📍</span>
+                <MapPin size={15} className="mt-0.5 text-brand-500 flex-shrink-0" aria-hidden="true" />
                 <div className="min-w-0">
                   <div className="font-medium text-gray-800">{s.name}</div>
                   <div className="text-xs text-gray-500 truncate">{s.displayName}</div>
@@ -939,8 +947,8 @@ const ActivityForm: React.FC<ActivityFormProps> = ({
         <button
           type="submit"
           disabled={!title.trim()}
-          className="text-xs font-semibold px-4 py-1.5 rounded-full bg-[#0d3d38] text-white
-                     hover:bg-[#1a6b5e] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          className="text-xs font-semibold px-4 py-1.5 rounded-full bg-brand-900 text-white
+                     hover:bg-brand-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         >
           {isEditing ? "Save changes" : "Add"}
         </button>
@@ -1454,16 +1462,12 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
     setUndoStack((prev) => prev.slice(0, -1));
   }, [undoStack]);
 
-  // Detect whether localItinerary differs from the original itinerary prop
-  const hasChanges = useMemo(() => {
-    if (localItinerary.length !== itinerary.length) return true;
-    return localItinerary.some((day, di) => {
-      const orig = itinerary[di];
-      if (!orig || day.day !== orig.day) return true;
-      if (day.activities.length !== orig.activities.length) return true;
-      return day.activities.some((act, ai) => act.title !== orig.activities[ai]?.title);
-    });
-  }, [localItinerary, itinerary]);
+  // Detect whether localItinerary differs from the original itinerary prop.
+  // Compares full content so edits to time/description/price also count.
+  const hasChanges = useMemo(
+    () => JSON.stringify(localItinerary) !== JSON.stringify(itinerary),
+    [localItinerary, itinerary]
+  );
 
   // Remove activity
   const handleRemoveActivity = (dayNumber: number, activityIndex: number) => {
@@ -1499,7 +1503,7 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
         {onBackToRoutes ? (
           <button
             onClick={onBackToRoutes}
-            className="flex items-center gap-1.5 text-sm text-[#1a6b5e] hover:text-[#0d3d38] font-medium transition-colors group"
+            className="flex items-center gap-1.5 text-sm text-brand-700 hover:text-brand-900 font-medium transition-colors group"
           >
             <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -1514,11 +1518,11 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
             title={isFavorite ? "Remove from favourites" : "Add to favourites"}
             className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full border transition-all duration-150
               ${isFavorite
-                ? "bg-[#fdf6ec] border-[#c9a96e] text-[#c9a96e]"
-                : "bg-white border-[#e8e4df] text-[#b0b0b0] hover:border-[#c9a96e] hover:text-[#c9a96e]"
+                ? "bg-gold-50 border-gold-500 text-gold-500"
+                : "bg-white border-line text-ink-faint hover:border-gold-500 hover:text-gold-500"
               }`}
           >
-            {isFavorite ? "★" : "☆"}
+            <Star size={14} fill={isFavorite ? "currentColor" : "none"} aria-hidden="true" />
             <span>{isFavorite ? "Saved to favourites" : "Add to favourites"}</span>
           </button>
         )}
@@ -1546,16 +1550,18 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
                 {undoStack.length > 0 && (
                   <button
                     onClick={(e) => { e.stopPropagation(); handleUndo(); }}
-                    className="flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all duration-200 bg-white text-blue-500 border-blue-200 hover:bg-blue-50"
+                    className="flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all duration-200 bg-white text-brand-700 border-brand-200 hover:bg-brand-50"
                   >
-                    ↩ Undo{undoStack.length > 1 ? ` (${undoStack.length})` : ""}
+                    <Undo2 size={13} aria-hidden="true" />
+                    Undo{undoStack.length > 1 ? ` (${undoStack.length})` : ""}
                   </button>
                 )}
                 <button
                   onClick={(e) => { e.stopPropagation(); handleDiscard(); }}
                   className="flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all duration-200 bg-white text-red-400 border-red-200 hover:bg-red-50"
                 >
-                  ✕ Discard
+                  <X size={13} aria-hidden="true" />
+                  Discard
                 </button>
                 <button
                   onClick={(e) => {
@@ -1564,19 +1570,20 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
                     exitEditMode();
                   }}
                   disabled={isSaving}
-                  className={`flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all duration-200 bg-[#0d3d38] text-white border-[#0d3d38] shadow-sm hover:bg-[#1a6b5e]
+                  className={`flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all duration-200 bg-brand-900 text-white border-brand-900 shadow-sm hover:bg-brand-700
                     ${isSaving ? "opacity-60 cursor-not-allowed" : ""}
                   `}
                 >
-                  {isSaving ? "Saving…" : "✓ Done"}
+                  {isSaving ? "Saving…" : <><Check size={13} aria-hidden="true" />Done</>}
                 </button>
               </>
             ) : (
               <button
                 onClick={(e) => { e.stopPropagation(); enterEditMode(); }}
-                className="flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all duration-200 bg-white text-gray-400 border-[#e8e4df] hover:text-red-400 hover:border-red-300"
+                className="flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all duration-200 bg-white text-gray-400 border-line hover:text-red-400 hover:border-red-300"
               >
-                ✎ Edit
+                <Pencil size={13} aria-hidden="true" />
+                Edit
               </button>
             )}
           </div>
@@ -1584,9 +1591,10 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
       </div>
 
       {/* AI composer — always available, not gated behind Edit */}
-      <div className="mb-4 rounded-2xl border border-[#e2caf7] bg-gradient-to-b from-[#f3e8fd] to-[#faf5fe] p-4">
-        <p className="text-[10.5px] font-bold tracking-widest uppercase text-[#6e3fa3] mb-2.5">
-          ✨ Ask AI to adjust this trip
+      <div className="mb-4 rounded-2xl border border-gold-200 bg-gold-50 p-4">
+        <p className="flex items-center gap-1.5 text-[10.5px] font-bold tracking-widest uppercase text-gold-700 mb-2.5">
+          <Sparkles size={13} aria-hidden="true" />
+          Ask AI to adjust this trip
         </p>
         <div className="flex flex-wrap gap-1.5 mb-2.5">
           {AI_SUGGESTIONS.map((s) => (
@@ -1595,8 +1603,8 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
               type="button"
               disabled={aiBusy}
               onClick={() => handleAiSubmit(s)}
-              className="text-xs px-3 py-1.5 rounded-full border border-[#e2caf7] bg-white text-[#6e3fa3]
-                         hover:bg-[#8b5fbf] hover:text-white hover:border-[#8b5fbf] transition-colors
+              className="text-xs px-3 py-1.5 rounded-full border border-gold-200 bg-white text-gold-700
+                         hover:bg-brand-900 hover:text-white hover:border-brand-900 transition-colors
                          disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {s}
@@ -1616,23 +1624,23 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
             disabled={aiBusy}
             rows={1}
             placeholder="e.g. Swap Day 2's afternoon for something more relaxed"
-            className="flex-1 text-sm px-3 py-2.5 rounded-xl border border-[#e2caf7] bg-white
-                       outline-none focus:ring-2 focus:ring-[#8b5fbf]/20 resize-none
-                       disabled:bg-[#f0ede8] transition-colors"
+            className="flex-1 text-sm px-3 py-2.5 rounded-xl border border-gold-200 bg-white
+                       outline-none focus:ring-2 focus:ring-brand-500/20 resize-none
+                       disabled:bg-surface-dim transition-colors"
           />
           <button
             type="button"
             disabled={aiBusy || !aiInput.trim()}
             onClick={() => handleAiSubmit(aiInput)}
-            className="flex-shrink-0 text-sm font-semibold px-4 py-2.5 rounded-xl bg-[#8b5fbf] text-white
-                       hover:bg-[#6e3fa3] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            className="flex-shrink-0 text-sm font-semibold px-4 py-2.5 rounded-xl bg-brand-900 text-white
+                       hover:bg-brand-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
           >
             Ask AI
           </button>
         </div>
         {aiBusy && (
-          <div className="flex items-center gap-2 mt-2.5 text-xs text-[#6e3fa3]">
-            <span className="w-3 h-3 rounded-full border-2 border-[#e2caf7] border-t-[#6e3fa3] animate-spin flex-shrink-0" />
+          <div className="flex items-center gap-2 mt-2.5 text-xs text-gold-700">
+            <span className="w-3 h-3 rounded-full border-2 border-gold-200 border-t-gold-700 animate-spin flex-shrink-0" />
             {aiStatusText}
           </div>
         )}
@@ -1642,7 +1650,7 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
       </div>
 
       {/* Drag hint */}
-      <div className="mb-4 flex items-center gap-2 px-3 py-2 rounded-xl bg-[#e8f7f5] border border-[#cde8e4] text-xs text-[#2d9e8a]">
+      <div className="mb-4 flex items-center gap-2 px-3 py-2 rounded-xl bg-brand-100 border border-brand-200 text-xs text-brand-500">
         <span className="text-base leading-none select-none">⠿</span>
         <span>
           Hover a card and drag the <strong>⠿ handle</strong> to reorder · drag across days
@@ -1663,8 +1671,8 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
                   itinerary-day-animated relative border-l-4 pl-6 mb-8 cursor-pointer
                   transition-all duration-500 ease-in-out
                   ${highlightedDay === dayItem.day
-                    ? "border-[#1a6b5e] bg-[#f0faf8]/50 rounded-r-2xl py-2"
-                    : "border-[#2d9e8a] hover:border-[#1a6b5e]"
+                    ? "border-brand-700 bg-brand-50/50 rounded-r-2xl py-2"
+                    : "border-brand-500 hover:border-brand-700"
                   }
                 `}
               >
@@ -1675,8 +1683,8 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
                     text-white font-bold flex items-center justify-center shadow-md
                     transition-all duration-500
                     ${highlightedDay === dayItem.day
-                      ? "bg-gradient-to-br from-[#0d3d38] to-[#2d9e8a] scale-110 shadow-lg"
-                      : "bg-gradient-to-br from-[#0d3d38] to-[#1a6b5e]"
+                      ? "bg-brand-500 scale-110 shadow-lg"
+                      : "bg-brand-900"
                     }
                   `}
                 >
@@ -1696,11 +1704,12 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
                       <button
                         onClick={(e) => handleDayRoute(e, dayItem.activities)}
                         className="text-xs font-semibold px-2.5 py-1 rounded-full
-                                   bg-[#0d3d38] text-white hover:bg-[#1a6b5e]
+                                   bg-brand-900 text-white hover:bg-brand-700
                                    transition-colors duration-150 flex items-center gap-1"
                         title="Open day route in Google Maps"
                       >
-                        🗺 Day route
+                        <MapIcon size={13} aria-hidden="true" />
+                        Day route
                       </button>
                     )}
                   </div>
@@ -1715,7 +1724,7 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
                       className={`
                         space-y-2 rounded-2xl transition-all duration-200
                         ${snapshot.isDraggingOver
-                          ? "bg-[#e8f7f5]/60 ring-2 ring-[#2d9e8a]/50 ring-offset-2 p-1"
+                          ? "bg-brand-100/60 ring-2 ring-brand-500/50 ring-offset-2 p-1"
                           : "p-0"
                         }
                       `}
@@ -1726,16 +1735,16 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
                             flex items-center justify-center h-[54px] rounded-2xl
                             transition-all duration-200
                             ${snapshot.isDraggingOver
-                              ? "border-2 border-[#2d9e8a] bg-[#e8f7f5]"
-                              : "border-[1.5px] border-dashed border-[#cde8e4]"
+                              ? "border-2 border-brand-500 bg-brand-100"
+                              : "border-[1.5px] border-dashed border-brand-200"
                             }
                           `}
                         >
                           <span
                             className={`text-sm transition-colors duration-200 ${
                               snapshot.isDraggingOver
-                                ? "text-[#2d9e8a] font-medium"
-                                : "text-[#a8d5cf]"
+                                ? "text-brand-500 font-medium"
+                                : "text-brand-200"
                             }`}
                           >
                             ⊕ Drop an activity here
@@ -1770,9 +1779,10 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   onClick={(e) => e.stopPropagation()}
-                                  className="flex items-center justify-center gap-1 py-1 text-[11px] text-[#2d9e8a] hover:text-[#1a6b5e] hover:underline"
+                                  className="flex items-center justify-center gap-1 py-1 text-[11px] text-brand-500 hover:text-brand-700 hover:underline"
                                 >
-                                  🚌 Public transit directions
+                                  <Bus size={12} aria-hidden="true" />
+                                  Public transit directions
                                 </a>
                               )}
                               <Draggable
@@ -1849,8 +1859,8 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
                     <button
                       onClick={(e) => { e.stopPropagation(); setAddingDay(dayItem.day); setEditingKey(null); }}
                       className="mt-2 w-full flex items-center justify-center gap-1.5 py-2
-                                 text-xs font-medium text-[#2d9e8a] rounded-xl border border-dashed
-                                 border-[#2d9e8a]/40 hover:border-[#2d9e8a] hover:bg-[#f0faf8]
+                                 text-xs font-medium text-brand-500 rounded-xl border border-dashed
+                                 border-brand-500/40 hover:border-brand-500 hover:bg-brand-50
                                  transition-all duration-150"
                     >
                       + Add activity

@@ -1,12 +1,12 @@
-// src/app/App.tsx (MAJOR REWRITE)
+// src/app/App.tsx
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import PageContainer from "../components/Layout/PageContainer";
 import SmartSearch from "../components/Sidebar/SmartSearch";
 import PreferenceForm from "../components/Sidebar/PreferenceForm";
+import TripWizard from "../components/Wizard/TripWizard";
 import GenerateButton from "../components/Sidebar/GenerateButton";
 import { RouteList } from "../components/RouteSelection";
 import ItineraryPanel from "../components/MainPanel/ItineraryPanel";
@@ -14,84 +14,52 @@ import MapView from "../components/MainPanel/MapView";
 import { DayItinerary, Location } from "../types/itinerary";
 import { RouteOption } from "@/types/routes";
 import { useToast, ToastContainer } from "../components/UI";
+import { Loader2, TriangleAlert, MapPin } from "lucide-react";
 
 // ⭐ Define three app stages ⭐
 type AppStage = "initial" | "routes" | "details";
 
-const loadingSteps = [
-  { icon: "🌍", title: "Exploring your destination",  subtitle: "Researching local attractions, hidden gems and seasonal highlights..." },
-  { icon: "✨", title: "Crafting your routes",         subtitle: "Building 3 personalised itineraries tailored to your preferences..." },
-  { icon: "📸", title: "Fetching real photos",         subtitle: "Finding authentic images for each activity and location..." },
-];
-
-const LoadingView: React.FC<{ loadingPhase: number; isComplete: boolean }> = ({
-  loadingPhase,
-  isComplete,
-}) => (
-  <div className="flex-1 flex flex-col items-center justify-center px-8 py-12">
-    <div className="relative mb-8">
-      <div className="absolute -inset-3 rounded-full animate-ping opacity-10 bg-[#2d9e8a]" />
-      <div className="relative w-20 h-20 rounded-full flex items-center justify-center text-4xl bg-[#f0faf8] border-2 border-[#2d9e8a]/30">
-        {loadingSteps[loadingPhase].icon}
+// Placeholder shown while routes generate: three card skeletons shaped like RouteCard
+const LoadingView: React.FC = () => (
+  <div className="h-full overflow-hidden" role="status" aria-live="polite">
+    <div className="px-6 pt-6 pb-2">
+      <div className="flex items-center gap-2 font-display text-2xl font-bold text-brand-900 mb-1">
+        <Loader2 size={20} className="animate-spin text-brand-500" aria-hidden="true" />
+        Building your routes…
       </div>
+      <p className="text-ink-muted text-sm">Three options, usually ready in 10–20 seconds.</p>
     </div>
-    <h3 className="text-xl font-semibold text-gray-800 mb-2 text-center">
-      {loadingSteps[loadingPhase].title}
-    </h3>
-    <p className="text-sm text-gray-400 text-center max-w-xs leading-relaxed mb-10">
-      {loadingSteps[loadingPhase].subtitle}
-    </p>
-    <div className="flex items-start gap-6 mb-10">
-      {loadingSteps.map((_, i) => (
-        <div key={i} className="flex flex-col items-center gap-2">
-          <div className={`w-2 h-2 rounded-full transition-all duration-500 ${
-            i < loadingPhase  ? "bg-[#0d3d38] scale-100"
-            : i === loadingPhase ? "bg-[#2d9e8a] scale-125 ring-4 ring-[#2d9e8a]/20"
-            : "bg-gray-200 scale-100"
-          }`} />
-          <span className={`text-[10px] font-medium transition-colors whitespace-nowrap ${
-            i < loadingPhase  ? "text-[#0d3d38]"
-            : i === loadingPhase ? "text-[#2d9e8a]"
-            : "text-gray-300"
-          }`}>
-            {i === 0 ? "Exploring" : i === 1 ? "Crafting" : "Photos"}
-          </span>
+    <div className="px-6 pb-6 pt-4 grid grid-cols-1 gap-3">
+      {[0, 1, 2].map((i) => (
+        <div key={i} className="rounded-xl border border-line bg-white overflow-hidden animate-pulse">
+          <div className="h-[160px] bg-surface-dim" />
+          <div className="p-5 space-y-3">
+            <div className="h-5 w-2/3 rounded bg-surface-dim" />
+            <div className="h-3 w-full rounded bg-surface" />
+            <div className="h-3 w-4/5 rounded bg-surface" />
+            <div className="flex gap-2 pt-1">
+              <div className="h-6 w-24 rounded-full bg-surface" />
+              <div className="h-6 w-20 rounded-full bg-surface" />
+              <div className="h-6 w-28 rounded-full bg-surface" />
+            </div>
+          </div>
         </div>
       ))}
-    </div>
-    {/* Progress bar */}
-    <div className="w-64 h-1.5 bg-gray-100 rounded-full overflow-hidden mb-8 relative">
-      <div
-        className={isComplete ? "" : "animate-progress-fill"}
-        style={
-          isComplete
-            ? { width: "100%", transition: "width 0.3s ease-in",
-                background: "linear-gradient(to right, #2d9e8a, #c9a96e)",
-                height: "100%", borderRadius: "9999px" }
-            : { background: "linear-gradient(to right, #2d9e8a, #c9a96e)",
-                height: "100%", borderRadius: "9999px" }
-        }
-      />
-    </div>
-    <div className="flex items-center gap-2 text-xs text-gray-400">
-      <div className="animate-spin rounded-full h-3 w-3 border border-gray-300 border-t-[#2d9e8a]" />
-      Usually takes 20–35 seconds
     </div>
   </div>
 );
 
 const App: React.FC = () => {
-  const pathname = usePathname();
   const { toasts, showToast, dismissToast } = useToast();
 
   // ⭐ Core state: current stage ⭐
   // ⭐ NextAuth session ⭐
   const { data: session } = useSession();
 
-  const [stage, setStage] = useState<AppStage>("routes");
+  const [stage, setStage] = useState<AppStage>("initial");
 
   // ⭐ Current active tab ⭐
-  const [activeTab, setActiveTab] = useState<string>("My Itineraries");
+  const [activeTab, setActiveTab] = useState<string>("Home");
 
   const [isTabSwitching, setIsTabSwitching] = useState(false);
 
@@ -115,11 +83,6 @@ const App: React.FC = () => {
   const [routeOptions, setRouteOptions] = useState<RouteOption[]>([]);
   const [myItineraries, setMyItineraries] = useState<RouteOption[]>([]); // Store generated routes
   const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
-
-  // ⭐ Currently selected route and itinerary ⭐
-  const selectedRoute = useMemo(() => {
-    return routeOptions.find((route) => route.id === selectedRouteId) || null;
-  }, [routeOptions, selectedRouteId]);
 
   const [itinerary, setItinerary] = useState<DayItinerary[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -256,11 +219,36 @@ const App: React.FC = () => {
     }
   };
 
-  // ⭐ Save itinerary handler — session-only (no DB) ⭐
-  // Persists edits in-memory so they survive navigating back to the route list.
-  // Only favoriting writes to the DB.
+  // ⭐ Save itinerary handler ⭐
+  // Edits always update the session copy (My Itineraries). If the route is
+  // favorited, the stored favorite is updated too — favorites are the only
+  // thing persisted to the DB.
   const handleSaveItinerary = (updatedItinerary: DayItinerary[]) => {
     if (!selectedRouteId) return;
+    const routeId = selectedRouteId;
+
+    if (favoriteRoutes.has(routeId)) {
+      const route = routeOptions.find((r) => r.id === routeId);
+      if (route) {
+        fetch("/api/favorites", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            routeId,
+            routeData: { ...route, itinerary: updatedItinerary },
+            action: "add",
+          }),
+        })
+          .then((res) => {
+            if (!res.ok) throw new Error(res.statusText);
+          })
+          .catch((error) => {
+            console.error("Error updating favorite:", error);
+            showToast("Couldn't save your edits to Favorites. Please try again.", "error");
+          });
+      }
+    }
+
     setItinerary(updatedItinerary); // reset hasChanges baseline in ItineraryPanel
     setRouteOptions((prev) =>
       prev.map((r) =>
@@ -440,25 +428,6 @@ const App: React.FC = () => {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [showToast]);
 
-  const [loadingPhase, setLoadingPhase] = useState(0);
-  const [loadingComplete, setLoadingComplete] = useState(false);
-  const [showLoader, setShowLoader] = useState(false);
-
-  useEffect(() => {
-    if (isLoading) {
-      setShowLoader(true);
-      setLoadingComplete(false);
-      setLoadingPhase(0);
-      const t1 = setTimeout(() => setLoadingPhase(1), 8000);
-      const t2 = setTimeout(() => setLoadingPhase(2), 20000);
-      return () => { clearTimeout(t1); clearTimeout(t2); };
-    } else if (showLoader) {
-      setLoadingComplete(true);
-      const t = setTimeout(() => setShowLoader(false), 400);
-      return () => clearTimeout(t);
-    }
-  }, [isLoading]);
-
   // ⭐ Handle clicking on a day's itinerary ⭐
   const handleDayClick = useCallback((dayNumber: number) => {
     // Clear location detail popup
@@ -523,83 +492,72 @@ const App: React.FC = () => {
   }, [itinerary, highlightedDay]);
 
   // ⭐ Sidebar content (changes based on stage) ⭐
+  // Sidebar: the trip planning form (PageContainer hides it on Favorites and the details view)
   const sidebarContent = (
     <div className="flex flex-col h-full">
-      {stage === "details" ? (
-        // Stage 3: Only show a back button
-        <button
-          onClick={handleBackToRoutes}
-          className="flex items-center gap-2 text-blue-600 font-semibold hover:text-blue-800 transition-colors"
-        >
-          ← Back to Routes
-        </button>
-      ) : activeTab === "Favorites" ? (
-        <div className="flex flex-col items-center justify-center h-full text-center px-6">
-          <div className="text-6xl mb-4">🏆</div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">
-            Your Favorite Routes
-          </h2>
-          <p className="text-gray-600">
-            These are the routes you've saved for future reference.
-          </p>
-        </div>
-      ) : (
-        // Home and My Itineraries: sticky top bar + scrollable form + sticky generate button
-        <div className="flex flex-col h-full bg-[#f5f2ee]">
-          {/* Sticky top bar */}
-          <div className="sticky top-0 z-10 bg-[#f5f2ee]/95 backdrop-blur border-b border-[#e2ddd8] px-5 py-4 flex-shrink-0">
-            <h2 className="font-semibold text-xl text-[#1a1a1a]">Plan Your Trip</h2>
-            <p className="text-xs text-[#8a8a8a] mt-0.5">Tell us about your dream journey</p>
-          </div>
+      <div className="border-b border-line px-5 py-4 flex-shrink-0">
+        <h2 className="font-semibold text-lg text-ink">Plan your trip</h2>
+        <p className="text-sm text-ink-muted mt-0.5">Where to, and what are you into?</p>
+      </div>
 
-          {/* Scrollable content */}
-          <div className="flex-1 overflow-y-auto px-4 pt-4 pb-24 custom-scrollbar">
-            <SmartSearch
-              query={smartSearchQuery}
-              setQuery={setSmartSearchQuery}
-              onSearch={handleSmartSearch}
-            />
-            <PreferenceForm
-              preferences={preferences}
-              onPreferenceChange={handlePreferenceChange}
-            />
-          </div>
+      <div className="flex-1 overflow-y-auto px-4 pt-4 pb-4 custom-scrollbar">
+        <SmartSearch
+          query={smartSearchQuery}
+          setQuery={setSmartSearchQuery}
+          onSearch={handleSmartSearch}
+        />
+        <PreferenceForm
+          preferences={preferences}
+          onPreferenceChange={handlePreferenceChange}
+        />
+      </div>
 
-          {/* Sticky generate button */}
-          <div className="sticky bottom-0 px-4 pb-4 pt-2 bg-gradient-to-t from-[#f5f2ee] to-transparent flex-shrink-0">
-            <GenerateButton
-              onClick={() => handleGenerateItinerary()}
-              isLoading={isLoading}
-            />
-          </div>
-        </div>
-      )}
+      <div className="border-t border-line p-4 flex-shrink-0">
+        <GenerateButton
+          onClick={() => handleGenerateItinerary()}
+          isLoading={isLoading}
+        />
+      </div>
     </div>
+  );
+
+  // Initial stage: step-by-step centered wizard instead of the full form
+  const wizardContent = (
+    <TripWizard
+      preferences={preferences}
+      onPreferenceChange={handlePreferenceChange}
+      note={smartSearchQuery}
+      onNoteChange={setSmartSearchQuery}
+      onGenerate={() => handleGenerateItinerary()}
+      isLoading={isLoading}
+    />
   );
 
   // ⭐ Main Panel content (changes based on stage) ⭐
   const mainPanelContent = (
     <div className="relative h-full">
       {isTabSwitching && (
-        <div className="absolute inset-0 bg-[#0a1a17] z-10 flex items-center justify-center rounded-2xl">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#2d9e8a]" />
+        <div className="absolute inset-0 bg-white/70 z-10 flex items-center justify-center rounded-xl">
+          <Loader2 size={28} className="animate-spin text-brand-500" aria-hidden="true" />
         </div>
       )}
       {stage === "routes" && (
-        <div className="h-full min-h-0 bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col">
-          {showLoader ? (
-            <LoadingView loadingPhase={loadingPhase} isComplete={loadingComplete} />
+        <div className="h-full min-h-0 bg-white border border-line rounded-xl overflow-hidden flex flex-col">
+          {isLoading ? (
+            <LoadingView />
           ) : error ? (
             <div className="flex items-center justify-center flex-1">
               <div className="text-center max-w-md">
-                <div className="text-6xl mb-4">⚠️</div>
+                <div className="w-16 h-16 rounded-full bg-red-50 text-red-500 flex items-center justify-center mb-4 mx-auto">
+                  <TriangleAlert size={30} aria-hidden="true" />
+                </div>
                 <h3 className="text-xl font-bold text-gray-800 mb-2">
                   Something went wrong
                 </h3>
                 <p className="text-red-500 mb-4">{error}</p>
                 <button
                   onClick={handleBackToInitial}
-                  className="px-6 py-2 bg-[#0d3d38] text-white rounded-xl hover:bg-[#1a6b5e] transition-colors"
+                  className="px-5 h-10 bg-brand-900 text-white text-sm font-medium rounded-lg hover:bg-brand-700 transition-colors"
                 >
                   Try Again
                 </button>
@@ -626,7 +584,7 @@ const App: React.FC = () => {
 
       {stage === "details" && (
         <div className="flex flex-col md:flex-row gap-4 h-full min-h-0">
-          <div className="flex-1 min-h-0 min-w-0 bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col">
+          <div className="flex-1 min-h-0 min-w-0 bg-white border border-line rounded-xl overflow-hidden flex flex-col">
             <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
               {error && (
                 <p className="text-red-500 text-center py-8">Error: {error}</p>
@@ -651,13 +609,14 @@ const App: React.FC = () => {
             </div>
           </div>
 
-          <div className="h-64 md:h-auto md:flex-1 min-h-0 min-w-0 bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col">
-            <div className="p-6 pb-4 border-b border-gray-200 flex-shrink-0">
-              <h3 className="text-xl font-semibold text-gray-800">
-                📍 Route Map
+          <div className="h-64 md:h-auto md:flex-1 min-h-0 min-w-0 bg-white border border-line rounded-xl overflow-hidden flex flex-col">
+            <div className="px-5 py-3.5 border-b border-line flex-shrink-0">
+              <h3 className="text-sm font-semibold text-ink flex items-center gap-2">
+                <MapPin size={16} className="text-brand-500" aria-hidden="true" />
+                Route map
               </h3>
             </div>
-            <div className="flex-1 p-6 pt-4 min-h-0">
+            <div className="flex-1 p-3 min-h-0">
               <MapView
                 locations={displayedLocations}
                 highlightedLocation={highlightedLocation}
@@ -672,11 +631,10 @@ const App: React.FC = () => {
   return (
     <div className="App">
       <PageContainer
-        sidebar={sidebarContent}
+        sidebar={stage === "initial" ? wizardContent : sidebarContent}
         mainContent={mainPanelContent}
-        currentUserId={currentUsername}
+        username={currentUsername}
         onLogout={handleLogout}
-        pathname={pathname}
         stage={stage}
         activeTab={activeTab}
         onTabChange={handleTabChange}

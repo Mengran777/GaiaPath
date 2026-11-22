@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import Map from "react-map-gl/mapbox";
+import { MapPin } from "lucide-react";
 import {
   Marker,
   NavigationControl,
@@ -37,7 +38,6 @@ const MapView: React.FC<MapViewProps> = ({
   // route,
   highlightedLocation,
 }) => {
-  console.log("🗺️ MapView render - highlightedLocation:", highlightedLocation);
 
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const [isMapReady, setIsMapReady] = useState(false);
@@ -55,15 +55,12 @@ const MapView: React.FC<MapViewProps> = ({
     null
   );
 
-  console.log("🗺️ MapView render - selectedLocation:", selectedLocation);
 
   // ⭐ IMPORTANT EFFECT: Fly to and highlight location when highlightedLocation changes ⭐
   useEffect(() => {
-    console.log("MapView useEffect triggered, highlightedLocation:", highlightedLocation);
 
     if (!highlightedLocation) {
       // Clear the popup when highlightedLocation is null
-      console.log("Clearing selectedLocation because highlightedLocation is null");
       setSelectedLocation(null);
       return;
     }
@@ -71,7 +68,6 @@ const MapView: React.FC<MapViewProps> = ({
     if (mapRef.current) {
       const { latitude, longitude } = highlightedLocation;
       if (latitude !== 0 && longitude !== 0) {
-        console.log("Flying to location and setting selectedLocation:", highlightedLocation);
         mapRef.current.flyTo({
           center: [longitude, latitude],
           zoom: 14, // Zoom in closer for highlighted location
@@ -238,7 +234,7 @@ const MapView: React.FC<MapViewProps> = ({
               >
                 {/* ⭐ MODIFIED: Refined comparison for highlighting ⭐ */}
                 <div
-                  className={`text-2xl drop-shadow-md transition-transform duration-300
+                  className={`drop-shadow-md transition-transform duration-300
                                 ${
                                   highlightedLocation &&
                                   // Compare by a unique identifier or all relevant properties
@@ -247,11 +243,11 @@ const MapView: React.FC<MapViewProps> = ({
                                   highlightedLocation.longitude ===
                                     location.longitude &&
                                   highlightedLocation.name === location.name
-                                    ? "text-[#c9a96e] scale-150 z-10" // Highlighted style + z-index to bring to front
-                                    : "text-red-600 scale-100" // Default style
+                                    ? "text-gold-500 scale-125 z-10" // Highlighted style + z-index to bring to front
+                                    : "text-brand-900 scale-100" // Default style
                                 }`}
                 >
-                  📍
+                  <MapPin size={30} fill="currentColor" stroke="white" strokeWidth={1.5} aria-hidden="true" />
                 </div>
               </Marker>
             ) : null
@@ -295,7 +291,7 @@ const MapView: React.FC<MapViewProps> = ({
       {MAPBOX_TOKEN && !isMapReady && (
         <div className="absolute inset-0 flex items-center justify-center bg-white rounded-2xl">
           <div className="text-center">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#1a6b5e] mb-4"></div>
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-brand-700 mb-4"></div>
             <p className="text-gray-600">Loading map...</p>
           </div>
         </div>

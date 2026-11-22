@@ -87,33 +87,24 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Check if already favorited
-      const existing = await prisma.favoriteRoute.findFirst({
-        where: {
-          userId: userId,
-          routeId: routeId,
-        },
-      });
+      // Strip the response-only field GET adds, so it isn't stored back
+      const { favoriteId: _ignored, ...cleanRouteData } = routeData;
 
-      if (existing) {
-        return NextResponse.json(
-          { message: "Route already favorited", routeId },
-          { status: 200 }
-        );
-      }
-
-      // Create new favorite record
-      const favorite = await prisma.favoriteRoute.create({
-        data: {
-          userId: userId,
-          routeId: routeId,
-          routeData: JSON.stringify(routeData),
+      // Upsert: re-sending an already-favorited route updates its stored
+      // content — this is how edits to a favorited route get persisted.
+      const favorite = await prisma.favoriteRoute.upsert({
+        where: { userId_routeId: { userId, routeId } },
+        create: {
+          userId,
+          routeId,
+          routeData: JSON.stringify(cleanRouteData),
         },
+        update: { routeData: JSON.stringify(cleanRouteData) },
       });
 
       return NextResponse.json(
-        { message: "Favorite added successfully", favoriteId: favorite.id, routeId },
-        { status: 201 }
+        { message: "Favorite saved", favoriteId: favorite.id, routeId },
+        { status: 200 }
       );
     } else {
       return NextResponse.json(

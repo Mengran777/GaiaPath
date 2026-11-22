@@ -1,14 +1,12 @@
 // src/app/api/modify-itinerary/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/auth";
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { promises as fs } from "fs";
 import path from "path";
 import { retrievePois, RetrievedPoi, formatPoisForPrompt } from "@/lib/ai/poiRetrieval";
 import { Activity, DayItinerary } from "@/types/itinerary";
-
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const genAI = new GoogleGenerativeAI(GEMINI_API_KEY || "");
+import { generateJson, modifySchema } from "@/lib/ai/gemini";
+import { validateCoordinates } from "@/lib/ai/geo";
 
 interface ModifyOperation {
   type: "replace" | "add";
@@ -72,53 +70,36 @@ export async function POST(request: NextRequest) {
       .replaceAll("{{currentItinerary}}", formatItineraryForPrompt(currentItinerary))
       .replaceAll("{{retrievedPois}}", formatPoisForPrompt(retrievedPois));
 
-    const model = genAI.getGenerativeModel({
-      model: "gemini-3.1-flash-lite-preview",
-      generationConfig: { temperature: 0.6, maxOutputTokens: 4096 },
+    const parsed = await generateJson<{ summary?: string; operations?: any[] }>(prompt, {
+      schema: modifySchema,
+      temperature: 0.6,
+      maxOutputTokens: 4096,
+      label: "modify-itinerary",
     });
 
-    let lastError: unknown = null;
-    for (let attempt = 1; attempt <= 3; attempt++) {
-      try {
-        const result = await model.generateContent(prompt);
-        const responseText = result.response.text();
+    const dayNumbers = new Set(currentItinerary.map((d: DayItinerary) => d.day));
+    const operations: ModifyOperation[] = (parsed.operations ?? []).filter(
+      (op: any) =>
+        (op.type === "replace" || op.type === "add") &&
+        dayNumbers.has(op.day) &&
+        (op.type === "add" || typeof op.activityIndex === "number") &&
+        op.activity,
+    );
 
-        let jsonString = responseText.trim();
-        const jsonMatch = jsonString.match(/```json\s*([\s\S]*?)\s*```/);
-        if (jsonMatch) jsonString = jsonMatch[1].trim();
-        if (!jsonString.startsWith("{")) {
-          const objectMatch = jsonString.match(/\{[\s\S]*\}/);
-          if (objectMatch) jsonString = objectMatch[0];
-        }
+    // Existing activities only help locate the destination center
+    const existingActivities = currentItinerary.flatMap((d: DayItinerary) => d.activities ?? []);
+    const coordStats = await validateCoordinates(
+      operations.map((op) => op.activity),
+      destination,
+      retrievedPois,
+      existingActivities,
+    );
+    console.log("📍 Coordinate validation (modify):", coordStats);
 
-        const parsed = JSON.parse(jsonString);
-        if (!Array.isArray(parsed.operations)) {
-          throw new Error("Response JSON is missing an operations array");
-        }
-
-        const operations: ModifyOperation[] = parsed.operations.filter(
-          (op: any) =>
-            (op.type === "replace" || op.type === "add") &&
-            typeof op.day === "number" &&
-            op.activity,
-        );
-
-        return NextResponse.json({
-          summary: typeof parsed.summary === "string" ? parsed.summary : "Updated your itinerary.",
-          operations,
-        });
-      } catch (error: any) {
-        lastError = error;
-        const isOverloaded = error?.message?.includes("503") || error?.message?.includes("overloaded");
-        const isJSONError = error?.message?.includes("JSON") || error?.name === "SyntaxError";
-        if ((isOverloaded || isJSONError) && attempt < 3) {
-          await new Promise((resolve) => setTimeout(resolve, Math.pow(2, attempt) * 1000));
-          continue;
-        }
-        break;
-      }
-    }
-    throw lastError;
+    return NextResponse.json({
+      summary: typeof parsed.summary === "string" ? parsed.summary : "Updated your itinerary.",
+      operations,
+    });
   } catch (error: any) {
     console.error("Error in modify-itinerary API:", error);
     return NextResponse.json(

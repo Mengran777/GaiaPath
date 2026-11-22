@@ -1,36 +1,9 @@
-/* Correct Tailwind CSS directives - ONLY ONCE */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 html {
   font-size: clamp(14px, 1.1vw, 16px);
-}
-
-/* Float animation for auth page destination tags */
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50%       { transform: translateY(-8px); }
-}
-
-.animate-float {
-  animation: float 6s ease-in-out infinite;
-}
-
-@keyframes loading-bar {
-  0% { width: 0%; }
-  100% { width: 100%; }
-}
-.animate-loading-bar {
-  animation: loading-bar 8s linear forwards;
-}
-
-@keyframes progress-fill {
-  0%   { width: 0%; }
-  100% { width: 90%; }
-}
-.animate-progress-fill {
-  animation: progress-fill 35s ease-out forwards;
 }
 
 @keyframes card-enter {
@@ -41,50 +14,19 @@ html {
   animation: card-enter 0.35s ease-out both;
 }
 
-@keyframes pulse-glow-eis {
-  0%, 100% { transform: scale(1);    opacity: 0.65; }
-  50%       { transform: scale(1.18); opacity: 0.28; }
-}
-
-@keyframes shimmer-sweep {
-  0%   { transform: translateX(-60%); }
-  100% { transform: translateX(140%); }
-}
-
-@keyframes card-glow-pulse {
-  0%, 100% { opacity: 0.45; transform: scale(1); }
-  50%       { opacity: 0.78; transform: scale(1.08); }
-}
-
-@keyframes orbit-spin {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
+/* Respect the OS "reduce motion" setting */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* Mapbox GL JS CSS */
 @import "mapbox-gl/dist/mapbox-gl.css";
-
-/* Global CSS Variables and Styles */
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-html,
-body {
-  /* Next.js 14 recommended body style, no need to manually set height: 100vh; */
-  min-height: 100vh;
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
-}
 
 /* Custom CSS for scrollbar */
 .custom-scrollbar::-webkit-scrollbar {
@@ -121,45 +63,9 @@ body {
   scrollbar-color: rgba(45, 158, 138, 0.6) rgba(241, 241, 241, 0.5);
 }
 
-/* Initial state for fade-in animation, transition property is important */
-.itinerary-day-animated {
-  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
-}
-
 /* Itinerary day transition animation */
 .itinerary-day-animated {
   transition: opacity 0.6s ease-out, transform 0.6s ease-out,
     background-color 0.5s ease, border-color 0.5s ease;
 }
 
-/* Vertical writing mode (used for Stage 3 sidebar) */
-.writing-mode-vertical {
-  writing-mode: vertical-rl;
-  text-orientation: mixed;
-}
-
-/* Card scale animation */
-.active\:scale-98:active {
-  transform: scale(0.98);
-}
-
-/* Line clamp (used for route card descriptions) */
-.line-clamp-3 {
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-/* Stage 1 scroll fix */
-.page-container.stage-initial {
-  justify-content: flex-start !important; /* Start from the top */
-  align-items: center;
-  padding-top: 2rem;
-  padding-bottom: 2rem;
-}
-
-.preference-form-wrapper {
-  /* Remove any fixed height */
-  height: auto !important;
-  max-height: none !important;
-}

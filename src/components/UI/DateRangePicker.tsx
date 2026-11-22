@@ -134,26 +134,26 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
     <div
       ref={popupRef}
       style={popupStyle}
-      className="bg-white rounded-2xl border border-[#e2ddd8] shadow-xl p-4 min-w-[320px]"
+      className="bg-white rounded-2xl border border-line shadow-xl p-4 min-w-[320px]"
     >
       {/* Month navigation */}
       <div className="flex items-center justify-between mb-4">
         <button
           type="button"
           onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))}
-          className="p-2 hover:bg-[#f0ede8] rounded-lg transition-colors"
+          className="p-2 hover:bg-surface-dim rounded-lg transition-colors"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
         </button>
-        <div className="font-semibold text-[#1a1a1a] text-sm">
+        <div className="font-semibold text-ink text-sm">
           {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
         </div>
         <button
           type="button"
           onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))}
-          className="p-2 hover:bg-[#f0ede8] rounded-lg transition-colors"
+          className="p-2 hover:bg-surface-dim rounded-lg transition-colors"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -164,7 +164,7 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
       {/* Weekday headers */}
       <div className="grid grid-cols-7 gap-1 mb-2">
         {weekDays.map(d => (
-          <div key={d} className="text-center text-[10px] font-semibold text-[#8a8a8a] py-1 uppercase tracking-wide">
+          <div key={d} className="text-center text-[10px] font-semibold text-ink-muted py-1 uppercase tracking-wide">
             {d}
           </div>
         ))}
@@ -190,16 +190,16 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
               className={`
                 p-2 text-sm rounded-lg transition-all relative text-center
                 ${isStart || isEnd
-                  ? 'bg-[#0d3d38] text-white font-semibold'
+                  ? 'bg-brand-900 text-white font-semibold'
                   : ''}
                 ${isInRange
-                  ? 'bg-[#e0f5f2] text-[#0d3d38]'
+                  ? 'bg-brand-100 text-brand-900'
                   : ''}
                 ${!isInRange && !isStart && !isEnd
-                  ? 'hover:bg-[#f0ede8] text-[#4a4a4a]'
+                  ? 'hover:bg-surface-dim text-ink-soft'
                   : ''}
                 ${isToday && !isStart && !isEnd
-                  ? 'ring-1 ring-[#c9a96e]'
+                  ? 'ring-1 ring-gold-500'
                   : ''}
               `}
             >
@@ -210,7 +210,7 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
       </div>
 
       {/* Help text */}
-      <div className="mt-3 text-[10.5px] text-[#8a8a8a] text-center">
+      <div className="mt-3 text-[10.5px] text-ink-muted text-center">
         {!startDate || (startDate && endDate) ? 'Select check-in date' : 'Select check-out date'}
       </div>
 
@@ -219,7 +219,7 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
         <button
           type="button"
           onClick={() => { onStartDateChange(''); onEndDateChange(''); setHoverDate(null); }}
-          className="mt-2 w-full py-1.5 text-xs text-[#c9a96e] hover:bg-[#fdf4e7] rounded-lg transition-colors"
+          className="mt-2 w-full py-1.5 text-xs text-gold-500 hover:bg-gold-50 rounded-lg transition-colors"
         >
           Clear dates
         </button>
