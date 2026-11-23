@@ -9,38 +9,41 @@
 //   ink-*      text (ink > soft > muted > faint)
 //   line-*     borders and dividers
 //   surface-*  warm off-white backgrounds
+//
+// Current look: Notion-like. Warm near-black ink for actions and headings,
+// a single blue accent, soft warm grays, very light borders.
 
 /** @type {const} */
 const palette = {
   brand: {
-    950: "#0a1a17",
-    900: "#0d3d38",
-    700: "#1a6b5e",
-    500: "#2d9e8a",
-    300: "#5dcaa5",
-    200: "#cde8e4",
-    100: "#e8f7f5",
-    50: "#f0faf8",
+    950: "#191919",
+    900: "#37352f",
+    700: "#55534e",
+    500: "#2383e2",
+    300: "#529cca",
+    200: "#d3e5ef",
+    100: "#e7f3f8",
+    50: "#f1f8fb",
   },
   gold: {
-    700: "#9a6f30",
-    500: "#c9a96e",
-    200: "#e8d9b8",
-    50: "#fdf4e7",
+    700: "#a87b16",
+    500: "#dfab01",
+    200: "#f3e3b3",
+    50: "#fbf3db",
   },
   ink: {
-    DEFAULT: "#1a1a1a",
-    soft: "#4a4a4a",
-    muted: "#8a8a8a",
-    faint: "#b0b0b0",
+    DEFAULT: "#37352f",
+    soft: "#5f5e5b",
+    muted: "#9b9a97",
+    faint: "#c3c2c1",
   },
   line: {
-    DEFAULT: "#e2ddd8",
-    strong: "#d0ccc8",
+    DEFAULT: "#e9e9e7",
+    strong: "#dfdfde",
   },
   surface: {
-    DEFAULT: "#f5f2ee",
-    dim: "#f0ede8",
+    DEFAULT: "#f7f7f5",
+    dim: "#f1f1ef",
   },
 };
 
