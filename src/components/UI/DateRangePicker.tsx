@@ -77,7 +77,17 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
   const dateToString = (date: Date) =>
     `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}T00:00`;
 
+  // Days before today can't be picked, and the calendar can't page back past this month
+  const now        = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const isPastDay  = (day: number) =>
+    new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day) < todayStart;
+  const isAtCurrentMonth =
+    currentMonth.getFullYear() < now.getFullYear() ||
+    (currentMonth.getFullYear() === now.getFullYear() && currentMonth.getMonth() <= now.getMonth());
+
   const handleDayClick = (day: number) => {
+    if (isPastDay(day)) return;
     const selectedDate    = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
     const datetimeString  = dateToString(selectedDate);
     if (!startDate || (startDate && endDate)) {
@@ -96,7 +106,7 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
   };
 
   const handleDayHover = (day: number) => {
-    if (startDate && !endDate) {
+    if (startDate && !endDate && !isPastDay(day)) {
       setHoverDate(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day));
     }
   };
@@ -141,7 +151,9 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
         <button
           type="button"
           onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))}
-          className="p-2 hover:bg-surface-dim rounded-lg transition-colors"
+          disabled={isAtCurrentMonth}
+          aria-label="Previous month"
+          className="p-2 hover:bg-surface-dim rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -180,6 +192,20 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
           const isInRange = isDayInRange(day);
           const isToday   = new Date().toDateString() ===
             new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day).toDateString();
+
+          if (isPastDay(day)) {
+            return (
+              <button
+                key={day}
+                type="button"
+                disabled
+                aria-disabled="true"
+                className="p-2 text-sm rounded-lg text-center text-ink-faint cursor-not-allowed"
+              >
+                {day}
+              </button>
+            );
+          }
 
           return (
             <button
