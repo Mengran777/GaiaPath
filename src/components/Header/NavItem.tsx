@@ -6,13 +6,14 @@ interface NavItemProps {
   onClick?: () => void;
 }
 
+// Current page is full black; the others rest at 60% and darken on hover.
 const NavItem: React.FC<NavItemProps> = ({ label, isActive = false, onClick }) => (
   <button
     type="button"
     onClick={onClick}
     aria-current={isActive ? "page" : undefined}
-    className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-      isActive ? "bg-surface-dim text-ink" : "text-ink-muted hover:text-ink hover:bg-surface"
+    className={`py-1 text-[13px] text-ink transition-opacity duration-500 ${
+      isActive ? "opacity-100" : "opacity-60 hover:opacity-100"
     }`}
   >
     {label}

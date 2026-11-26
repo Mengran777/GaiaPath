@@ -44,6 +44,8 @@ Special Requirements: {{specialNeeds}}
    - If "fast": 3-4 activities per full day
    - If "high": 4-5 activities per full day
 9. Keep descriptions brief but informative (1-2 sentences max)
+10. Route title: 2 to 5 words, sentence case (only the first word and proper nouns capitalised), evocative, and WITHOUT the destination or city name (the page already shows it). Good: "Imperial treasures", "Flavours of the old capital", "Hidden natural retreats". Bad: "Imperial Treasures and Ancient Wonders of Beijing"
+11. Route description: one sentence, at most 22 words
 
 **JSON FORMAT - Return ONLY this JSON object:**
 
@@ -51,8 +53,8 @@ Special Requirements: {{specialNeeds}}
 {
   "id": "{{routeId}}",
   "badge": "{{theme}}",
-  "title": "Compelling route title for {{destination}}",
-  "description": "1-2 sentences describing this route's unique focus on {{theme}}",
+  "title": "Short sentence-case title, 2-5 words, no city name",
+  "description": "One sentence (max 22 words) on this route's focus on {{theme}}",
   "highlights": [
     "Key attraction 1",
     "Key attraction 2",

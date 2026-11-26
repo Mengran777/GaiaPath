@@ -2,49 +2,52 @@
 // Used by tailwind.config.js (as utility classes, e.g. `bg-brand-900`) and
 // imported directly where a color is needed in JS (inline styles, map layers).
 //
-// Usage guide:
-//   brand-900  primary actions, headings        brand-500  accent: focus, selection, links
-//   brand-700  primary hover                    brand-50…200  tinted backgrounds/borders
-//   gold-*     secondary accent: favorites, AI-edited items, highlights
-//   ink-*      text (ink > soft > muted > faint)
-//   line-*     borders and dividers
-//   surface-*  warm off-white backgrounds
+// Current look: editorial (magazine-like). White paper, near-black ink, no UI
+// color. States are expressed by lightness; the only tints are a warm sand for
+// selected backgrounds and terracotta for the map route and AI changes.
 //
-// Current look: Notion-like. Warm near-black ink for actions and headings,
-// a single blue accent, soft warm grays, very light borders.
+// Usage guide:
+//   brand-900  ink: primary actions, headings     brand-700  primary hover
+//   brand-500  terracotta accent: map route, focus, small highlights
+//   brand-50…300  sand: selected/hover backgrounds and light borders
+//   gold-*     terracotta family: favorites, AI-edited items
+//   ink-*      text (ink > soft > muted > faint)
+//   line-*     hairline borders and dividers
+//   surface-*  very light warm backgrounds (hover, skeletons)
 
 /** @type {const} */
 const palette = {
   brand: {
-    950: "#191919",
-    900: "#37352f",
-    700: "#55534e",
-    500: "#2383e2",
-    300: "#529cca",
-    200: "#d3e5ef",
-    100: "#e7f3f8",
-    50: "#f1f8fb",
+    950: "#0b0b0b",
+    900: "#111111",
+    700: "#333333",
+    500: "#a65a3a",
+    300: "#c9b99a",
+    200: "#e9e2d4",
+    100: "#f3eee4",
+    50: "#faf8f4",
   },
   gold: {
-    700: "#a87b16",
-    500: "#dfab01",
-    200: "#f3e3b3",
-    50: "#fbf3db",
+    700: "#8a4a2e",
+    500: "#a65a3a",
+    200: "#e8cfc2",
+    50: "#f6ebe5",
   },
   ink: {
-    DEFAULT: "#37352f",
-    soft: "#5f5e5b",
-    muted: "#9b9a97",
-    faint: "#c3c2c1",
+    DEFAULT: "#111111",
+    soft: "#333333",
+    muted: "#6b6b6b",
+    faint: "#bdbdbd",
   },
   line: {
-    DEFAULT: "#e9e9e7",
-    strong: "#dfdfde",
+    DEFAULT: "#e8e8e8",
+    strong: "#d9d9d9",
   },
   surface: {
-    DEFAULT: "#f7f7f5",
-    dim: "#f1f1ef",
+    DEFAULT: "#f7f6f3",
+    dim: "#f2f0ec",
   },
+  sand: "#e9e2d4",
 };
 
 module.exports = palette;

@@ -3,16 +3,17 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import Map from "react-map-gl/mapbox";
-import { MapPin } from "lucide-react";
+import Lozenge from "../UI/Lozenge";
 import {
   Marker,
   NavigationControl,
   FullscreenControl,
   ScaleControl,
   Popup,
-  // Source,
-  // Layer,
+  Source,
+  Layer,
 } from "react-map-gl/mapbox";
+import type { DayRoute } from "@/lib/travelTimes";
 import "mapbox-gl/dist/mapbox-gl.css";
 import mapboxgl from "mapbox-gl"; // Import mapboxgl for programmatic control
 
@@ -27,16 +28,26 @@ interface Location {
 interface MapViewProps {
   locations: Location[];
   highlightedLocation: Location | null; // This is correctly passed
+  /** One day selected: its route line and travel times between stops */
+  dayRoute?: DayRoute | null;
+  /** Show stop numbers beside the markers (a single day, in visiting order) */
+  numbered?: boolean;
+  /** Bottom strip, e.g. "Day II · 3 stops" and "5.4 km · 20 min moving" */
+  summary?: { title: string; detail?: string } | null;
+  /** Marker clicked: the page opens that stop in the list (instead of a popup) */
+  onMarkerClick?: (location: Location) => void;
 }
 
-// route: GeoJSON.Feature<GeoJSON.LineString, GeoJSON.GeoJsonProperties> | null;
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
 
 const MapView: React.FC<MapViewProps> = ({
   locations,
-  // route,
   highlightedLocation,
+  dayRoute = null,
+  numbered = false,
+  summary = null,
+  onMarkerClick,
 }) => {
 
   const mapRef = useRef<mapboxgl.Map | null>(null);
@@ -180,22 +191,9 @@ const MapView: React.FC<MapViewProps> = ({
     };
   }, [isMapReady]);
 
-  // const lineLayerStyle = {
-  //   id: "route-line",
-  //   type: "line",
-  //   paint: {
-  //     "line-color": "#007cbf",
-  //     "line-width": 4,
-  //     "line-opacity": 0.75,
-  //   },
-  //   layout: {
-  //     "line-join": "round",
-  //     "line-cap": "round",
-  //   },
-  // } as const;
 
   return (
-    <div className="relative w-full h-full rounded-2xl overflow-hidden shadow-xl">
+    <div className="relative w-full h-full overflow-hidden">
       {MAPBOX_TOKEN ? (
         <div className={`w-full h-full transition-opacity duration-300 ${isMapReady ? 'opacity-100' : 'opacity-0'}`}>
         <Map
@@ -204,18 +202,39 @@ const MapView: React.FC<MapViewProps> = ({
           onMove={(evt) => setViewState(evt.viewState)}
           onLoad={onMapLoad} // Use the useCallback version
           style={{ width: "100%", height: "100%" }}
-          mapStyle="mapbox://styles/mapbox/streets-v12"
+          mapStyle="mapbox://styles/mapbox/light-v11"
           onClick={() => setSelectedLocation(null)} // Close popup if map is clicked directly
         >
-          <NavigationControl position="top-right" />
-          <FullscreenControl position="top-right" />
+          <NavigationControl position="top-left" />
+          <FullscreenControl position="top-left" />
           <ScaleControl />
 
-          {/* {route && (
-            <Source id="my-route-data" type="geojson" data={route}>
-              <Layer {...lineLayerStyle} />
+          {/* Day route: terracotta line under the markers */}
+          {dayRoute && dayRoute.line.length > 1 && (
+            <Source
+              id="day-route"
+              type="geojson"
+              data={{ type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: dayRoute.line } }}
+            >
+              <Layer
+                id="day-route-line"
+                type="line"
+                paint={{ "line-color": "#a65a3a", "line-width": 2, "line-opacity": 0.9 }}
+                layout={{ "line-join": "round", "line-cap": "round" }}
+              />
             </Source>
-          )} */}
+          )}
+
+          {/* Travel time between stops, at each leg's midpoint */}
+          {dayRoute?.legs.map((leg, i) =>
+            leg ? (
+              <Marker key={`leg-${i}`} longitude={leg.at[0]} latitude={leg.at[1]} anchor="center">
+                <span className="pointer-events-none whitespace-nowrap bg-white/90 px-1.5 py-0.5 text-[11px] text-ink-soft">
+                  {leg.label}
+                </span>
+              </Marker>
+            ) : null
+          )}
 
           {locations.map((location, index) =>
             typeof location.latitude === "number" &&
@@ -226,15 +245,16 @@ const MapView: React.FC<MapViewProps> = ({
                 key={`marker-${index}`}
                 longitude={location.longitude}
                 latitude={location.latitude}
-                anchor="bottom"
+                anchor="center"
                 onClick={(e) => {
                   e.originalEvent.stopPropagation(); // Prevent map click from closing popup immediately
-                  setSelectedLocation(location); // Open popup on marker click
+                  if (onMarkerClick) onMarkerClick(location);
+                  else setSelectedLocation(location); // Open popup on marker click
                 }}
               >
                 {/* ⭐ MODIFIED: Refined comparison for highlighting ⭐ */}
                 <div
-                  className={`drop-shadow-md transition-transform duration-300
+                  className={`transition-transform duration-500 ease-editorial cursor-pointer
                                 ${
                                   highlightedLocation &&
                                   // Compare by a unique identifier or all relevant properties
@@ -243,12 +263,17 @@ const MapView: React.FC<MapViewProps> = ({
                                   highlightedLocation.longitude ===
                                     location.longitude &&
                                   highlightedLocation.name === location.name
-                                    ? "text-gold-500 scale-125 z-10" // Highlighted style + z-index to bring to front
-                                    : "text-brand-900 scale-100" // Default style
+                                    ? "text-brand-500 scale-150 z-10" // Highlighted: terracotta, larger, in front
+                                    : "text-ink scale-100" // Default: ink lozenge
                                 }`}
                 >
-                  <MapPin size={30} fill="currentColor" stroke="white" strokeWidth={1.5} aria-hidden="true" />
+                  <Lozenge className="w-4 h-4 [filter:drop-shadow(0_0_1.5px_white)]" />
                 </div>
+                {numbered && (
+                  <span className="absolute left-5 top-1/2 -translate-y-1/2 text-[12px] text-ink [text-shadow:0_0_3px_white,0_0_3px_white] pointer-events-none">
+                    {index + 1}
+                  </span>
+                )}
               </Marker>
             ) : null
           )}
@@ -263,7 +288,7 @@ const MapView: React.FC<MapViewProps> = ({
               closeOnClick={false}
             >
               <div className="p-2">
-                <h4 className="font-bold text-base mb-1">
+                <h4 className="font-display text-[17px] mb-1">
                   {selectedLocation.name}
                 </h4>
                 {selectedLocation.description && (
@@ -275,24 +300,30 @@ const MapView: React.FC<MapViewProps> = ({
                   <img
                     src={selectedLocation.imageUrl}
                     alt={selectedLocation.name}
-                    className="w-full h-24 object-cover mt-2 rounded-md"
+                    className="w-full h-24 object-cover mt-2"
                   />
                 )}
               </div>
             </Popup>
           )}
         </Map>
+        {summary && (
+          <div className="absolute left-4 right-4 bottom-4 bg-white px-4 py-3 flex items-baseline justify-between gap-4 pointer-events-none">
+            <span className="font-display text-[16px] text-ink">{summary.title}</span>
+            {summary.detail && <span className="text-xs text-ink-muted">{summary.detail}</span>}
+          </div>
+        )}
         </div>
       ) : (
-        <div className="flex items-center justify-center w-full h-full bg-gray-100 text-gray-500 rounded-2xl">
-          Map loading... (Please check Mapbox Token)
+        <div className="flex items-center justify-center w-full h-full bg-surface-dim text-ink-muted">
+          The map can’t load. Check the Mapbox token in your environment settings.
         </div>
       )}
       {MAPBOX_TOKEN && !isMapReady && (
-        <div className="absolute inset-0 flex items-center justify-center bg-white rounded-2xl">
+        <div className="absolute inset-0 flex items-center justify-center bg-surface-dim">
           <div className="text-center">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-brand-700 mb-4"></div>
-            <p className="text-gray-600">Loading map...</p>
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b border-ink mb-4"></div>
+            <p className="eyebrow">Loading map</p>
           </div>
         </div>
       )}

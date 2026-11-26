@@ -214,7 +214,7 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
               onClick={() => handleDayClick(day)}
               onMouseEnter={() => handleDayHover(day)}
               className={`
-                p-2 text-sm rounded-lg transition-all relative text-center
+                p-2 text-sm tabular-nums transition-colors relative text-center
                 ${isStart || isEnd
                   ? 'bg-brand-900 text-white font-semibold'
                   : ''}
@@ -225,7 +225,7 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
                   ? 'hover:bg-surface-dim text-ink-soft'
                   : ''}
                 ${isToday && !isStart && !isEnd
-                  ? 'ring-1 ring-gold-500'
+                  ? 'underline underline-offset-4 decoration-ink'
                   : ''}
               `}
             >
@@ -245,7 +245,7 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
         <button
           type="button"
           onClick={() => { onStartDateChange(''); onEndDateChange(''); setHoverDate(null); }}
-          className="mt-2 w-full py-1.5 text-xs text-gold-500 hover:bg-gold-50 rounded-lg transition-colors"
+          className="link-quiet mt-3 w-full py-1.5 text-xs"
         >
           Clear dates
         </button>

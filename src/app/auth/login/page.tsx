@@ -48,24 +48,26 @@ const LoginPage: React.FC = () => {
 
   return (
     <AuthLayout>
-      <h1 className="font-display text-3xl font-bold text-ink">Welcome back</h1>
-      <p className="mt-2 mb-8 text-sm text-ink-muted">
+      <h1 className="font-display text-[40px] leading-[1.06] text-ink uppercase">Welcome back</h1>
+      <p className="mt-4 mb-10 text-sm text-ink-muted">
         New to Gaia?{" "}
-        <Link href="/auth/register" className="font-medium text-brand-700 hover:text-brand-900 hover:underline">
+        <Link href="/auth/register" className="text-ink underline underline-offset-4 decoration-ink/30 hover:decoration-ink transition-colors">
           Create an account
         </Link>
       </p>
 
       <GoogleButton disabled={loading} />
 
-      <form onSubmit={handleLogin} className="space-y-4">
+      <form onSubmit={handleLogin} className="space-y-6">
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-ink-soft mb-1.5">
+          <label htmlFor="email" className="eyebrow block">
             Email
           </label>
           <Input
             id="email"
+            name="email"
             type="email"
+            spellCheck={false}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@example.com"
@@ -76,11 +78,12 @@ const LoginPage: React.FC = () => {
         </div>
 
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-ink-soft mb-1.5">
+          <label htmlFor="password" className="eyebrow block">
             Password
           </label>
           <PasswordInput
             id="password"
+            name="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Your password"
@@ -91,7 +94,7 @@ const LoginPage: React.FC = () => {
         </div>
 
         {error && (
-          <p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3.5 py-2.5 text-sm text-red-700">
+          <p role="alert" className="text-sm text-red-700">
             {error}
           </p>
         )}
@@ -99,15 +102,18 @@ const LoginPage: React.FC = () => {
         <button
           type="submit"
           disabled={loading}
-          className="w-full h-11 flex items-center justify-center gap-2 rounded-lg bg-brand-900 text-white font-semibold
-                     hover:bg-brand-700 transition-colors
-                     focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2
-                     disabled:opacity-60 disabled:cursor-not-allowed"
+          className="btn-ink w-full mt-2"
         >
           {loading && <Loader2 size={18} className="animate-spin" aria-hidden="true" />}
           {loading ? "Logging in…" : "Log in"}
         </button>
       </form>
+
+      <p className="mt-8 text-center">
+        <Link href="/" className="link-quiet text-[13px]">
+          Continue without an account
+        </Link>
+      </p>
     </AuthLayout>
   );
 };

@@ -2,13 +2,16 @@
 import { RouteOption } from "@/types/routes";
 import { Activity } from "@/types/itinerary";
 import { NextRequest, NextResponse } from "next/server";
-import { authenticateRequest } from "@/lib/auth";
+import { guestGate } from "@/lib/guestGate";
 import { promises as fs } from "fs";
 import path from "path";
 import { retrievePois, RetrievedPoi, formatPoisForPrompt } from "@/lib/ai/poiRetrieval";
 import { generateJson, routeSchema } from "@/lib/ai/gemini";
 import { validateCoordinates } from "@/lib/ai/geo";
-import { selectUnsplashPhoto, UnsplashPhoto } from "@/lib/unsplash";
+import { selectUnsplashPhoto, withUtm, UnsplashPhoto } from "@/lib/unsplash";
+import { searchStopPhotos } from "@/lib/stopPhotoSearch";
+import { ROUTE_COVER_FALLBACKS, routeThemeOf } from "@/data/routeCoverFallbacks";
+import { galleryImageUrl } from "@/data/galleryDestinations";
 
 const UNSPLASH_ACCESS_KEY = process.env.UNSPLASH_ACCESS_KEY;
 
@@ -27,10 +30,13 @@ function getUnsplashKeywords(badge: string, destination: string): string {
   return `${destination} landmark temple travel`;
 }
 
+// Dedupes by Unsplash photo ID, not URL: the same photo comes back with a
+// different tracking parameter (ixid) on every search, so URLs never match.
 async function fetchUnsplashCover(
   keywords: string,
   destination: string,
-  excludeUrls: Set<string>,
+  usedPhotoIds: Set<string>,
+  allowDuplicate = false,
 ): Promise<UnsplashPhoto | null> {
   if (!UNSPLASH_ACCESS_KEY) return null;
   const tryFetch = async (query: string, allowDuplicate = false): Promise<UnsplashPhoto | null> => {
@@ -49,12 +55,16 @@ async function fetchUnsplashCover(
       const data = await res.json();
       for (const result of data?.results ?? []) {
         const url: string | undefined = result?.urls?.regular;
+        const id: string | undefined = result?.id;
         if (!url) continue;
-        if (!allowDuplicate && excludeUrls.has(url)) continue;
+        if (!allowDuplicate && id && usedPhotoIds.has(id)) continue;
         // Only commits (and fires the download-trigger ping) once a candidate
         // actually has usable attribution — otherwise keep trying the rest.
         const photo = selectUnsplashPhoto(result, "regular", UNSPLASH_ACCESS_KEY!);
-        if (photo) return photo;
+        if (photo) {
+          if (id) usedPhotoIds.add(id);
+          return photo;
+        }
       }
       return null;
     } catch {
@@ -63,53 +73,46 @@ async function fetchUnsplashCover(
   };
   // Widen the pool if the badge-keyword bucket is already exhausted by earlier
   // routes, then as a last resort accept a duplicate — a repeated cover beats none.
+  if (allowDuplicate) return tryFetch(keywords, true);
   return (
     (await tryFetch(keywords)) ??
     (await tryFetch(keywords + " scenic")) ??
-    (await tryFetch(destination)) ??
-    (await tryFetch(keywords, true))
+    (await tryFetch(destination))
   );
+}
+
+// A backup cover from the route theme's own set (data/routeCoverFallbacks.ts),
+// so the three routes stay distinct even when the search finds nothing.
+function pickFallbackCover(badge: string, usedPhotoIds: Set<string>): UnsplashPhoto | null {
+  const set = ROUTE_COVER_FALLBACKS[routeThemeOf(badge)].filter((p) => !usedPhotoIds.has(p.id));
+  if (set.length === 0) return null;
+  const photo = set[Math.floor(Math.random() * set.length)];
+  usedPhotoIds.add(photo.id);
+  if (UNSPLASH_ACCESS_KEY) {
+    // Unsplash download ping for a photo we display
+    fetch(photo.downloadLocation, { headers: { Authorization: `Client-ID ${UNSPLASH_ACCESS_KEY}` } }).catch(() => {});
+  }
+  return {
+    url: galleryImageUrl(photo, 1080, 1350),
+    photographerName: photo.photographerName,
+    photographerUrl: withUtm(photo.photographerProfile),
+  };
 }
 
 // Module-level cache — survives across requests in the same server process
 const unsplashImageCache = new Map<string, UnsplashPhoto>();
 
-const STOPWORDS = new Set([
-  "the", "and", "of", "at", "in", "a", "an", "to", "for",
-  "by", "on", "with", "from", "visit", "explore", "see", "tour",
-]);
+// Cache key for a stop's photo
+const stopPhotoKey = (title: string, destination: string) => `${title.toLowerCase()}|${destination.toLowerCase()}`;
 
-function buildActivityKeywords(title: string, destination: string): string {
-  const words = title
-    .toLowerCase()
-    .replace(/[^a-z\s]/g, " ")
-    .split(/\s+/)
-    .filter((w) => w.length > 1 && !STOPWORDS.has(w))
-    .slice(0, 3);
-  return [...words, destination].join(" ");
-}
-
-async function fetchUnsplashImage(keywords: string): Promise<UnsplashPhoto | undefined> {
-  if (!UNSPLASH_ACCESS_KEY) return undefined;
-  if (unsplashImageCache.has(keywords)) return unsplashImageCache.get(keywords);
-  try {
-    const res = await fetch(
-      `https://api.unsplash.com/search/photos?query=${encodeURIComponent(keywords)}&per_page=1&orientation=landscape`,
-      { headers: { Authorization: `Client-ID ${UNSPLASH_ACCESS_KEY}` } },
-    );
-    if (!res.ok) {
-      console.warn(`Unsplash activity image search failed (${res.status}) for "${keywords}"`);
-      return undefined;
-    }
-    const data = await res.json();
-    const result = data?.results?.[0];
-    if (!result) return undefined;
-    const photo = selectUnsplashPhoto(result, "small", UNSPLASH_ACCESS_KEY) ?? undefined;
-    if (photo) unsplashImageCache.set(keywords, photo);
-    return photo;
-  } catch {
-    return undefined;
-  }
+// One photo per stop, widening the search when the narrow query finds nothing
+// (lib/stopPhotoSearch.ts). Misses are left empty: the page shows a placeholder.
+async function fetchStopPhoto(title: string, destination: string): Promise<void> {
+  if (!UNSPLASH_ACCESS_KEY) return;
+  const key = stopPhotoKey(title, destination);
+  if (unsplashImageCache.has(key)) return;
+  const [photo] = await searchStopPhotos(title, destination, 1, UNSPLASH_ACCESS_KEY);
+  if (photo) unsplashImageCache.set(key, photo);
 }
 
 async function getPromptFromFile(filename: string): Promise<string> {
@@ -135,11 +138,14 @@ function selectPoisForTheme(pois: RetrievedPoi[], theme: string): RetrievedPoi[]
   return [...primary, ...rest].slice(0, MAX_POIS_PER_PROMPT);
 }
 
+// Three routes in parallel, with model fallback when Gemini is busy, can take
+// well over Vercel's default function limit; allow up to a minute.
+export const maxDuration = 60;
+
 export async function POST(request: NextRequest) {
-  const authResult = await authenticateRequest(request);
-  if (!authResult) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  // Guests may generate too, within an hourly allowance
+  const { blocked } = await guestGate(request, "generate");
+  if (blocked) return blocked;
 
   try {
     const body = await request.json();
@@ -156,14 +162,12 @@ export async function POST(request: NextRequest) {
       activityIntensity,
       specialNeeds,
       userRequest, // free-text request from SmartSearch
-      userId,
     } = body;
 
     const missingFields = [];
     if (!destination) missingFields.push("destination");
     if (!travelStartDate) missingFields.push("travelStartDate");
     if (!travelEndDate) missingFields.push("travelEndDate");
-    if (!userId) missingFields.push("userId");
 
     if (missingFields.length > 0) {
       console.error(
@@ -296,6 +300,15 @@ export async function POST(request: NextRequest) {
       `✅ Successfully generated ${generatedItineraryData.length} routes in parallel`,
     );
 
+    // Every route failed (usually the AI service is overloaded): say so,
+    // instead of returning an empty list the page can't explain
+    if (generatedItineraryData.length === 0) {
+      return NextResponse.json(
+        { error: "Our route planner is busy right now. Give it a minute and try again." },
+        { status: 503 },
+      );
+    }
+
     // Collect activities (for coordinate validation and image lookup)
     type ActivityWithKeywords = { activity: Activity; keywords: string };
     const activityEntries: ActivityWithKeywords[] = [];
@@ -307,19 +320,19 @@ export async function POST(request: NextRequest) {
         for (const activity of day.activities) {
           activityEntries.push({
             activity,
-            keywords: buildActivityKeywords(activity.title, destination),
+            keywords: stopPhotoKey(activity.title, destination),
           });
         }
       }
     }
 
     // Deduplicate: only fetch keywords not already in the module-level cache
-    const uniqueKeywords = [
-      ...new Set(
+    const uniqueStops = [
+      ...new Map(
         activityEntries
-          .map((e) => e.keywords)
-          .filter((kw) => !unsplashImageCache.has(kw)),
-      ),
+          .filter((e) => !unsplashImageCache.has(e.keywords))
+          .map((e) => [e.keywords, e.activity.title] as const),
+      ).values(),
     ];
 
     // Coordinate validation runs alongside image fetching — they touch
@@ -330,7 +343,7 @@ export async function POST(request: NextRequest) {
         destination,
         retrievedPois,
       ),
-      ...uniqueKeywords.map((kw) => fetchUnsplashImage(kw)),
+      ...uniqueStops.map((title) => fetchStopPhoto(title, destination)),
     ]);
     console.log("📍 Coordinate validation:", coordStats);
 
@@ -344,23 +357,20 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch Unsplash cover images sequentially to allow deduplication
-    if (UNSPLASH_ACCESS_KEY) {
-      const usedCoverUrls = new Set<string>();
-      for (const route of generatedItineraryData) {
-        const keywords = getUnsplashKeywords(route.badge, destination);
-        const cover = await fetchUnsplashCover(keywords, destination, usedCoverUrls);
-        route.coverImageUrl = cover?.url ?? null;
-        route.coverImageAttribution = cover
-          ? { photographerName: cover.photographerName, photographerUrl: cover.photographerUrl }
-          : null;
-        if (cover) usedCoverUrls.add(cover.url);
-      }
-    } else {
-      console.warn("⚠️ UNSPLASH_ACCESS_KEY not set — skipping cover images");
-      for (const route of generatedItineraryData) {
-        route.coverImageUrl = null;
-        route.coverImageAttribution = null;
-      }
+    // Cover per route: Unsplash search → the theme's backup set → (last resort)
+    // a repeat of an earlier search result → none
+    const usedCoverIds = new Set<string>();
+    if (!UNSPLASH_ACCESS_KEY) console.warn("⚠️ UNSPLASH_ACCESS_KEY not set — using backup covers only");
+    for (const route of generatedItineraryData) {
+      const keywords = getUnsplashKeywords(route.badge, destination);
+      const cover =
+        (await fetchUnsplashCover(keywords, destination, usedCoverIds)) ??
+        pickFallbackCover(route.badge, usedCoverIds) ??
+        (await fetchUnsplashCover(keywords, destination, usedCoverIds, true));
+      route.coverImageUrl = cover?.url ?? null;
+      route.coverImageAttribution = cover
+        ? { photographerName: cover.photographerName, photographerUrl: cover.photographerUrl }
+        : null;
     }
 
     // Routes are not saved here — only favorites are persisted (see /api/favorites)

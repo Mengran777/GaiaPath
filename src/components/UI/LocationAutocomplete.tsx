@@ -17,6 +17,8 @@ interface LocationAutocompleteProps {
   onChange: (value: string) => void;
   placeholder?: string;
   id?: string;
+  /** Extra classes for the input (size, alignment); it is always an underline field */
+  inputClassName?: string;
 }
 
 const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
@@ -24,6 +26,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
   onChange,
   placeholder = "e.g., Paris, France",
   id,
+  inputClassName = "text-base",
 }) => {
   const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -210,7 +213,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
               onMouseEnter={() => setHighlightedIndex(index)}
               className={`w-full text-left px-4 py-3 transition-colors duration-150
                 ${index === highlightedIndex
-                  ? "bg-brand-50 border-l-4 border-brand-700"
+                  ? "bg-brand-50 border-l-4 border-ink"
                   : "hover:bg-gray-50 border-l-4 border-transparent"
                 }
                 ${index !== suggestions.length - 1 ? "border-b border-gray-100" : ""}
@@ -219,7 +222,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
               <div className="flex items-center space-x-3">
                 <MapPin size={20} className="text-brand-500 flex-shrink-0" aria-hidden="true" />
                 <div className="flex-1">
-                  <div className="font-semibold text-gray-800">{suggestion.name}</div>
+                  <div className="font-display text-[17px] text-ink">{suggestion.name}</div>
                   <div className="text-sm text-gray-500">{suggestion.displayName}</div>
                 </div>
               </div>
@@ -257,9 +260,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
             }
           }}
           placeholder={placeholder}
-          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl
-                   focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20
-                   transition-all duration-300 outline-none text-gray-800"
+          className={`field-line ${inputClassName}`}
           autoComplete="off"
         />
         {isLoading && (

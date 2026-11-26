@@ -21,17 +21,17 @@ export default function GoogleButton({ disabled }: { disabled?: boolean }) {
         type="button"
         onClick={() => signIn("google", { callbackUrl: "/" })}
         disabled={disabled}
-        className="w-full h-11 flex items-center justify-center gap-3 rounded-lg border border-line bg-white
-                   text-sm font-medium text-ink hover:bg-surface-dim transition-colors
+        className="w-full h-12 flex items-center justify-center gap-3 border border-ink bg-white
+                   text-sm text-ink hover:bg-surface transition-colors duration-500
                    disabled:opacity-60 disabled:cursor-not-allowed"
       >
         <GoogleIcon />
         Continue with Google
       </button>
 
-      <div className="flex items-center gap-3 my-6">
+      <div className="flex items-center gap-3.5 mt-8 mb-2">
         <div className="flex-1 h-px bg-line" />
-        <span className="text-xs text-ink-muted">or</span>
+        <span className="eyebrow">or</span>
         <div className="flex-1 h-px bg-line" />
       </div>
     </>

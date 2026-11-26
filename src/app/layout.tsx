@@ -1,16 +1,26 @@
 // RootLayout.tsx
 // Location: src/app/layout.tsx
 import "./globals.css";
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Inter_Tight, Newsreader } from "next/font/google";
 import Providers from "@/components/Providers";
 
 // Self-hosted at build time by next/font — no request to Google at runtime.
-// One sans family for body and headings (Notion-like); headings get weight and tighter tracking.
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans", display: "swap" });
+// Editorial pairing: a newspaper serif for headings, a compact grotesk for UI text.
+const interTight = Inter_Tight({ subsets: ["latin"], variable: "--font-sans", display: "swap" });
+const newsreader = Newsreader({
+  subsets: ["latin"],
+  variable: "--font-display",
+  display: "swap",
+  style: ["normal", "italic"],
+});
 
 export const metadata: Metadata = {
   title: "Gaia – Plan your journey, effortlessly",
+};
+
+export const viewport: Viewport = {
+  themeColor: "#ffffff",
 };
 
 export default function RootLayout({
@@ -19,8 +29,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={inter.variable}>
-      <body className="min-h-screen bg-brand-950 text-gray-800 font-sans antialiased">
+    <html lang="en" className={`${interTight.variable} ${newsreader.variable}`}>
+      <body className="min-h-screen bg-white text-ink font-sans antialiased">
         <Providers>{children}</Providers>
         {/* Dev-only quick-fill button — file is gitignored, no-ops if absent */}
         {process.env.NODE_ENV === "development" && (

@@ -1,5 +1,6 @@
 // src/app/api/generate-activity-description/route.ts
 import { NextRequest, NextResponse } from "next/server";
+import { guestGate } from "@/lib/guestGate";
 
 /** Truncate to at most `maxLen` chars, ending at the last full sentence. */
 function truncateToSentence(text: string, maxLen: number): string {
@@ -10,6 +11,9 @@ function truncateToSentence(text: string, maxLen: number): string {
 }
 
 export async function POST(req: NextRequest) {
+  const { blocked } = await guestGate(req, "describe");
+  if (blocked) return blocked;
+
   const { title, locationName } = await req.json();
   if (!title || typeof title !== "string") {
     return NextResponse.json({ error: "title is required" }, { status: 400 });

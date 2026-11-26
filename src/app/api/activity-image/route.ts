@@ -1,51 +1,41 @@
 import { NextRequest, NextResponse } from "next/server";
-import { selectUnsplashPhoto } from "@/lib/unsplash";
+import { guestGate } from "@/lib/guestGate";
+import { searchStopPhotos } from "@/lib/stopPhotoSearch";
 
 const UNSPLASH_ACCESS_KEY = process.env.UNSPLASH_ACCESS_KEY;
 
-const STOPWORDS = new Set([
-  "the", "and", "of", "at", "in", "a", "an", "to", "for",
-  "by", "on", "with", "from", "visit", "explore", "see", "tour",
-]);
-
-function buildKeywords(title: string, destination: string): string {
-  const words = title
-    .toLowerCase()
-    .replace(/[^a-z\s]/g, " ")
-    .split(/\s+/)
-    .filter((w) => w.length > 1 && !STOPWORDS.has(w))
-    .slice(0, 3);
-  return [...words, destination].filter(Boolean).join(" ");
-}
-
+// Unsplash photos for a stop (or a city). The search widens step by step
+// (name + city → name → city + kind, see lib/stopPhotoSearch.ts); when nothing
+// is found the response is empty and the page shows a typographic placeholder.
+//   { title, destination?, locationName? }           → { imageUrl, imageAttribution }
+//   { title, destination?, locationName?, count: n } → { images: [...] } (n ≤ 4)
 export async function POST(req: NextRequest) {
-  const { title, destination, locationName } = await req.json();
+  const { blocked } = await guestGate(req, "image");
+  if (blocked) return blocked;
+
+  const { title, destination, locationName, count } = await req.json();
 
   if (!title || typeof title !== "string") {
     return NextResponse.json({ imageUrl: null }, { status: 400 });
   }
   if (!UNSPLASH_ACCESS_KEY) {
-    return NextResponse.json({ imageUrl: null });
+    return NextResponse.json({ imageUrl: null, imageAttribution: null, images: [] });
   }
 
-  const keywords = buildKeywords(locationName || title, destination ?? "");
+  const name = locationName || title;
+  const place = typeof destination === "string" ? destination : "";
 
-  try {
-    const res = await fetch(
-      `https://api.unsplash.com/search/photos?query=${encodeURIComponent(keywords)}&per_page=1&orientation=landscape`,
-      { headers: { Authorization: `Client-ID ${UNSPLASH_ACCESS_KEY}` } },
-    );
-    if (!res.ok) return NextResponse.json({ imageUrl: null });
-    const data = await res.json();
-    const result = data?.results?.[0];
-    const photo = result ? selectUnsplashPhoto(result, "small", UNSPLASH_ACCESS_KEY) : null;
+  // Gallery mode: several photos for a stop's drawer
+  if (typeof count === "number" && count > 1) {
+    const photos = await searchStopPhotos(name, place, Math.min(Math.floor(count), 4), UNSPLASH_ACCESS_KEY);
     return NextResponse.json({
-      imageUrl: photo?.url ?? null,
-      imageAttribution: photo
-        ? { photographerName: photo.photographerName, photographerUrl: photo.photographerUrl }
-        : null,
+      images: photos.map((p) => ({ url: p.url, photographerName: p.photographerName, photographerUrl: p.photographerUrl })),
     });
-  } catch {
-    return NextResponse.json({ imageUrl: null, imageAttribution: null });
   }
+
+  const [photo] = await searchStopPhotos(name, place, 1, UNSPLASH_ACCESS_KEY);
+  return NextResponse.json({
+    imageUrl: photo?.url ?? null,
+    imageAttribution: photo ? { photographerName: photo.photographerName, photographerUrl: photo.photographerUrl } : null,
+  });
 }
