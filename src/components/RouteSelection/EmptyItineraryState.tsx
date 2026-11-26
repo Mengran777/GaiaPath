@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import { ArrowRight, Route } from "lucide-react";
 
 interface EmptyItineraryStateProps {
   onBackToInitial?: () => void;
@@ -31,39 +30,25 @@ export default function EmptyItineraryState({
   return (
     <div className="h-full overflow-y-auto flex items-center justify-center px-6 py-12">
       <div className="w-full max-w-lg text-center">
-        <div className="mx-auto mb-5 w-12 h-12 rounded-xl bg-brand-50 text-brand-700 flex items-center justify-center">
-          <Route size={24} aria-hidden="true" />
-        </div>
-
-        <h2 className="font-display text-2xl font-bold text-ink">No routes yet</h2>
-        <p className="mt-2 text-sm text-ink-muted leading-relaxed">
-          Fill in your trip details and generate. You&apos;ll get three route
-          options to compare, each mapped out day by day.
+        <p className="eyebrow">Itineraries</p>
+        <h2 className="mt-3 font-display text-[44px] leading-[1.04] uppercase text-ink">No routes yet</h2>
+        <p className="mt-4 text-sm text-ink-muted leading-relaxed">
+          Tell us where and when, and you&apos;ll get three route options to
+          compare, each mapped out day by day.
         </p>
 
         {onBackToInitial && (
-          <button
-            onClick={onBackToInitial}
-            className="mt-6 inline-flex items-center gap-2 h-10 px-5 rounded-lg bg-brand-900 text-white text-sm font-medium
-                       hover:bg-brand-700 transition-colors"
-          >
+          <button type="button" onClick={onBackToInitial} className="btn-ink mt-8">
             Plan a trip
-            <ArrowRight size={16} aria-hidden="true" />
           </button>
         )}
 
-        <div className="mt-12">
-          <p className="text-sm font-medium text-ink-soft mb-3">Or start with a popular destination</p>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            {DESTINATIONS.map(({ city, country }) => (
-              <button
-                key={city}
-                onClick={() => handleSelectDestination(city)}
-                className="rounded-lg border border-line bg-white px-3 py-2.5 text-left
-                           hover:border-brand-500 hover:bg-brand-50 transition-colors"
-              >
-                <span className="block text-sm font-medium text-ink">{city}</span>
-                <span className="block text-xs text-ink-muted">{country}</span>
+        <div className="mt-14">
+          <p className="eyebrow mb-4">Or start with a popular destination</p>
+          <div className="flex flex-wrap justify-center gap-1">
+            {DESTINATIONS.map(({ city }) => (
+              <button key={city} type="button" onClick={() => handleSelectDestination(city)} className="pill-sand text-lg">
+                {city}
               </button>
             ))}
           </div>

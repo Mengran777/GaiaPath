@@ -11,7 +11,7 @@ export interface UnsplashPhoto extends UnsplashAttribution {
 
 const APP_NAME = "gaiapath";
 
-function withUtm(url: string): string {
+export function withUtm(url: string): string {
   const sep = url.includes("?") ? "&" : "?";
   return `${url}${sep}utm_source=${APP_NAME}&utm_medium=referral`;
 }

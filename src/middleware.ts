@@ -3,6 +3,11 @@ import type { NextRequest } from "next/server";
 import { jwtVerify } from "jose/jwt/verify";
 import { getToken } from "next-auth/jwt";
 
+// The planner works without an account (guest mode), so pages and the AI
+// routes are open; routes that touch a user's data (/api/favorites, /api/me)
+// check auth themselves. The only job left here: send signed-in users away
+// from the login and register pages.
+
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || "");
 
 async function isValidToken(token: string): Promise<boolean> {
@@ -16,48 +21,21 @@ async function isValidToken(token: string): Promise<boolean> {
 
 export async function middleware(request: NextRequest) {
   const authToken = request.cookies.get("authToken")?.value;
-  const { pathname } = request.nextUrl;
-
-  const publicRoutes = ["/auth/login", "/auth/register"];
-  const isPublicRoute = publicRoutes.includes(pathname);
-
-  // 1. Check existing custom JWT cookie
   let authenticated = authToken ? await isValidToken(authToken) : false;
 
-  // 2. Fallback: NextAuth session token
   if (!authenticated) {
     try {
-      const nextAuthToken = await getToken({
-        req: request,
-        secret: process.env.NEXTAUTH_SECRET!,
-      });
+      const nextAuthToken = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET! });
       if (nextAuthToken?.userId) authenticated = true;
     } catch {
-      // ignore — treated as unauthenticated
+      // treated as signed out
     }
   }
 
-  if (isPublicRoute) {
-    if (authenticated) return NextResponse.redirect(new URL("/", request.url));
-    return NextResponse.next();
-  }
-
-  if (!authenticated) {
-    const response = NextResponse.redirect(new URL("/auth/login", request.url));
-    if (authToken) {
-      response.cookies.set("authToken", "", { expires: new Date(0), path: "/" });
-    }
-    return response;
-  }
-
+  if (authenticated) return NextResponse.redirect(new URL("/", request.url));
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: [
-    "/",
-    "/auth/:path*",
-    // Exclude static assets, all /api/auth/* routes (both custom + NextAuth), and file extensions
-    "/((?!_next/static|_next/image|favicon.ico|.*\\..*|api/auth).*)",
-  ],
+  matcher: ["/auth/login", "/auth/register"],
 };

@@ -3,7 +3,8 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
-import { Check, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import Lozenge from "@/components/UI/Lozenge";
 import AuthLayout from "@/components/Auth/AuthLayout";
 import GoogleButton from "@/components/Auth/GoogleButton";
 import Input from "@/components/UI/Input";
@@ -23,9 +24,9 @@ const PasswordRules = ({ password }: { password: string }) => (
       return (
         <li
           key={label}
-          className={`flex items-center gap-1.5 text-xs transition-colors ${met ? "text-brand-700" : "text-ink-muted"}`}
+          className={`flex items-center gap-2 text-xs transition-colors ${met ? "text-ink" : "text-ink-muted"}`}
         >
-          <Check size={13} strokeWidth={2.5} className={met ? "opacity-100" : "opacity-25"} aria-hidden="true" />
+          <Lozenge outline={!met} className="w-[8px] h-[8px] flex-none" />
           {label}
         </li>
       );
@@ -49,21 +50,21 @@ const RegisterPage: React.FC = () => {
       const response = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, email, password }),
+        body: JSON.stringify({ username: username.trim(), email: email.trim(), password }),
       });
 
       const data = await response.json();
 
       if (response.ok) {
         const result = await signIn("credentials", {
-          email,
+          email: email.trim(),
           password,
           redirect: false,
         });
         if (result?.ok) {
           window.location.href = "/";
         } else {
-          setError("Account created. Please log in.");
+          window.location.href = "/auth/login";
         }
       } else {
         setError(data.error || "Registration failed.");
@@ -78,41 +79,46 @@ const RegisterPage: React.FC = () => {
 
   return (
     <AuthLayout>
-      <h1 className="font-display text-3xl font-bold text-ink">Create your account</h1>
-      <p className="mt-2 mb-8 text-sm text-ink-muted">
+      <h1 className="font-display text-[40px] leading-[1.06] text-ink uppercase">Create your account</h1>
+      <p className="mt-4 mb-10 text-sm text-ink-muted">
         Already have an account?{" "}
-        <Link href="/auth/login" className="font-medium text-brand-700 hover:text-brand-900 hover:underline">
+        <Link href="/auth/login" className="text-ink underline underline-offset-4 decoration-ink/30 hover:decoration-ink transition-colors">
           Log in
         </Link>
       </p>
 
       <GoogleButton disabled={loading} />
 
-      <form onSubmit={handleRegister} className="space-y-4">
+      <form onSubmit={handleRegister} className="space-y-6">
         <div>
-          <label htmlFor="username" className="block text-sm font-medium text-ink-soft mb-1.5">
+          <label htmlFor="username" className="eyebrow block">
             Username
           </label>
           <Input
             id="username"
+            name="username"
             type="text"
+            spellCheck={false}
+            autoCapitalize="none"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            placeholder="e.g. mona_travels"
+            placeholder="mona_travels"
             required
             disabled={loading}
             autoComplete="username"
           />
-          <p className="mt-1.5 text-xs text-ink-muted">3–20 characters: letters, numbers or underscores.</p>
+          <p className="mt-2 text-xs text-ink-muted">3–20 characters: letters, numbers or underscores.</p>
         </div>
 
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-ink-soft mb-1.5">
+          <label htmlFor="email" className="eyebrow block">
             Email
           </label>
           <Input
             id="email"
+            name="email"
             type="email"
+            spellCheck={false}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@example.com"
@@ -123,11 +129,12 @@ const RegisterPage: React.FC = () => {
         </div>
 
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-ink-soft mb-1.5">
+          <label htmlFor="password" className="eyebrow block">
             Password
           </label>
           <PasswordInput
             id="password"
+            name="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Create a password"
@@ -139,7 +146,7 @@ const RegisterPage: React.FC = () => {
         </div>
 
         {error && (
-          <p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3.5 py-2.5 text-sm text-red-700">
+          <p role="alert" className="text-sm text-red-700">
             {error}
           </p>
         )}
@@ -147,15 +154,18 @@ const RegisterPage: React.FC = () => {
         <button
           type="submit"
           disabled={loading}
-          className="w-full h-11 flex items-center justify-center gap-2 rounded-lg bg-brand-900 text-white font-semibold
-                     hover:bg-brand-700 transition-colors
-                     focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2
-                     disabled:opacity-60 disabled:cursor-not-allowed"
+          className="btn-ink w-full mt-2"
         >
           {loading && <Loader2 size={18} className="animate-spin" aria-hidden="true" />}
           {loading ? "Creating account…" : "Create account"}
         </button>
       </form>
+
+      <p className="mt-8 text-center">
+        <Link href="/" className="link-quiet text-[13px]">
+          Continue without an account
+        </Link>
+      </p>
     </AuthLayout>
   );
 };

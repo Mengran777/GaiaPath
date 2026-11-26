@@ -3,11 +3,12 @@
 import React, { useState } from "react";
 import { RouteOption } from "@/types/routes";
 import UnsplashCredit from "@/components/UI/UnsplashCredit";
-import palette from "@/styles/palette";
-import { Star, CalendarDays } from "lucide-react";
+import Lozenge from "@/components/UI/Lozenge";
 
 interface RouteCardProps {
   route: RouteOption;
+  /** Position in the list, shown as a Roman numeral (0 → I) */
+  index?: number;
   onSelect: (routeId: string) => void;
   isFavorite?: boolean;
   onToggleFavorite?: (routeId: string) => void;
@@ -15,22 +16,15 @@ interface RouteCardProps {
   coverImageAttribution?: { photographerName: string; photographerUrl: string } | null;
 }
 
-// Derive accent color + badge pill theme from badge text
-const getBadgeTheme = (badge: string) => {
+const ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
+
+// Shorter theme names for the small caps line under the photo
+const shortBadge = (badge: string) => {
   const b = badge.toLowerCase();
-  if (
-    b.includes("culinar") || b.includes("food") ||
-    b.includes("culture") || b.includes("art") || b.includes("local")
-  ) {
-    return { bar: palette.gold[500], pillText: palette.gold[700] };
-  }
-  if (
-    b.includes("nature") || b.includes("hidden") ||
-    b.includes("garden") || b.includes("eco") || b.includes("green")
-  ) {
-    return { bar: palette.brand[500], pillText: palette.brand[700] };
-  }
-  return { bar: palette.brand[900], pillText: palette.brand[900] };
+  if (b.includes("classic")) return "Classic";
+  if (b.includes("cultur") || b.includes("culinar") || b.includes("food")) return "Culture and food";
+  if (b.includes("nature") || b.includes("hidden")) return "Nature";
+  return badge.replace(/\s+route$/i, "");
 };
 
 const intensityLabel = (intensity?: string) => {
@@ -40,166 +34,98 @@ const intensityLabel = (intensity?: string) => {
   return null;
 };
 
+/**
+ * Editorial route card: only what you need at a glance.
+ * Photo, a small caps line ("I · Classic · 5 days") and a short serif title.
+ * The description and photo credit appear on the photo on hover / focus;
+ * Save is a lozenge on the photo's corner (outline = save, filled = saved).
+ */
 const RouteCard: React.FC<RouteCardProps> = ({
   route,
+  index,
   onSelect,
   isFavorite = false,
   onToggleFavorite,
   coverImageUrl,
   coverImageAttribution,
 }) => {
-  const theme = getBadgeTheme(route.badge);
   const [imageLoaded, setImageLoaded] = useState(false);
-
-  // Derive date range from itinerary
-  const firstDate = route.itinerary?.[0]?.date;
-  const lastDate = route.itinerary?.[route.itinerary.length - 1]?.date;
-  const dateRange =
-    firstDate && lastDate && firstDate !== lastDate
-      ? `${firstDate} → ${lastDate}`
-      : firstDate || null;
-
-  const pace = intensityLabel(route.intensity);
+  const meta = [
+    index !== undefined ? ROMAN[index] ?? String(index + 1) : null,
+    shortBadge(route.badge),
+    `${route.days} ${route.days === 1 ? "day" : "days"}`,
+    intensityLabel(route.intensity),
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
-    <div
-      onClick={() => onSelect(route.id)}
-      className="relative bg-white rounded-xl overflow-hidden cursor-pointer
-                 border border-line hover:border-brand-500 transition-colors"
-    >
-      {/* Left accent bar */}
-      <div
-        className="absolute left-0 top-0 bottom-0 w-1 z-10"
-        style={{ background: theme.bar }}
-      />
-
-      {/* Cover image */}
-      <div className="relative h-[160px] w-full overflow-hidden bg-gray-100">
-        {coverImageUrl ? (
-          <>
-            {/* Skeleton shown until image loads */}
-            {!imageLoaded && (
-              <div className="absolute inset-0 bg-gray-200 animate-pulse" />
-            )}
+    <article className="group/card">
+      <div className="relative aspect-[4/5] overflow-hidden bg-surface-dim">
+        <button
+          type="button"
+          onClick={() => onSelect(route.id)}
+          aria-label={`${route.title}. ${route.description}`}
+          className="absolute inset-0 block w-full text-left focus-visible:outline-offset-[-3px]"
+        >
+          {coverImageUrl ? (
             <img
               src={coverImageUrl}
               alt=""
-              className={`w-full h-full object-cover transition-opacity duration-300 ${
+              width={800}
+              height={1000}
+              className={`absolute inset-0 w-full h-full object-cover transition-[opacity,transform] duration-700 ease-editorial group-hover/card:scale-[1.03] ${
                 imageLoaded ? "opacity-100" : "opacity-0"
               }`}
               onLoad={() => setImageLoaded(true)}
               onError={() => setImageLoaded(true)}
             />
-            {/* Bottom gradient mask for badge readability */}
-            <div className="absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-black/55 to-transparent" />
-            {coverImageAttribution && (
-              <div className="absolute bottom-2.5 right-3 z-10">
-                <UnsplashCredit
-                  photographerName={coverImageAttribution.photographerName}
-                  photographerUrl={coverImageAttribution.photographerUrl}
-                />
-              </div>
-            )}
-          </>
-        ) : (
-          /* Placeholder: deep green gradient */
-          <div className="absolute inset-0 bg-brand-900 flex items-center justify-center">
-            <span className="text-white/60 text-sm font-medium text-center px-6 leading-snug">
-              {route.title}
+          ) : (
+            <span className="absolute inset-0 flex flex-col items-center justify-center px-8 text-center bg-brand-100">
+              <span className="font-display text-[26px] leading-tight text-ink">{route.title}</span>
+              <span className="eyebrow mt-3">{shortBadge(route.badge)}</span>
             </span>
-          </div>
-        )}
-
-        {/* Badge overlaid on image bottom-left */}
-        <div className="absolute bottom-2.5 left-4 z-10">
+          )}
+          {/* Description, shown over the photo on hover / keyboard focus */}
           <span
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full
-                       text-xs font-semibold tracking-wide uppercase
-                       bg-white/85 backdrop-blur-sm"
-            style={{ color: theme.pillText }}
+            aria-hidden="true"
+            className="absolute inset-x-0 bottom-0 px-4 pt-14 pb-4 bg-gradient-to-t from-black/60 to-transparent text-[13px] leading-snug text-white
+                       opacity-0 translate-y-1.5 transition-[opacity,transform] duration-500 ease-editorial
+                       group-hover/card:opacity-100 group-hover/card:translate-y-0 group-focus-within/card:opacity-100 group-focus-within/card:translate-y-0"
           >
-            {route.badge}
+            <span className="line-clamp-3">{route.description}</span>
           </span>
-        </div>
+        </button>
 
-        {/* Favorite button — top-right corner of image */}
         {onToggleFavorite && (
           <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleFavorite(route.id);
-            }}
-            className={`absolute top-2.5 right-3 z-10 w-8 h-8 rounded-full flex items-center justify-center
-                       text-base leading-none transition-all duration-150
-                       ${isFavorite
-                         ? "bg-gold-500 border-[1.5px] border-gold-500 text-white"
-                         : "bg-white/80 backdrop-blur-sm border-[1.5px] border-white/60 text-ink-faint hover:border-gold-500"
-                       }`}
+            type="button"
+            onClick={() => onToggleFavorite(route.id)}
+            aria-pressed={isFavorite}
+            aria-label={isFavorite ? `Saved: ${route.title}` : `Save ${route.title}`}
+            title={isFavorite ? "Saved" : "Save"}
+            className="absolute left-3 top-3 z-10 w-8 h-8 flex items-center justify-center bg-white/90 text-ink transition-colors duration-300 hover:bg-white"
           >
-            <Star size={16} fill={isFavorite ? "currentColor" : "none"} aria-hidden="true" />
+            <Lozenge outline={!isFavorite} className="w-[10px] h-[10px]" />
           </button>
         )}
-      </div>
 
-      {/* Card body */}
-      <div className="pl-6 pr-5 pt-4 pb-4">
-        {/* Title */}
-        <h3 className="font-display text-xl font-bold text-brand-900 mb-2 leading-snug pr-2">
-          {route.title}
-        </h3>
-
-        {/* Description */}
-        <p className="text-ink-soft text-sm leading-relaxed mb-4 line-clamp-2">
-          {route.description}
-        </p>
-
-        {/* Highlights */}
-        {(route.highlights || []).length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
-            {route.highlights.map((h, i) => (
-              <span
-                key={i}
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full
-                           text-xs text-ink-soft bg-surface border border-line"
-              >
-                {h.label}
-              </span>
-            ))}
-          </div>
+        {coverImageAttribution && (
+          <UnsplashCredit
+            photographerName={coverImageAttribution.photographerName}
+            photographerUrl={coverImageAttribution.photographerUrl}
+            className="absolute right-3 top-3.5 z-10 opacity-0 transition-opacity duration-500 group-hover/card:opacity-100 focus-within:opacity-100"
+          />
         )}
       </div>
 
-      {/* Footer */}
-      <div className="border-t border-line px-6 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-2 text-xs text-ink-muted flex-wrap">
-          <span className="inline-flex items-center gap-1"><CalendarDays size={13} aria-hidden="true" />{route.days} {route.days === 1 ? "Day" : "Days"}</span>
-          {pace && (
-            <>
-              <span className="text-line-strong">·</span>
-              <span>{pace}</span>
-            </>
-          )}
-          {dateRange && (
-            <>
-              <span className="text-line-strong">·</span>
-              <span>{dateRange}</span>
-            </>
-          )}
-        </div>
-
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onSelect(route.id);
-          }}
-          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full
-                     bg-brand-900 text-white text-xs font-medium flex-shrink-0
-                     hover:bg-brand-700 transition-colors duration-150"
-        >
-          View route
-        </button>
-      </div>
-    </div>
+      <button type="button" tabIndex={-1} onClick={() => onSelect(route.id)} className="block w-full text-left mt-3">
+        <span className="block eyebrow">{meta}</span>
+        <span className="block mt-1 font-display text-[20px] leading-[1.2] text-ink line-clamp-2 transition-opacity duration-500 group-hover/card:opacity-60">
+          {route.title}
+        </span>
+      </button>
+    </article>
   );
 };
 

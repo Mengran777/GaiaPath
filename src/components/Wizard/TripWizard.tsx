@@ -1,13 +1,15 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import { Loader2 } from "lucide-react";
 import { LocationAutocomplete } from "../UI";
-import DateRangePicker from "../UI/DateRangePicker";
-import {
-  ArrowLeft, ArrowRight, CalendarDays, ChevronDown, Loader2, Sparkles,
-  User, Users, UsersRound, UserRoundPlus,
-  Landmark, UtensilsCrossed, Trees, Palette, Mountain, TreePalm, Heart, Baby,
-} from "lucide-react";
+import Lozenge from "../UI/Lozenge";
+import UnsplashCredit from "../UI/UnsplashCredit";
+import InlineCalendar from "./InlineCalendar";
+import { GALLERY_DESTINATIONS, galleryImageUrl } from "@/data/galleryDestinations";
+import { INTEREST_TILES } from "@/data/interestPhotos";
+import { withUtm } from "@/lib/unsplash";
+import { formatShortDate } from "@/lib/format";
 
 export interface TripPreferences {
   destination: string;
@@ -30,121 +32,167 @@ interface TripWizardProps {
   onNoteChange: (value: string) => void;
   onGenerate: () => void;
   isLoading: boolean;
+  /** A gallery photo was chosen: use it as this trip's photo */
+  onDestinationPhoto?: (photo: DestinationPhoto) => void;
+  /** Step 1 finished with a typed city: find a photo for it now */
+  onDestinationConfirmed?: (destination: string) => void;
+}
+
+export interface DestinationPhoto {
+  destination: string;
+  url: string;
+  photographerName: string;
+  photographerUrl: string;
 }
 
 const STEP_COUNT = 4;
-const SLIDE_MS = 450;
-
-const popularDestinations = ["Kyoto", "Lisbon", "Santorini", "Reykjavik"];
+const SLIDE_MS = 550;
+const GALLERY_SIZE = 6;
 
 const travelerOptions = [
-  { value: "1",   label: "Solo",        sub: "Just me",        icon: User },
-  { value: "2",   label: "Two of us",   sub: "Partner or friend", icon: Users },
-  { value: "3-4", label: "Small group", sub: "3–4 people",     icon: UsersRound },
-  { value: "5+",  label: "Big group",   sub: "5 or more",      icon: UserRoundPlus },
-];
-
-const interestOptions = [
-  { value: "history",      label: "History and culture", icon: Landmark },
-  { value: "food",         label: "Food",                icon: UtensilsCrossed },
-  { value: "nature",       label: "Nature",              icon: Trees },
-  { value: "art_shopping", label: "Art and shopping",    icon: Palette },
-  { value: "adventure",    label: "Adventure",           icon: Mountain },
-  { value: "relax",        label: "Relaxing",            icon: TreePalm },
-  { value: "honeymoon",    label: "Romantic",            icon: Heart },
-  { value: "family",       label: "Family",              icon: Baby },
+  { value: "1", label: "Solo", sub: "Just me, at my own pace" },
+  { value: "2", label: "Two of us", sub: "With a partner or a friend" },
+  { value: "3-4", label: "A small group", sub: "Three or four, one table" },
+  { value: "5+", label: "A big group", sub: "Five or more, plan ahead" },
 ];
 
 const timeOfDayOptions = [
-  { value: "morning",   label: "Morning" },
+  { value: "morning", label: "Morning" },
   { value: "afternoon", label: "Afternoon" },
-  { value: "evening",   label: "Evening" },
+  { value: "evening", label: "Evening" },
 ];
 
 const paceOptions = [
-  { value: "easy",     label: "Relaxed" },
+  { value: "easy", label: "Relaxed" },
   { value: "moderate", label: "Moderate" },
-  { value: "fast",     label: "Busy" },
-  { value: "high",     label: "Packed" },
+  { value: "fast", label: "Busy" },
+  { value: "high", label: "Packed" },
 ];
 
-const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-const formatDate = (s: string) => {
-  if (!s) return "";
-  const d = new Date(s);
-  return `${MONTHS[d.getMonth()]} ${d.getDate()}`;
-};
+const transportOptions: { label: string; value: string[] }[] = [
+  { label: "Any", value: [] },
+  { label: "Self-drive", value: ["car"] },
+  { label: "Public transit", value: ["public_transport"] },
+];
+
+const formatDate = formatShortDate;
 const nightsBetween = (a: string, b: string) =>
   a && b ? Math.max(0, Math.round((new Date(b).getTime() - new Date(a).getTime()) / 86_400_000)) : 0;
 
-// Small pill used for single-choice rows (times, pace, transport)
-const Pill: React.FC<{ active: boolean; onClick: () => void; children: React.ReactNode }> = ({
-  active, onClick, children,
-}) => (
+const shuffle = <T,>(xs: T[]) => {
+  const a = [...xs];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+};
+
+/** A lozenge option (marker wipes in on hover, stays when selected). */
+const LozOption: React.FC<{
+  selected: boolean;
+  onClick: () => void;
+  role?: "radio";
+  className?: string;
+  children: React.ReactNode;
+}> = ({ selected, onClick, role, className = "", children }) => (
   <button
     type="button"
+    role={role}
+    aria-checked={role === "radio" ? selected : undefined}
+    aria-pressed={role === "radio" ? undefined : selected}
     onClick={onClick}
-    aria-pressed={active}
-    className={`px-3 h-8 rounded-full text-[13px] font-medium border transition-colors ${
-      active
-        ? "bg-brand-900 border-brand-900 text-white"
-        : "bg-white border-line text-ink-soft hover:border-gold-500"
-    }`}
+    className={`loz-opt text-left py-1 ${className}`}
   >
-    {children}
+    <span className="loz-mk"><Lozenge /></span>
+    <span className="loz-tx">{children}</span>
   </button>
 );
 
-const Question: React.FC<{ title: string; hint: string }> = ({ title, hint }) => (
-  <>
-    <h2 className="font-display text-[26px] leading-tight font-bold text-brand-900">{title}</h2>
-    <p className="text-sm text-ink-muted mt-1 mb-5">{hint}</p>
-  </>
+const Question: React.FC<{ title: React.ReactNode; hint?: string }> = ({ title, hint }) => (
+  <div className="text-center">
+    <h1 className="font-display text-[34px] sm:text-[42px] leading-[1.04] uppercase text-ink">{title}</h1>
+    {hint && <p className="mt-3 text-sm text-ink-muted">{hint}</p>}
+  </div>
 );
 
 const TripWizard: React.FC<TripWizardProps> = ({
   preferences, onPreferenceChange, note, onNoteChange, onGenerate, isLoading,
+  onDestinationPhoto, onDestinationConfirmed,
 }) => {
   const [step, setStep] = useState(0);
   const [error, setError] = useState("");
-  const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimes, setShowTimes] = useState(false);
-  const [showMore, setShowMore] = useState(false);
-  const dateRowRef = useRef<HTMLDivElement>(null);
   const stepRefs = useRef<(HTMLElement | null)[]>([]);
-
   const p = preferences;
   const nights = nightsBetween(p.travelStartDate, p.travelEndDate);
 
-  // After a slide finishes: focus the step's first field, and open the calendar on the dates step
+  // A different set of places, and a random photo of each, on every visit.
+  // Picked after mount: a random pick during render would differ between the
+  // server render and the browser and break hydration.
+  const [gallery, setGallery] = useState<
+    { place: (typeof GALLERY_DESTINATIONS)[number]; photo: (typeof GALLERY_DESTINATIONS)[number]["photos"][number] }[]
+  >([]);
+  useEffect(() => {
+    setGallery(
+      shuffle(GALLERY_DESTINATIONS)
+        .slice(0, GALLERY_SIZE)
+        .map((place) => ({ place, photo: place.photos[Math.floor(Math.random() * place.photos.length)] }))
+    );
+  }, []);
+
+  // Unsplash requires a download ping for photos we display
+  useEffect(() => {
+    const interestPhotos = INTEREST_TILES.flatMap((t) => (t.photo ? [{ photo: t.photo }] : []));
+    [...gallery, ...(gallery.length ? interestPhotos : [])].forEach(({ photo }) => {
+      fetch("/api/unsplash/track", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ downloadLocation: photo.downloadLocation }),
+      }).catch(() => {});
+    });
+  }, [gallery]);
+
+  // After a slide: focus the step's first field or its selected option
   useEffect(() => {
     const t = setTimeout(() => {
       if (step === 0) document.getElementById("wizard-destination")?.focus();
-      if (step === 1 && !p.travelEndDate) setShowDatePicker(true);
-      if (step === 2 || step === 3) {
-        stepRefs.current[step]?.querySelector<HTMLElement>("button[aria-pressed='true'], button")?.focus();
-      }
+      else
+        stepRefs.current[step]
+          ?.querySelector<HTMLElement>("[aria-checked='true'], [aria-pressed='true'], button")
+          ?.focus({ preventScroll: true });
     }, SLIDE_MS);
     return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step]);
+
+  // Track the visible step's height (it also changes inside a step, e.g. when
+  // "Add times" expands or gallery photos load)
+  const [stepHeight, setStepHeight] = useState<number | undefined>(undefined);
+  useEffect(() => {
+    const el = stepRefs.current[step];
+    if (!el) return;
+    const update = () => setStepHeight(el.offsetHeight);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
   }, [step]);
 
   const goTo = (n: number) => {
     setError("");
-    setShowDatePicker(false);
     setStep(Math.max(0, Math.min(STEP_COUNT - 1, n)));
   };
 
   const next = () => {
     if (step === 0 && !p.destination.trim()) {
-      setError("Enter a destination first");
+      setError("Enter a destination, or choose one of the places below");
       return;
     }
     if (step === 1 && (!p.travelStartDate || !p.travelEndDate)) {
       setError(p.travelStartDate ? "Pick an end date" : "Pick your travel dates");
-      setShowDatePicker(true);
       return;
     }
+    if (step === 0) onDestinationConfirmed?.(p.destination);
     goTo(step + 1);
   };
 
@@ -155,326 +203,322 @@ const TripWizard: React.FC<TripWizardProps> = ({
     else onPreferenceChange("travelType", [...sel.slice(1), value]);
   };
 
-  // Answers from earlier steps, shown as jump-back links above the question
+  // Earlier answers, as links back to their step
   const crumbs = [
     p.destination.trim() && { step: 0, label: p.destination.trim() },
     p.travelStartDate && p.travelEndDate && {
-      step: 1, label: `${formatDate(p.travelStartDate)} – ${formatDate(p.travelEndDate)}`,
+      step: 1, label: `${formatDate(p.travelStartDate)} — ${formatDate(p.travelEndDate)}`,
     },
     { step: 2, label: travelerOptions.find((o) => o.value === p.travelers)?.label ?? "" },
   ].filter((c): c is { step: number; label: string } => Boolean(c) && (c as any).step < step);
 
-  return (
-    <div className="w-full max-w-[480px] mx-auto">
-      <div className="bg-white rounded-2xl border border-line shadow-sm overflow-hidden">
-        {/* Progress header */}
-        <div className="flex items-center gap-3 px-5 pt-5">
-          <button
-            type="button"
-            onClick={() => goTo(step - 1)}
-            aria-label="Previous step"
-            className={`w-8 h-8 -ml-1.5 rounded-lg flex items-center justify-center text-ink-muted hover:bg-surface-dim hover:text-ink transition-colors ${
-              step === 0 ? "invisible" : ""
-            }`}
-          >
-            <ArrowLeft size={18} aria-hidden="true" />
-          </button>
-          <div
-            className="flex-1 h-1 rounded-full bg-line overflow-hidden"
-            role="progressbar"
-            aria-valuemin={1}
-            aria-valuemax={STEP_COUNT}
-            aria-valuenow={step + 1}
-            aria-label="Form progress"
-          >
-            <div
-              className="h-full bg-brand-500 rounded-full transition-[width] duration-500 ease-out"
-              style={{ width: `${((step + 1) / STEP_COUNT) * 100}%` }}
-            />
-          </div>
-          <span className="text-xs text-ink-muted tabular-nums w-7 text-right">
-            {step + 1}/{STEP_COUNT}
-          </span>
-        </div>
+  const stepProps = (i: number) => ({
+    ref: (el: HTMLElement | null) => { stepRefs.current[i] = el; },
+    inert: step !== i,
+    "aria-hidden": step !== i,
+    className: `w-full flex-shrink-0 px-5 sm:px-10 transition-opacity duration-500 ${step === i ? "opacity-100" : "opacity-0"}`,
+  });
 
-        {/* Earlier answers */}
-        <div className="px-7 pt-3 min-h-[28px] flex flex-wrap gap-x-3 gap-y-1">
-          {crumbs.map((c) => (
+  return (
+    <div className="w-full max-w-[1200px] mx-auto flex flex-col items-center">
+      {/* Step counter and earlier answers */}
+      <p className="eyebrow text-center px-5">
+        Step {step + 1} of {STEP_COUNT}
+        {crumbs.map((c) => (
+          <React.Fragment key={c.step}>
+            <span aria-hidden="true"> · </span>
             <button
-              key={c.step}
               type="button"
               onClick={() => goTo(c.step)}
-              className="text-xs text-ink-muted hover:text-brand-700 underline decoration-line underline-offset-2"
+              className="link-quiet normal-case tracking-normal text-xs"
             >
               {c.label}
             </button>
-          ))}
-        </div>
+          </React.Fragment>
+        ))}
+      </p>
 
-        {/* Sliding steps */}
-        <div className="overflow-hidden">
-          <div
-            className="flex items-start transition-transform ease-[cubic-bezier(0.22,1,0.36,1)]"
-            style={{ transform: `translateX(-${step * 100}%)`, transitionDuration: `${SLIDE_MS}ms` }}
-          >
-            {/* 1 · Destination */}
-            <section
-              ref={(el) => { stepRefs.current[0] = el; }}
-              inert={step !== 0}
-              aria-hidden={step !== 0}
-              className={`w-full flex-shrink-0 px-7 pt-2 pb-7 transition-opacity duration-300 ${step === 0 ? "opacity-100" : "opacity-0"}`}
+      {/* Sliding steps. The viewport takes the current step's height (not the
+          tallest step's), so short steps don't push the actions off screen. */}
+      <div
+        className="w-full overflow-hidden mt-4 transition-[height] ease-editorial"
+        style={{ height: stepHeight, transitionDuration: `${SLIDE_MS}ms` }}
+      >
+        <div
+          className="flex items-start transition-transform ease-editorial"
+          style={{ transform: `translateX(-${step * 100}%)`, transitionDuration: `${SLIDE_MS}ms` }}
+        >
+          {/* 1 · Destination and photo gallery */}
+          <section {...stepProps(0)}>
+            <Question title={<>Where are<br />you headed?</>} />
+            <div
+              className="max-w-[440px] mx-auto mt-6"
+              onKeyDown={(e) => {
+                // The autocomplete keeps Enter while its list is open; otherwise Enter advances
+                if (e.key === "Enter" && !e.defaultPrevented) next();
+              }}
+              onChange={() => error && setError("")}
             >
-              <Question title="Where are you headed?" hint="A city, island, or region." />
-              <div
-                onKeyDown={(e) => {
-                  // The autocomplete swallows Enter while its list is open; otherwise Enter advances
-                  if (e.key === "Enter" && !e.defaultPrevented) next();
-                }}
-                onChange={() => error && setError("")}
-              >
-                <LocationAutocomplete
-                  id="wizard-destination"
-                  value={p.destination}
-                  onChange={(v) => onPreferenceChange("destination", v)}
-                  placeholder="Athens, Greece"
-                />
-              </div>
-              <p className="text-xs text-ink-muted mt-4 mb-2">Popular right now</p>
-              <div className="flex flex-wrap gap-2">
-                {popularDestinations.map((d) => (
-                  <Pill
-                    key={d}
-                    active={p.destination === d}
-                    onClick={() => {
-                      onPreferenceChange("destination", d);
-                      setError("");
-                      goTo(1);
-                    }}
-                  >
-                    {d}
-                  </Pill>
+              <label htmlFor="wizard-destination" className="sr-only">Destination</label>
+              <LocationAutocomplete
+                id="wizard-destination"
+                value={p.destination}
+                onChange={(v) => onPreferenceChange("destination", v)}
+                placeholder="Type a city, or choose one below…"
+                inputClassName="font-display text-[26px] text-center"
+              />
+            </div>
+
+            <div className="group/gal mt-9 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+              {gallery.length === 0 &&
+                Array.from({ length: GALLERY_SIZE }).map((_, i) => (
+                  <div key={i} aria-hidden="true">
+                    <div className="aspect-[3/4] bg-surface-dim" />
+                    <div className="h-4 w-2/3 mt-3 bg-surface-dim" />
+                  </div>
                 ))}
-              </div>
-            </section>
+              {gallery.map(({ place, photo }) => {
+                const value = `${place.city}, ${place.country}`;
+                return (
+                  <div
+                    key={place.slug}
+                    className="group/city transition-opacity duration-500 ease-editorial group-hover/gal:opacity-40 hover:!opacity-100 focus-within:!opacity-100"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onPreferenceChange("destination", value);
+                        onDestinationPhoto?.({
+                          destination: value,
+                          url: galleryImageUrl(photo, 900, 600),
+                          photographerName: photo.photographerName,
+                          photographerUrl: withUtm(photo.photographerProfile),
+                        });
+                        setError("");
+                        goTo(1);
+                      }}
+                      aria-label={`Choose ${value}`}
+                      className="block w-full text-left"
+                    >
+                      <span className="block relative aspect-[3/4] overflow-hidden bg-surface-dim">
+                        <img
+                          src={galleryImageUrl(photo, 480, 640)}
+                          alt=""
+                          width={480}
+                          height={640}
+                          fetchPriority="high"
+                          className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-editorial group-hover/city:scale-[1.04]"
+                        />
+                      </span>
+                      <span className="block mt-3 font-display text-lg uppercase tracking-[0.02em]">{place.city}</span>
+                      <span className="block eyebrow mt-0.5">{place.country}</span>
+                    </button>
+                    <UnsplashCredit
+                      photographerName={photo.photographerName}
+                      photographerUrl={withUtm(photo.photographerProfile)}
+                      className="mt-1.5 !text-ink-muted !drop-shadow-none opacity-0 group-hover/city:opacity-100 focus-within:opacity-100 transition-opacity duration-500"
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </section>
 
-            {/* 2 · Dates */}
-            <section
-              ref={(el) => { stepRefs.current[1] = el; }}
-              inert={step !== 1}
-              aria-hidden={step !== 1}
-              className={`w-full flex-shrink-0 px-7 pt-2 pb-7 transition-opacity duration-300 ${step === 1 ? "opacity-100" : "opacity-0"}`}
-            >
-              <Question title="When are you going?" hint="We'll plan each day of the trip." />
-              <div
-                ref={dateRowRef}
-                role="button"
-                tabIndex={0}
-                onClick={() => setShowDatePicker((v) => !v)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    setShowDatePicker((v) => !v);
-                  }
-                }}
-                className="flex items-center gap-3 px-4 py-3 border-2 border-gray-200 rounded-xl cursor-pointer hover:border-brand-500 focus:border-brand-500 focus:outline-none transition-colors"
-              >
-                <CalendarDays size={18} className="text-brand-700 flex-shrink-0" aria-hidden="true" />
-                {p.travelStartDate ? (
-                  <span className="text-ink text-[15px]">
-                    {formatDate(p.travelStartDate)}
-                    <span className="text-ink-muted mx-1.5">→</span>
-                    {p.travelEndDate ? formatDate(p.travelEndDate) : <span className="text-ink-muted">End date</span>}
-                  </span>
-                ) : (
-                  <span className="text-ink-muted text-[15px]">Pick your dates</span>
-                )}
-                {nights > 0 && (
-                  <span className="ml-auto bg-gold-50 text-gold-700 text-xs font-semibold px-2.5 py-1 rounded-full">
-                    {nights} {nights === 1 ? "night" : "nights"}
-                  </span>
-                )}
-              </div>
-              {showDatePicker && step === 1 && (
-                <DateRangePicker
-                  startDate={p.travelStartDate}
-                  endDate={p.travelEndDate}
-                  onStartDateChange={(d) => { onPreferenceChange("travelStartDate", d); setError(""); }}
-                  onEndDateChange={(d) => {
-                    onPreferenceChange("travelEndDate", d);
-                    if (d) { setShowDatePicker(false); setError(""); }
-                  }}
-                  triggerRef={dateRowRef}
-                  onClose={() => setShowDatePicker(false)}
-                />
-              )}
-
-              {!showTimes ? (
-                <button
-                  type="button"
-                  onClick={() => setShowTimes(true)}
-                  className="mt-4 text-[13px] text-ink-muted hover:text-brand-700 underline decoration-line underline-offset-2"
-                >
-                  Add arrival and departure times
-                </button>
+          {/* 2 · Dates */}
+          <section {...stepProps(1)}>
+            <Question title={<>When are<br />you going?</>} />
+            <p className="text-center mt-4 font-display text-[22px] min-h-[33px]">
+              {p.travelStartDate ? (
+                <>
+                  {formatDate(p.travelStartDate)} — {p.travelEndDate ? formatDate(p.travelEndDate) : <span className="text-ink-muted">end date</span>}
+                  {nights > 0 && <span className="eyebrow ml-3 align-middle">{nights} {nights === 1 ? "night" : "nights"}</span>}
+                </>
               ) : (
-                <div className="mt-4 space-y-2.5">
+                <span className="text-ink-muted">Pick a start date</span>
+              )}
+            </p>
+            <div className="max-w-[760px] mx-auto mt-6">
+              <InlineCalendar
+                startDate={p.travelStartDate}
+                endDate={p.travelEndDate}
+                onChange={(s, e) => {
+                  onPreferenceChange("travelStartDate", s);
+                  onPreferenceChange("travelEndDate", e);
+                  setError("");
+                }}
+              />
+            </div>
+            <div className="max-w-[760px] mx-auto mt-8 text-center">
+              {!showTimes ? (
+                <p className="text-[13px] text-ink-muted">
+                  Arriving or leaving at a set time?{" "}
+                  <button type="button" onClick={() => setShowTimes(true)} className="text-ink underline underline-offset-4 decoration-ink/30 hover:decoration-ink">
+                    Add times
+                  </button>
+                </p>
+              ) : (
+                <div className="flex flex-col items-center gap-3">
                   {(["arrivalTime", "departureTime"] as const).map((key) => (
-                    <div key={key} className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[13px] text-ink-soft w-14">{key === "arrivalTime" ? "Arrive" : "Leave"}</span>
+                    <div key={key} role="radiogroup" aria-label={key === "arrivalTime" ? "Arrive" : "Leave"} className="flex flex-wrap items-center justify-center gap-x-6 gap-y-1">
+                      <span className="eyebrow w-14 text-left">{key === "arrivalTime" ? "Arrive" : "Leave"}</span>
                       {timeOfDayOptions.map((o) => (
-                        <Pill key={o.value} active={p[key] === o.value} onClick={() => onPreferenceChange(key, o.value)}>
+                        <LozOption key={o.value} role="radio" selected={p[key] === o.value} onClick={() => onPreferenceChange(key, o.value)} className="text-lg">
                           {o.label}
-                        </Pill>
+                        </LozOption>
                       ))}
                     </div>
                   ))}
                 </div>
               )}
-            </section>
+            </div>
+          </section>
 
-            {/* 3 · Travellers (single choice, advances on click) */}
-            <section
-              ref={(el) => { stepRefs.current[2] = el; }}
-              inert={step !== 2}
-              aria-hidden={step !== 2}
-              className={`w-full flex-shrink-0 px-7 pt-2 pb-7 transition-opacity duration-300 ${step === 2 ? "opacity-100" : "opacity-0"}`}
-            >
-              <Question title="Who's coming along?" hint="Tap one to continue." />
-              <div className="grid grid-cols-2 gap-2.5">
-                {travelerOptions.map((o) => {
-                  const active = p.travelers === o.value;
+          {/* 3 · Travellers (single choice, advances on click) */}
+          <section {...stepProps(2)}>
+            <div className="flex flex-col items-center justify-center py-6">
+              <Question title={<>Who&apos;s coming<br />along?</>} />
+              <div
+                role="radiogroup"
+                aria-label="Travellers"
+                className="mt-10 w-full max-w-[960px] grid grid-cols-2 lg:grid-cols-4 border-t border-ink"
+              >
+                {travelerOptions.map((o, i) => {
+                  const selected = p.travelers === o.value;
                   return (
                     <button
                       key={o.value}
                       type="button"
-                      aria-pressed={active}
+                      role="radio"
+                      aria-checked={selected}
                       onClick={() => {
                         onPreferenceChange("travelers", o.value);
-                        setTimeout(() => goTo(3), 180);
+                        setTimeout(() => goTo(3), 350);
                       }}
-                      className={`text-left rounded-xl border-[1.5px] p-3.5 transition-colors ${
-                        active ? "border-brand-900 bg-brand-50" : "border-line hover:border-gold-500"
-                      }`}
+                      className={`loz-opt flex-col !items-start text-left px-5 pt-5 pb-7 border-line transition-colors duration-500 hover:bg-brand-50 ${
+                        selected ? "bg-brand-50" : ""
+                      } ${i > 0 ? "lg:border-l" : ""} ${i % 2 === 1 ? "border-l" : ""}`}
                     >
-                      <o.icon size={20} className={active ? "text-brand-900" : "text-brand-700"} aria-hidden="true" />
-                      <div className="text-sm font-semibold text-ink mt-2">{o.label}</div>
-                      <div className="text-xs text-ink-muted">{o.sub}</div>
+                      <span className="eyebrow mb-6">{["I", "II", "III", "IV"][i]}</span>
+                      <span className="flex items-center text-[28px] leading-tight">
+                        <span className="loz-mk"><Lozenge /></span>
+                        <span className="loz-tx">{o.label}</span>
+                      </span>
+                      <span className="mt-2 font-sans text-[13px] text-ink-muted">{o.sub}</span>
                     </button>
                   );
                 })}
               </div>
-            </section>
+              <p className="mt-6 text-[13px] text-ink-muted">Pick one to continue.</p>
+            </div>
+          </section>
 
-            {/* 4 · Interests + optional extras */}
-            <section
-              ref={(el) => { stepRefs.current[3] = el; }}
-              inert={step !== 3}
-              aria-hidden={step !== 3}
-              className={`w-full flex-shrink-0 px-7 pt-2 pb-7 transition-opacity duration-300 ${step === 3 ? "opacity-100" : "opacity-0"}`}
-            >
-              <Question title="What are you into?" hint="Pick up to 3, or skip and we'll keep it balanced." />
-              <div className="flex flex-wrap gap-2">
-                {interestOptions.map((o) => {
-                  const active = p.travelType.includes(o.value);
-                  return (
-                    <button
-                      key={o.value}
-                      type="button"
-                      aria-pressed={active}
-                      onClick={() => toggleInterest(o.value)}
-                      className={`inline-flex items-center gap-1.5 px-3 h-9 rounded-full text-[13px] font-medium border transition-colors ${
-                        active
-                          ? "bg-brand-900 border-brand-900 text-white"
-                          : "bg-white border-line text-ink-soft hover:border-gold-500"
-                      }`}
-                    >
-                      <o.icon size={14} aria-hidden="true" />
+          {/* 4 · Interests, pace, getting around, note */}
+          <section {...stepProps(3)}>
+            <Question title="What are you into?" hint="Choose up to three, or skip and we'll keep it balanced." />
+            {/* Photo tiles: greyscale at rest, colour returns on hover, full colour when chosen */}
+            <div className="max-w-[720px] mx-auto mt-6 grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-4">
+              {INTEREST_TILES.map((t) => {
+                const selected = p.travelType.includes(t.value);
+                return (
+                  <button
+                    key={t.value}
+                    type="button"
+                    aria-pressed={selected}
+                    onClick={() => toggleInterest(t.value)}
+                    className="loz-opt group/tile flex-col !items-stretch text-left"
+                  >
+                    <span className="block relative aspect-[4/3] overflow-hidden bg-surface-dim">
+                      {t.photo ? (
+                        <img
+                          src={galleryImageUrl(t.photo, 480, 360)}
+                          alt=""
+                          width={480}
+                          height={360}
+                          loading="lazy"
+                          className={`absolute inset-0 w-full h-full object-cover transition-[transform,filter,opacity] duration-700 ease-editorial group-hover/tile:scale-[1.04] ${
+                            selected ? "" : "grayscale brightness-110 opacity-60 group-hover/tile:grayscale-[0.2] group-hover/tile:opacity-90"
+                          }`}
+                        />
+                      ) : (
+                        <span
+                          className={`absolute inset-0 transition-[transform,filter,opacity] duration-700 ease-editorial group-hover/tile:scale-[1.04] ${
+                            selected ? "" : "grayscale brightness-110 opacity-50 group-hover/tile:grayscale-[0.2] group-hover/tile:opacity-90"
+                          }`}
+                          style={{ background: t.tone }}
+                        />
+                      )}
+                    </span>
+                    <span className="mt-2.5 flex items-center text-[17px]">
+                      <span className="loz-mk"><Lozenge /></span>
+                      <span className="loz-tx">{t.label}</span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="max-w-[720px] mx-auto mt-7 grid grid-cols-1 sm:grid-cols-2 gap-8">
+              <div>
+                <p className="eyebrow mb-1.5">Pace</p>
+                <div role="radiogroup" aria-label="Pace" className="flex flex-wrap gap-x-5">
+                  {paceOptions.map((o) => (
+                    <LozOption key={o.value} role="radio" selected={p.activityIntensity === o.value} onClick={() => onPreferenceChange("activityIntensity", o.value)} className="text-xl">
                       {o.label}
-                    </button>
-                  );
-                })}
+                    </LozOption>
+                  ))}
+                </div>
               </div>
+              <div>
+                <p className="eyebrow mb-1.5">Getting around</p>
+                <div className="flex flex-wrap gap-1">
+                  {transportOptions.map((o) => {
+                    const active = o.value.length === 0
+                      ? p.transportation.length === 0
+                      : p.transportation.length === 1 && p.transportation[0] === o.value[0];
+                    return (
+                      <button key={o.label} type="button" aria-pressed={active} onClick={() => onPreferenceChange("transportation", o.value)} className="pill-sand text-base">
+                        {o.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
 
-              <textarea
+            <div className="max-w-[720px] mx-auto mt-6">
+              <label htmlFor="wizard-note" className="eyebrow block">Anything else</label>
+              <input
+                id="wizard-note"
+                name="trip-note"
+                autoComplete="off"
                 value={note}
                 onChange={(e) => onNoteChange(e.target.value)}
-                rows={2}
-                placeholder="Anything else? Sunrise hikes, local markets, no museums…"
-                className="w-full mt-4 px-3.5 py-2.5 text-[13px] text-ink placeholder:text-ink-muted border border-line rounded-xl resize-none focus:outline-none focus:border-brand-500"
+                placeholder="Sunrise hikes, long lunches, no museums…"
+                className="field-line text-[15px]"
               />
-
-              <button
-                type="button"
-                onClick={() => setShowMore((v) => !v)}
-                aria-expanded={showMore}
-                className="mt-3 inline-flex items-center gap-1 text-[13px] text-ink-muted hover:text-brand-700"
-              >
-                More options: pace, getting around
-                <ChevronDown size={14} className={`transition-transform ${showMore ? "rotate-180" : ""}`} aria-hidden="true" />
-              </button>
-              {showMore && (
-                <div className="mt-3 space-y-2.5">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[13px] text-ink-soft w-14">Pace</span>
-                    {paceOptions.map((o) => (
-                      <Pill
-                        key={o.value}
-                        active={p.activityIntensity === o.value}
-                        onClick={() => onPreferenceChange("activityIntensity", o.value)}
-                      >
-                        {o.label}
-                      </Pill>
-                    ))}
-                  </div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[13px] text-ink-soft w-14">Travel</span>
-                    <Pill active={p.transportation.length === 0} onClick={() => onPreferenceChange("transportation", [])}>
-                      Any
-                    </Pill>
-                    <Pill
-                      active={p.transportation.length === 1 && p.transportation[0] === "car"}
-                      onClick={() => onPreferenceChange("transportation", ["car"])}
-                    >
-                      Self-drive
-                    </Pill>
-                    <Pill
-                      active={p.transportation.length === 1 && p.transportation[0] === "public_transport"}
-                      onClick={() => onPreferenceChange("transportation", ["public_transport"])}
-                    >
-                      Public transit
-                    </Pill>
-                  </div>
-                </div>
-              )}
-            </section>
-          </div>
+            </div>
+          </section>
         </div>
+      </div>
 
-        {/* Footer action */}
-        <div className="px-7 pb-7 -mt-2">
-          <p className="text-[13px] text-red-600 min-h-[20px] mb-1" role="alert">{error}</p>
+      {/* Actions: pinned to the bottom of the view, so Next never needs a scroll */}
+      <div className="sticky bottom-0 z-10 w-full mt-6 pt-4 pb-5 bg-white flex flex-col items-center px-5">
+        <p className="text-[13px] text-red-700 min-h-[20px] mb-2 empty:mb-0 empty:min-h-0" role="alert">{error}</p>
+        <div className="flex items-center gap-7">
+          {step > 0 && (
+            <button type="button" onClick={() => goTo(step - 1)} className="link-quiet text-[13px]">
+              Back
+            </button>
+          )}
           {step < 2 && (
-            <button
-              type="button"
-              onClick={next}
-              className="w-full h-12 rounded-xl bg-brand-900 text-white font-semibold text-[15px] flex items-center justify-center gap-2 hover:bg-brand-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
-            >
+            <button type="button" onClick={next} className="btn-ink">
               Next
-              <ArrowRight size={18} aria-hidden="true" />
             </button>
           )}
           {step === 3 && (
-            <button
-              type="button"
-              onClick={onGenerate}
-              disabled={isLoading}
-              className="w-full h-12 rounded-xl bg-brand-900 text-white font-semibold text-[15px] flex items-center justify-center gap-2 hover:bg-brand-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 disabled:opacity-70 disabled:cursor-not-allowed"
-            >
-              {isLoading ? (
-                <><Loader2 size={18} className="animate-spin" aria-hidden="true" /> Generating…</>
-              ) : (
-                <><Sparkles size={18} aria-hidden="true" /> Generate itinerary</>
-              )}
+            <button type="button" onClick={onGenerate} disabled={isLoading} className="btn-ink">
+              {isLoading && <Loader2 size={16} className="animate-spin" aria-hidden="true" />}
+              {isLoading ? "Generating…" : "Generate itinerary"}
             </button>
           )}
         </div>

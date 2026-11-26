@@ -6,55 +6,36 @@ import { useSession, signOut } from "next-auth/react";
 import PageContainer from "../components/Layout/PageContainer";
 import SmartSearch from "../components/Sidebar/SmartSearch";
 import PreferenceForm from "../components/Sidebar/PreferenceForm";
-import TripWizard from "../components/Wizard/TripWizard";
+import TripWizard, { type DestinationPhoto } from "../components/Wizard/TripWizard";
 import GenerateButton from "../components/Sidebar/GenerateButton";
 import { RouteList } from "../components/RouteSelection";
 import ItineraryPanel from "../components/MainPanel/ItineraryPanel";
 import MapView from "../components/MainPanel/MapView";
+import PhotoViewer, { type PhotoViewState } from "../components/MainPanel/PhotoViewer";
+import { useDayRoute } from "@/lib/travelTimes";
 import { DayItinerary, Location } from "../types/itinerary";
 import { RouteOption } from "@/types/routes";
 import { useToast, ToastContainer } from "../components/UI";
-import { Loader2, TriangleAlert, MapPin } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import RoutesLoading from "../components/RouteSelection/RoutesLoading";
+import SaveAccountPrompt from "../components/Auth/SaveAccountPrompt";
+
+// Guest hand-off: when a signed-out visitor goes to log in or sign up, their
+// in-progress trip is parked in sessionStorage and restored once they're back
+// (and the route they tried to save gets saved).
+const HANDOFF_KEY = "gaia:guest-handoff";
+const HANDOFF_MAX_AGE_MS = 60 * 60 * 1000;
 
 // ⭐ Define three app stages ⭐
 type AppStage = "initial" | "routes" | "details";
-
-// Placeholder shown while routes generate: three card skeletons shaped like RouteCard
-const LoadingView: React.FC = () => (
-  <div className="h-full overflow-hidden" role="status" aria-live="polite">
-    <div className="px-6 pt-6 pb-2">
-      <div className="flex items-center gap-2 font-display text-2xl font-bold text-brand-900 mb-1">
-        <Loader2 size={20} className="animate-spin text-brand-500" aria-hidden="true" />
-        Building your routes…
-      </div>
-      <p className="text-ink-muted text-sm">Three options, usually ready in 10–20 seconds.</p>
-    </div>
-    <div className="px-6 pb-6 pt-4 grid grid-cols-1 gap-3">
-      {[0, 1, 2].map((i) => (
-        <div key={i} className="rounded-xl border border-line bg-white overflow-hidden animate-pulse">
-          <div className="h-[160px] bg-surface-dim" />
-          <div className="p-5 space-y-3">
-            <div className="h-5 w-2/3 rounded bg-surface-dim" />
-            <div className="h-3 w-full rounded bg-surface" />
-            <div className="h-3 w-4/5 rounded bg-surface" />
-            <div className="flex gap-2 pt-1">
-              <div className="h-6 w-24 rounded-full bg-surface" />
-              <div className="h-6 w-20 rounded-full bg-surface" />
-              <div className="h-6 w-28 rounded-full bg-surface" />
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  </div>
-);
 
 const App: React.FC = () => {
   const { toasts, showToast, dismissToast } = useToast();
 
   // ⭐ Core state: current stage ⭐
   // ⭐ NextAuth session ⭐
-  const { data: session } = useSession();
+  const { data: session, status: sessionStatus } = useSession();
+  const [savePromptRouteId, setSavePromptRouteId] = useState<string | null>(null);
 
   const [stage, setStage] = useState<AppStage>("initial");
 
@@ -78,6 +59,9 @@ const App: React.FC = () => {
   });
 
   const [smartSearchQuery, setSmartSearchQuery] = useState("");
+  // The trip's photo (see ensureDestinationPhoto below)
+  const [destinationPhoto, setDestinationPhoto] = useState<DestinationPhoto | null>(null);
+  const photoRequestFor = useRef<string | null>(null);
 
   // ⭐ Route options state ⭐
   const [routeOptions, setRouteOptions] = useState<RouteOption[]>([]);
@@ -106,17 +90,93 @@ const App: React.FC = () => {
   const generateRef = useRef<((p?: typeof preferences) => void) | null>(null);
 
   // ⭐ Sync user identity from NextAuth session ⭐
+  // Signed out is a normal state (guest mode), not a reason to redirect.
   useEffect(() => {
     if (session?.user) {
       setCurrentUserId(session.user.id ?? null);
       setCurrentUsername(session.user.name ?? null);
-    } else if (session === null) {
-      // session === null means unauthenticated (not loading)
-      handleLogout();
+    } else if (sessionStatus === "unauthenticated") {
+      setCurrentUserId(null);
+      setCurrentUsername(null);
     }
-    // session === undefined means still loading — do nothing
+  }, [session, sessionStatus]);
+
+  // Keep this tab's trip across refreshes: routes, preferences and note live in
+  // sessionStorage (cleared when the tab closes). Restored once on load.
+  const SESSION_KEY = "gaia:session";
+  const restoredSession = useRef(false);
+  useEffect(() => {
+    if (restoredSession.current) return;
+    restoredSession.current = true;
+    try {
+      const raw = sessionStorage.getItem(SESSION_KEY);
+      if (!raw) return;
+      const saved = JSON.parse(raw);
+      if (saved?.preferences) setPreferences(saved.preferences);
+      if (typeof saved?.note === "string") setSmartSearchQuery(saved.note);
+      if (Array.isArray(saved?.routes) && saved.routes.length > 0) setMyItineraries(saved.routes);
+      if (saved?.destinationPhoto?.url) {
+        setDestinationPhoto(saved.destinationPhoto);
+        photoRequestFor.current = saved.destinationPhoto.destination;
+      }
+    } catch {
+      // storage unavailable or corrupt: start fresh
+    }
+  }, []);
+  useEffect(() => {
+    if (!restoredSession.current) return;
+    try {
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify({ preferences, note: smartSearchQuery, routes: myItineraries, destinationPhoto }));
+    } catch {
+      // ignore (private mode / quota)
+    }
+  }, [preferences, smartSearchQuery, myItineraries, destinationPhoto]);
+
+  // Back from log in / sign up: restore the guest's trip and save the route
+  // they tried to save before signing in.
+  useEffect(() => {
+    if (!currentUserId) return;
+    let raw: string | null = null;
+    try {
+      raw = sessionStorage.getItem(HANDOFF_KEY);
+      sessionStorage.removeItem(HANDOFF_KEY);
+    } catch {
+      return;
+    }
+    if (!raw) return;
+    let handoff: any;
+    try {
+      handoff = JSON.parse(raw);
+    } catch {
+      return;
+    }
+    if (!handoff || Date.now() - (handoff.savedAt ?? 0) > HANDOFF_MAX_AGE_MS) return;
+
+    if (handoff.preferences) setPreferences(handoff.preferences);
+    if (typeof handoff.note === "string") setSmartSearchQuery(handoff.note);
+    const routes: RouteOption[] = Array.isArray(handoff.routes) ? handoff.routes : [];
+    if (routes.length > 0) {
+      setMyItineraries(routes);
+      setRouteOptions(routes);
+      setStage("routes");
+      setActiveTab("My Itineraries");
+    }
+    const pending: RouteOption | null = handoff.pendingFavorite ?? null;
+    if (pending?.id) {
+      fetch("/api/favorites", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ routeId: pending.id, routeData: pending, action: "add" }),
+      })
+        .then((res) => {
+          if (!res.ok) throw new Error(res.statusText);
+          setFavoriteRoutes((prev) => new Set(prev).add(pending.id));
+          showToast("Saved to your trips.", "success");
+        })
+        .catch(() => showToast("Couldn't save that trip. Try saving it again.", "error"));
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session]);
+  }, [currentUserId]);
 
   // ⭐ Load user's favorite routes from database ⭐
   useEffect(() => {
@@ -155,13 +215,29 @@ const App: React.FC = () => {
       setMyItineraries([]);
       setItinerary([]);
 
-      // Use replace to force redirect to login page
-      window.location.replace("/auth/login");
+      // Back to the planner, now as a guest
+      window.location.replace("/");
     } catch (error) {
       console.error("Logout error:", error);
-      // Redirect to login page even on error
-      window.location.replace("/auth/login");
+      window.location.replace("/");
     }
+  };
+
+  // Guest going to log in / sign up: park the current trip, then navigate
+  const goToAuth = (path: "/auth/login" | "/auth/register", pendingRouteId?: string | null) => {
+    try {
+      const routes = myItineraries.length > 0 ? myItineraries : routeOptions;
+      const pending = pendingRouteId
+        ? routeOptions.find((r) => r.id === pendingRouteId) ?? routes.find((r) => r.id === pendingRouteId) ?? null
+        : null;
+      sessionStorage.setItem(
+        HANDOFF_KEY,
+        JSON.stringify({ savedAt: Date.now(), preferences, note: smartSearchQuery, routes, pendingFavorite: pending })
+      );
+    } catch {
+      // Storage unavailable (private mode): sign-in still works, the trip just isn't carried over
+    }
+    window.location.href = path;
   };
 
   const handlePreferenceChange = (key: string, value: any) => {
@@ -174,6 +250,10 @@ const App: React.FC = () => {
 
   // ⭐ Favorites feature handler ⭐
   const toggleFavorite = async (routeId: string) => {
+    if (!currentUserId) {
+      setSavePromptRouteId(routeId);
+      return;
+    }
     const isFavorited = favoriteRoutes.has(routeId);
     const action = isFavorited ? "remove" : "add";
 
@@ -262,6 +342,59 @@ const App: React.FC = () => {
     );
   };
 
+  // Every itinerary edit updates the session copy (so "All routes" and back
+  // keeps it). Favorited routes are also saved to the account, debounced.
+  const favoriteSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const handleItineraryDraft = (updatedItinerary: DayItinerary[]) => {
+    if (!selectedRouteId) return;
+    const routeId = selectedRouteId;
+    const apply = (list: RouteOption[]) =>
+      list.map((r) => (r.id === routeId ? { ...r, itinerary: updatedItinerary } : r));
+    setRouteOptions(apply);
+    setMyItineraries(apply);
+
+    if (favoriteRoutes.has(routeId)) {
+      const route = routeOptions.find((r) => r.id === routeId);
+      if (favoriteSaveTimer.current) clearTimeout(favoriteSaveTimer.current);
+      favoriteSaveTimer.current = setTimeout(() => {
+        if (!route) return;
+        fetch("/api/favorites", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ routeId, routeData: { ...route, itinerary: updatedItinerary }, action: "add" }),
+        }).catch(() => showToast("Couldn't save your edits to Saved. Try again.", "error"));
+      }, 900);
+    }
+  };
+
+  // The trip's photo: the gallery photo picked in step 1, or, for a typed city,
+  // one fetched from Unsplash as soon as step 1 is done, so the results
+  // sidebar can show it while the routes are still generating.
+  const ensureDestinationPhoto = (destination: string) => {
+    const dest = destination.trim();
+    if (!dest || destinationPhoto?.destination === dest || photoRequestFor.current === dest) return;
+    photoRequestFor.current = dest;
+    fetch("/api/activity-image", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: dest }),
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (photoRequestFor.current !== dest || !d?.imageUrl) return;
+        setDestinationPhoto({
+          destination: dest,
+          // The search returns a small size; ask for a sharper one for the header
+          url: String(d.imageUrl).replace(/([?&]w=)\d+/, "$1900"),
+          photographerName: d.imageAttribution?.photographerName ?? "",
+          photographerUrl: d.imageAttribution?.photographerUrl ?? "",
+        });
+      })
+      .catch(() => {
+        if (photoRequestFor.current === dest) photoRequestFor.current = null;
+      });
+  };
+
   // ⭐ Tab switch handler ⭐
   const handleTabChange = async (tab: string) => {
     setIsTabSwitching(true);
@@ -309,6 +442,7 @@ const App: React.FC = () => {
       return;
     }
 
+    ensureDestinationPhoto(prefs.destination);
     setStage("routes");
     setIsLoading(true);
     setError(null);
@@ -327,7 +461,6 @@ const App: React.FC = () => {
         body: JSON.stringify({
           ...prefs,
           userRequest: smartSearchQuery,
-          userId: currentUserId,
         }),
       });
 
@@ -430,8 +563,9 @@ const App: React.FC = () => {
 
   // ⭐ Handle clicking on a day's itinerary ⭐
   const handleDayClick = useCallback((dayNumber: number) => {
-    // Clear location detail popup
+    // Clear location detail popup and bring the map back
     setHighlightedLocation(null);
+    setPhotoView(null);
 
     // If clicking 0 (header), reset to show all locations
     if (dayNumber === 0) {
@@ -444,6 +578,7 @@ const App: React.FC = () => {
 
   // ⭐ Handle clicking an activity card ⭐
   const handleCardClick = useCallback((location: Location) => {
+    setPhotoView(null);
     setHighlightedLocation((prev) => {
       if (
         prev &&
@@ -457,8 +592,25 @@ const App: React.FC = () => {
     });
   }, []);
 
+  // Title and one-line subtitle for the itinerary page
+  const selectedRoute = routeOptions.find((r) => r.id === selectedRouteId);
+  const routeSubtitle = (() => {
+    const fmt = (s: string) =>
+      new Date(s).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    const place = preferences.destination.trim();
+    if (place && preferences.travelStartDate && preferences.travelEndDate) {
+      return `${place}, ${fmt(preferences.travelStartDate)} — ${fmt(preferences.travelEndDate)}`;
+    }
+    return selectedRoute ? `${selectedRoute.days} ${selectedRoute.days === 1 ? "day" : "days"}` : undefined;
+  })();
+
+  // The map follows the edited trip (drags, removals, AI changes), not the
+  // itinerary as first opened
+  const liveItinerary = routeOptions.find((r) => r.id === selectedRouteId)?.itinerary ?? itinerary;
+
   // ⭐ Currently displayed locations (based on selected day) ⭐
   const displayedLocations = useMemo(() => {
+    const itinerary = liveItinerary;
     if (!itinerary || itinerary.length === 0) return [];
 
     if (highlightedDay !== null) {
@@ -489,30 +641,90 @@ const App: React.FC = () => {
         }))
       )
       .filter((loc) => loc.latitude !== 0 && loc.longitude !== 0);
-  }, [itinerary, highlightedDay]);
+  }, [liveItinerary, highlightedDay]);
+
+  // A single day selected: its route, travel times and a one-line summary
+  const singleDay = highlightedDay !== null && highlightedDay > 0;
+  const dayRoute = useDayRoute(singleDay ? displayedLocations : [], (preferences.transportation as string[]).includes("car"));
+  const ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
+  const mapSummary = singleDay
+    ? {
+        title: `Day ${ROMAN[(highlightedDay ?? 1) - 1] ?? highlightedDay} · ${displayedLocations.length} ${displayedLocations.length === 1 ? "stop" : "stops"}`,
+        detail: dayRoute && dayRoute.totalKm > 0
+          ? `${dayRoute.totalKm.toFixed(1)} km · ${dayRoute.movingMin} min moving`
+          : undefined,
+      }
+    : displayedLocations.length > 0
+    ? { title: `Whole trip · ${displayedLocations.length} stops`, detail: "Choose a day to see its route" }
+    : null;
+
+  // Right-hand pane: the map, or a stop's photos when one is opened
+  const [photoView, setPhotoView] = useState<PhotoViewState | null>(null);
+  useEffect(() => {
+    if (stage !== "details") setPhotoView(null);
+  }, [stage]);
+  // Wide screens can hide the map so the itinerary reads full width (kept for the session)
+  const [mapHidden, setMapHidden] = useState(false);
+  useEffect(() => {
+    try { setMapHidden(sessionStorage.getItem("gaia:map-hidden") === "1"); } catch {}
+  }, []);
+  const toggleMap = () => {
+    setMapHidden((h) => {
+      try { sessionStorage.setItem("gaia:map-hidden", h ? "0" : "1"); } catch {}
+      return !h;
+    });
+    setPhotoView(null);
+  };
+
+  // A marker clicked on the map: open that stop's row in the list
+  const [focusStop, setFocusStop] = useState<{ name: string; latitude: number; longitude: number; nonce: number } | null>(null);
+  const handleMarkerClick = useCallback((location: Location) => {
+    setHighlightedLocation(location);
+    setFocusStop({ name: location.name, latitude: location.latitude, longitude: location.longitude, nonce: Date.now() });
+  }, []);
+
+  const openPhotosInPane = (view: PhotoViewState) => {
+    // Phones have no side pane, and a hidden map leaves none: use the fullscreen viewer
+    if (mapHidden || typeof window === "undefined" || !window.matchMedia("(min-width: 768px)").matches) return false;
+    setPhotoView(view);
+    return true;
+  };
+
+  // Sidebar photo: the trip's own photo when it matches the current destination,
+  // else the first route's cover
+  const tripPhoto =
+    destinationPhoto && destinationPhoto.destination === preferences.destination.trim()
+      ? {
+          url: destinationPhoto.url,
+          attribution: destinationPhoto.photographerName
+            ? { photographerName: destinationPhoto.photographerName, photographerUrl: destinationPhoto.photographerUrl }
+            : null,
+        }
+      : routeOptions[0]?.coverImageUrl
+      ? { url: routeOptions[0].coverImageUrl, attribution: routeOptions[0].coverImageAttribution ?? null }
+      : null;
 
   // ⭐ Sidebar content (changes based on stage) ⭐
   // Sidebar: the trip planning form (PageContainer hides it on Favorites and the details view)
   const sidebarContent = (
     <div className="flex flex-col h-full">
-      <div className="border-b border-line px-5 py-4 flex-shrink-0">
-        <h2 className="font-semibold text-lg text-ink">Plan your trip</h2>
-        <p className="text-sm text-ink-muted mt-0.5">Where to, and what are you into?</p>
-      </div>
-
-      <div className="flex-1 overflow-y-auto px-4 pt-4 pb-4 custom-scrollbar">
-        <SmartSearch
-          query={smartSearchQuery}
-          setQuery={setSmartSearchQuery}
-          onSearch={handleSmartSearch}
-        />
+      <div className="flex-1 overflow-y-auto pr-2 pb-4 custom-scrollbar">
         <PreferenceForm
           preferences={preferences}
           onPreferenceChange={handlePreferenceChange}
+          coverImageUrl={tripPhoto?.url ?? null}
+          coverAttribution={tripPhoto?.attribution ?? null}
         />
+        <div className="pt-6">
+          <SmartSearch
+            query={smartSearchQuery}
+            setQuery={setSmartSearchQuery}
+            onSearch={handleSmartSearch}
+          />
+        </div>
       </div>
 
-      <div className="border-t border-line p-4 flex-shrink-0">
+      <div className="pt-4 flex-shrink-0">
         <GenerateButton
           onClick={() => handleGenerateItinerary()}
           isLoading={isLoading}
@@ -530,6 +742,11 @@ const App: React.FC = () => {
       onNoteChange={setSmartSearchQuery}
       onGenerate={() => handleGenerateItinerary()}
       isLoading={isLoading}
+      onDestinationPhoto={(photo) => {
+        photoRequestFor.current = photo.destination;
+        setDestinationPhoto(photo);
+      }}
+      onDestinationConfirmed={ensureDestinationPhoto}
     />
   );
 
@@ -537,29 +754,22 @@ const App: React.FC = () => {
   const mainPanelContent = (
     <div className="relative h-full">
       {isTabSwitching && (
-        <div className="absolute inset-0 bg-white/70 z-10 flex items-center justify-center rounded-xl">
-          <Loader2 size={28} className="animate-spin text-brand-500" aria-hidden="true" />
+        <div className="absolute inset-0 bg-white/70 z-10 flex items-center justify-center">
+          <Loader2 size={24} className="animate-spin text-ink" aria-hidden="true" />
         </div>
       )}
       {stage === "routes" && (
-        <div className="h-full min-h-0 bg-white border border-line rounded-xl overflow-hidden flex flex-col">
+        <div className="h-full min-h-0 bg-white overflow-hidden flex flex-col">
           {isLoading ? (
-            <LoadingView />
+            <RoutesLoading />
           ) : error ? (
             <div className="flex items-center justify-center flex-1">
               <div className="text-center max-w-md">
-                <div className="w-16 h-16 rounded-full bg-red-50 text-red-500 flex items-center justify-center mb-4 mx-auto">
-                  <TriangleAlert size={30} aria-hidden="true" />
-                </div>
-                <h3 className="text-xl font-bold text-gray-800 mb-2">
-                  Something went wrong
-                </h3>
-                <p className="text-red-500 mb-4">{error}</p>
-                <button
-                  onClick={handleBackToInitial}
-                  className="px-5 h-10 bg-brand-900 text-white text-sm font-medium rounded-lg hover:bg-brand-700 transition-colors"
-                >
-                  Try Again
+                <p className="eyebrow">Something went wrong</p>
+                <h3 className="mt-3 font-display text-[36px] leading-[1.06] uppercase text-ink">We couldn&apos;t build your routes</h3>
+                <p className="mt-4 text-sm text-red-700">{error}</p>
+                <button type="button" onClick={handleBackToInitial} className="btn-ink mt-8">
+                  Try again
                 </button>
               </div>
             </div>
@@ -572,6 +782,9 @@ const App: React.FC = () => {
               showFavoritesOnly={activeTab === "Favorites"}
               activeTab={activeTab}
               onExploreRoutes={() => handleTabChange("Home")}
+              isGuest={sessionStatus === "unauthenticated"}
+              onCreateAccount={() => goToAuth("/auth/register")}
+              onLogIn={() => goToAuth("/auth/login")}
               onBackToInitial={() => handleTabChange("Home")}
               onSelectDestination={(city) => {
                 handlePreferenceChange("destination", city);
@@ -583,9 +796,19 @@ const App: React.FC = () => {
       )}
 
       {stage === "details" && (
-        <div className="flex flex-col md:flex-row gap-4 h-full min-h-0">
-          <div className="flex-1 min-h-0 min-w-0 bg-white border border-line rounded-xl overflow-hidden flex flex-col">
-            <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
+        <div className="relative flex flex-col md:flex-row gap-10 h-full min-h-0">
+          {/* Same corner in both states: over the map, or above the empty right margin */}
+          <button
+            type="button"
+            onClick={toggleMap}
+            aria-pressed={mapHidden}
+            className="hidden md:block absolute top-0 right-0 z-20 bg-white px-3 py-2 text-[11px] tracking-[0.08em] uppercase text-ink-soft hover:text-ink transition-colors duration-300 active:scale-[0.97]"
+          >
+            {mapHidden ? "Show map" : "Hide map"}
+          </button>
+          <div className="flex-1 min-h-0 min-w-0 bg-white overflow-hidden flex flex-col">
+            <div className="flex-1 overflow-y-auto pr-3 pb-6 custom-scrollbar">
+              <div className={mapHidden ? "md:max-w-[760px] md:mx-auto md:pr-24 lg:pr-0" : undefined}>
               {error && (
                 <p className="text-red-500 text-center py-8">Error: {error}</p>
               )}
@@ -604,23 +827,42 @@ const App: React.FC = () => {
                   userId={currentUserId}
                   onSave={handleSaveItinerary}
                   isSaving={false}
+                  onDraftChange={handleItineraryDraft}
+                  onOpenPhotos={openPhotosInPane}
+                  routeTitle={selectedRoute?.title}
+                  routeSubtitle={routeSubtitle}
+                  focusStop={focusStop}
                 />
               )}
+              </div>
             </div>
           </div>
 
-          <div className="h-64 md:h-auto md:flex-1 min-h-0 min-w-0 bg-white border border-line rounded-xl overflow-hidden flex flex-col">
-            <div className="px-5 py-3.5 border-b border-line flex-shrink-0">
-              <h3 className="text-sm font-semibold text-ink flex items-center gap-2">
-                <MapPin size={16} className="text-brand-500" aria-hidden="true" />
-                Route map
-              </h3>
-            </div>
-            <div className="flex-1 p-3 min-h-0">
-              <MapView
-                locations={displayedLocations}
-                highlightedLocation={highlightedLocation}
-              />
+          <div className={`h-64 md:h-auto md:flex-1 min-h-0 min-w-0 bg-white overflow-hidden flex flex-col pb-6 ${mapHidden ? "md:hidden" : ""}`}>
+            <div className="relative flex-1 min-h-0">
+              {/* The map stays mounted underneath so it keeps its position */}
+              <div
+                className={`absolute inset-0 bg-surface-dim transition-opacity duration-500 ease-editorial ${photoView ? "opacity-0 pointer-events-none" : "opacity-100"}`}
+                aria-hidden={photoView ? true : undefined}
+              >
+                <MapView
+                  locations={displayedLocations}
+                  highlightedLocation={highlightedLocation}
+                  dayRoute={singleDay ? dayRoute : null}
+                  numbered={singleDay}
+                  summary={mapSummary}
+                  onMarkerClick={handleMarkerClick}
+                />
+              </div>
+              {photoView && (
+                <div className="absolute inset-0 animate-card-enter">
+                  <PhotoViewer
+                    view={photoView}
+                    onIndexChange={(index) => setPhotoView((v) => (v ? { ...v, index } : v))}
+                    onBack={() => setPhotoView(null)}
+                  />
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -635,9 +877,17 @@ const App: React.FC = () => {
         mainContent={mainPanelContent}
         username={currentUsername}
         onLogout={handleLogout}
+        isGuest={sessionStatus === "unauthenticated"}
+        onAuthNavigate={(path) => goToAuth(path)}
         stage={stage}
         activeTab={activeTab}
         onTabChange={handleTabChange}
+      />
+      <SaveAccountPrompt
+        open={savePromptRouteId !== null}
+        onClose={() => setSavePromptRouteId(null)}
+        onCreateAccount={() => goToAuth("/auth/register", savePromptRouteId)}
+        onLogIn={() => goToAuth("/auth/login", savePromptRouteId)}
       />
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </div>

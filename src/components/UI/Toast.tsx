@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useCallback } from "react";
-import { CircleCheck, CircleX, Info } from "lucide-react";
+import Lozenge from "./Lozenge";
 
 export interface Toast {
   id: string;
@@ -39,30 +39,31 @@ export const ToastContainer: React.FC<ToastContainerProps> = ({
   toasts,
   onDismiss,
 }) => {
-  if (toasts.length === 0) return null;
-
+  // Always mounted so screen readers announce new messages (polite live region)
   return (
-    <div className="fixed bottom-6 right-6 z-[200] flex flex-col gap-3 pointer-events-none">
+    <div
+      role="status"
+      aria-live="polite"
+      className="fixed bottom-6 right-6 z-[200] flex flex-col gap-2 pointer-events-none"
+    >
       {toasts.map((toast) => (
         <div
           key={toast.id}
-          className={`flex items-center gap-3 px-5 py-4 rounded-xl shadow-2xl text-white font-medium
-            min-w-[280px] max-w-[420px] pointer-events-auto
-            ${toast.type === "success" ? "bg-brand-700" : ""}
-            ${toast.type === "error" ? "bg-red-600" : ""}
-            ${toast.type === "info" ? "bg-brand-900" : ""}
-          `}
+          className={`flex items-center gap-3.5 pl-5 pr-3 py-3.5 min-w-[280px] max-w-[420px] pointer-events-auto animate-card-enter
+            ${toast.type === "error" ? "bg-white text-red-700 ring-1 ring-red-200" : "bg-ink text-white"}`}
         >
-          <span className="flex-shrink-0" aria-hidden="true">
-            {toast.type === "success" ? <CircleCheck size={20} /> : toast.type === "error" ? <CircleX size={20} /> : <Info size={20} />}
-          </span>
+          {toast.type === "error" ? (
+            <span className="text-[11px] tracking-[0.08em] uppercase flex-shrink-0">Error</span>
+          ) : (
+            <Lozenge className="w-[8px] h-[8px] flex-shrink-0" />
+          )}
           <span className="flex-1 text-sm leading-snug">{toast.message}</span>
           <button
+            type="button"
             onClick={() => onDismiss(toast.id)}
-            className="text-white/70 hover:text-white transition-colors ml-1 text-xl leading-none flex-shrink-0"
-            aria-label="Dismiss"
+            className="text-[11px] tracking-[0.08em] uppercase opacity-60 hover:opacity-100 transition-opacity flex-shrink-0 px-2 py-1"
           >
-            ×
+            Dismiss
           </button>
         </div>
       ))}

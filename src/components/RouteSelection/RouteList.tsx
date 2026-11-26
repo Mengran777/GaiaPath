@@ -4,7 +4,7 @@ import React from "react";
 import { RouteOption } from "@/types/routes";
 import RouteCard from "./RouteCard";
 import EmptyItineraryState from "./EmptyItineraryState";
-import { Star, Map as MapIcon, ArrowRight } from "lucide-react";
+
 
 interface RouteListProps {
   routes: RouteOption[];
@@ -16,6 +16,10 @@ interface RouteListProps {
   onExploreRoutes?: () => void;
   onBackToInitial?: () => void;
   onSelectDestination?: (city: string) => void;
+  /** Signed out: the Saved tab explains accounts instead of showing an empty list */
+  isGuest?: boolean;
+  onCreateAccount?: () => void;
+  onLogIn?: () => void;
 }
 
 // Stagger delays for first 3 cards, rest get the last value
@@ -31,6 +35,9 @@ const RouteList: React.FC<RouteListProps> = ({
   onExploreRoutes,
   onBackToInitial,
   onSelectDestination,
+  isGuest = false,
+  onCreateAccount,
+  onLogIn,
 }) => {
   if (!routes || routes.length === 0) {
     if (activeTab === "My Itineraries") {
@@ -43,25 +50,39 @@ const RouteList: React.FC<RouteListProps> = ({
         </div>
       );
     }
+    if (showFavoritesOnly && isGuest) {
+      return (
+        <div className="flex items-center justify-center h-full p-6">
+          <div className="w-full max-w-md text-center">
+            <p className="eyebrow">Saved</p>
+            <h3 className="mt-3 font-display text-[44px] leading-[1.04] uppercase text-ink">Keep the trips you like</h3>
+            <p className="mt-4 text-sm text-ink-muted leading-relaxed">
+              Create a free account to save routes and find them here on any device.
+            </p>
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-x-7 gap-y-4">
+              <button type="button" onClick={onCreateAccount} className="btn-ink">
+                Create account
+              </button>
+              <button type="button" onClick={onLogIn} className="link-quiet text-[13px]">
+                Log in
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
     if (showFavoritesOnly) {
       return (
         <div className="flex items-center justify-center h-full p-6">
-          <div className="w-full max-w-sm bg-white rounded-2xl shadow-sm border border-line p-10 flex flex-col items-center text-center">
-            <div className="w-20 h-20 rounded-full bg-gold-50 border-2 border-gold-200 flex items-center justify-center mb-5">
-              <Star size={34} className="text-gold-500" aria-hidden="true" />
-            </div>
-            <h3 className="text-xl font-bold text-brand-900 mb-2">No favourites yet</h3>
-            <p className="text-ink-muted text-sm mb-6 leading-relaxed">
-              Star a route to save it here and revisit it anytime.
+          <div className="w-full max-w-md text-center">
+            <p className="eyebrow">Saved</p>
+            <h3 className="mt-3 font-display text-[44px] leading-[1.04] uppercase text-ink">Nothing saved yet</h3>
+            <p className="mt-4 text-sm text-ink-muted leading-relaxed">
+              Save a route and it will wait for you here.
             </p>
             {onExploreRoutes && (
-              <button
-                onClick={onExploreRoutes}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full
-                           bg-brand-900 text-white text-sm font-medium
-                           hover:bg-brand-700 transition-colors duration-150"
-              >
-                Explore routes <ArrowRight size={15} className="text-brand-300" aria-hidden="true" />
+              <button type="button" onClick={onExploreRoutes} className="btn-ink mt-8">
+                Plan a trip
               </button>
             )}
           </div>
@@ -71,7 +92,6 @@ const RouteList: React.FC<RouteListProps> = ({
     return (
       <div className="flex items-center justify-center h-full">
         <div className="text-center">
-          <MapIcon size={48} strokeWidth={1.5} className="text-ink-faint mx-auto mb-4" aria-hidden="true" />
           <p className="text-ink-muted text-base">
             No routes available. Please try generating again.
           </p>
@@ -83,34 +103,34 @@ const RouteList: React.FC<RouteListProps> = ({
   const getHeaderContent = () => {
     if (activeTab === "Favorites") {
       return {
-        title: "Your Favorite Routes",
-        description: `${routes.length} saved ${routes.length === 1 ? "route" : "routes"} · Click to view the itinerary`,
+        title: "Saved trips",
+        description: `${routes.length} ${routes.length === 1 ? "trip" : "trips"}`,
       };
     }
     if (activeTab === "My Itineraries") {
       return {
-        title: "My Itineraries",
-        description: `${routes.length} saved ${routes.length === 1 ? "itinerary" : "itineraries"} · Click to view or edit`,
+        title: "Your routes",
+        description: `${routes.length} ${routes.length === 1 ? "option" : "options"}`,
       };
     }
     return {
-      title: "Choose Your Perfect Journey",
-      description: `${routes.length} personalised routes based on your preferences · Click to explore`,
+      title: "Choose your route",
+      description: `${routes.length} ${routes.length === 1 ? "option" : "options"}`,
     };
   };
 
   const { title, description } = getHeaderContent();
 
   return (
-    <div className="h-full overflow-y-auto custom-scrollbar">
-      <div className="px-6 pt-6 pb-2">
-        <h2 className="font-display text-2xl font-bold text-brand-900 mb-1">
+    <div className="h-full overflow-y-auto custom-scrollbar pr-1">
+      <div className="flex items-end justify-between gap-4 border-b border-ink pb-3 mb-8">
+        <h2 className={`font-display uppercase text-ink leading-[1.04] ${activeTab === "Favorites" ? "text-[44px]" : "text-[30px]"}`}>
           {title}
         </h2>
-        <p className="text-ink-muted text-sm">{description}</p>
+        <p className="eyebrow pb-1">{description}</p>
       </div>
 
-      <div className="px-6 pb-6 pt-4 grid grid-cols-1 gap-3">
+      <div className={`pb-10 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-x-6 gap-y-12 ${activeTab === "Favorites" ? "2xl:grid-cols-4" : ""}`}>
         {(() => {
           // Prefer route-level Unsplash cover; fall back to first unique Wikipedia activity image.
           // Attribution only ever accompanies the Unsplash cover, never the Wikipedia fallback.
@@ -140,6 +160,7 @@ const RouteList: React.FC<RouteListProps> = ({
             >
               <RouteCard
                 route={route}
+                index={activeTab === "Favorites" ? undefined : index}
                 onSelect={onSelectRoute}
                 isFavorite={favoriteRoutes.has(route.id)}
                 onToggleFavorite={onToggleFavorite}

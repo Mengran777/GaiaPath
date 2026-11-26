@@ -4,11 +4,9 @@
 import App from "./App"; // Import the App component
 
 /**
- * This is the main page component for the Next.js application.
- * After middleware handles authentication and redirects, this component always renders <App />.
+ * The planner. Open to everyone: signed-out visitors use it as guests and are
+ * asked to create an account only when they save a trip.
  */
 export default function HomePage() {
-  // Logic here runs server-side, not dependent on client-specific localStorage or window objects
-  // Since auth redirects are handled by middleware, no need to worry about unauthenticated users here
   return <App />;
 }

@@ -1,6 +1,6 @@
 // src/app/api/modify-itinerary/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { authenticateRequest } from "@/lib/auth";
+import { guestGate } from "@/lib/guestGate";
 import { promises as fs } from "fs";
 import path from "path";
 import { retrievePois, RetrievedPoi, formatPoisForPrompt } from "@/lib/ai/poiRetrieval";
@@ -34,21 +34,22 @@ function formatItineraryForPrompt(itinerary: DayItinerary[]): string {
     .join("\n\n");
 }
 
+// Model fallback when Gemini is busy can exceed the default function limit
+export const maxDuration = 60;
+
 export async function POST(request: NextRequest) {
-  const authResult = await authenticateRequest(request);
-  if (!authResult) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  // Guests may ask for changes too, within an hourly allowance
+  const { blocked } = await guestGate(request, "modify");
+  if (blocked) return blocked;
 
   try {
     const body = await request.json();
-    const { destination, currentItinerary, modificationRequest, userId } = body;
+    const { destination, currentItinerary, modificationRequest } = body;
 
     const missingFields = [];
     if (!destination) missingFields.push("destination");
     if (!Array.isArray(currentItinerary)) missingFields.push("currentItinerary");
     if (!modificationRequest) missingFields.push("modificationRequest");
-    if (!userId) missingFields.push("userId");
     if (missingFields.length > 0) {
       return NextResponse.json(
         { error: `Missing fields in request body: ${missingFields.join(", ")}` },

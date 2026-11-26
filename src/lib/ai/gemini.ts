@@ -4,7 +4,18 @@ import {
   type ObjectSchema,
 } from "@google/generative-ai";
 
-export const ITINERARY_MODEL = "gemini-3.1-flash-lite-preview";
+// Models tried in order. When one is overloaded (503) or rate limited (429),
+// the next takes over, so a demand spike on one model doesn't stop generation.
+// Override with GEMINI_MODEL / GEMINI_FALLBACK_MODELS (comma-separated).
+export const ITINERARY_MODEL = process.env.GEMINI_MODEL || "gemini-3.1-flash-lite";
+const FALLBACK_MODELS = (
+  process.env.GEMINI_FALLBACK_MODELS ||
+  "gemini-3.5-flash-lite,gemini-flash-lite-latest,gemini-3-flash-preview,gemini-3.1-flash-lite-preview"
+)
+  .split(",")
+  .map((m) => m.trim())
+  .filter((m) => m && m !== ITINERARY_MODEL);
+const MODEL_CHAIN = [ITINERARY_MODEL, ...FALLBACK_MODELS];
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
@@ -93,9 +104,16 @@ function isRetryable(error: any): boolean {
   );
 }
 
+// Overload / rate limit: worth moving to another model rather than waiting
+function isCapacityError(error: any): boolean {
+  const msg: string = error?.message ?? "";
+  return msg.includes("503") || msg.includes("overloaded") || msg.includes("429") || msg.includes("404");
+}
+
 /**
  * Calls Gemini with a response schema and returns the parsed JSON.
- * Retries on overload / rate limit / truncated output with 2s, 4s backoff.
+ * Each model in MODEL_CHAIN gets up to `attemptsPerModel` tries (1s, 2s
+ * backoff); on overload or rate limit it moves straight on to the next model.
  */
 export async function generateJson<T>(
   prompt: string,
@@ -104,33 +122,47 @@ export async function generateJson<T>(
     temperature: number;
     maxOutputTokens: number;
     label: string;
-    maxRetries?: number;
+    attemptsPerModel?: number;
   },
 ): Promise<T> {
-  const { schema, temperature, maxOutputTokens, label, maxRetries = 3 } = options;
+  const { schema, temperature, maxOutputTokens, label, attemptsPerModel = 2 } = options;
 
-  const model = genAI.getGenerativeModel({
-    model: ITINERARY_MODEL,
-    generationConfig: {
-      temperature,
-      maxOutputTokens,
-      responseMimeType: "application/json",
-      responseSchema: schema,
-    },
-  });
-
+  // Capacity shifts from moment to moment, so the chain is walked twice
+  // with a short pause between passes before giving up.
+  const PASSES = 2;
   let lastError: unknown;
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      const result = await model.generateContent(prompt);
-      return JSON.parse(result.response.text()) as T;
-    } catch (error: any) {
-      lastError = error;
-      if (!isRetryable(error) || attempt === maxRetries) break;
-      const waitMs = Math.pow(2, attempt) * 1000;
-      console.warn(`${label}: attempt ${attempt} failed (${error?.message}), retrying in ${waitMs / 1000}s`);
-      await new Promise((resolve) => setTimeout(resolve, waitMs));
+  for (let pass = 1; pass <= PASSES; pass++) {
+  if (pass > 1) await new Promise((resolve) => setTimeout(resolve, 1500));
+  for (const modelName of MODEL_CHAIN) {
+    const model = genAI.getGenerativeModel({
+      model: modelName,
+      generationConfig: {
+        temperature,
+        maxOutputTokens,
+        responseMimeType: "application/json",
+        responseSchema: schema,
+      },
+    });
+
+    for (let attempt = 1; attempt <= attemptsPerModel; attempt++) {
+      try {
+        const result = await model.generateContent(prompt);
+        if (modelName !== ITINERARY_MODEL) console.warn(`${label}: served by fallback model ${modelName}`);
+        return JSON.parse(result.response.text()) as T;
+      } catch (error: any) {
+        lastError = error;
+        if (!isRetryable(error) && !isCapacityError(error)) throw error;
+        // Capacity problems: don't wait on this model, try the next one
+        if (isCapacityError(error) || attempt === attemptsPerModel) {
+          console.warn(`${label}: ${modelName} failed (${error?.status ?? error?.message}), trying next model`);
+          break;
+        }
+        const waitMs = attempt * 1000;
+        console.warn(`${label}: ${modelName} attempt ${attempt} failed (${error?.message}), retrying in ${waitMs / 1000}s`);
+        await new Promise((resolve) => setTimeout(resolve, waitMs));
+      }
     }
+  }
   }
   throw lastError;
 }
