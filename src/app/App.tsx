@@ -395,6 +395,15 @@ const App: React.FC = () => {
       });
   };
 
+  // Only the latest generation may update the page: going home or starting a
+  // new trip cancels the one in flight, so a late reply can't take over.
+  const generationRef = useRef<{ id: number; controller: AbortController | null }>({ id: 0, controller: null });
+  const cancelGeneration = () => {
+    generationRef.current.controller?.abort();
+    generationRef.current = { id: generationRef.current.id + 1, controller: null };
+    setIsLoading(false);
+  };
+
   // ⭐ Tab switch handler ⭐
   const handleTabChange = async (tab: string) => {
     setIsTabSwitching(true);
@@ -402,6 +411,7 @@ const App: React.FC = () => {
 
     try {
       if (tab === "Home") {
+        cancelGeneration();
         setStage("initial");
       } else if (tab === "Favorites") {
         setStage("routes");
@@ -442,6 +452,12 @@ const App: React.FC = () => {
       return;
     }
 
+    cancelGeneration();
+    const controller = new AbortController();
+    const id = generationRef.current.id;
+    generationRef.current.controller = controller;
+    const isCurrent = () => generationRef.current.id === id;
+
     ensureDestinationPhoto(prefs.destination);
     setStage("routes");
     setIsLoading(true);
@@ -455,6 +471,7 @@ const App: React.FC = () => {
     try {
       const response = await fetch("/api/generate-itinerary", {
         method: "POST",
+        signal: controller.signal,
         headers: {
           "Content-Type": "application/json",
         },
@@ -464,12 +481,14 @@ const App: React.FC = () => {
         }),
       });
 
+      if (!isCurrent()) return;
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || "Failed to generate routes.");
       }
 
       const data = await response.json();
+      if (!isCurrent()) return;
       let generatedRoutes = [];
       if (Array.isArray(data)) {
         generatedRoutes = data;
@@ -487,10 +506,14 @@ const App: React.FC = () => {
       setStage("routes");
       setActiveTab("My Itineraries");
     } catch (error: any) {
+      if (!isCurrent()) return; // cancelled: nothing to report
       console.error("Error generating routes:", error.message);
       setError(error.message);
     } finally {
-      setIsLoading(false);
+      if (isCurrent()) {
+        setIsLoading(false);
+        generationRef.current.controller = null;
+      }
     }
   };
 
@@ -529,6 +552,7 @@ const App: React.FC = () => {
 
   // ⭐ Re-edit preferences ⭐
   const handleBackToInitial = useCallback(() => {
+    cancelGeneration();
     setStage("initial");
     setRouteOptions([]);
     setSelectedRouteId(null);
@@ -566,6 +590,8 @@ const App: React.FC = () => {
     // Clear location detail popup and bring the map back
     setHighlightedLocation(null);
     setPhotoView(null);
+
+    openPaneForDay();
 
     // If clicking 0 (header), reset to show all locations
     if (dayNumber === 0) {
@@ -663,29 +689,96 @@ const App: React.FC = () => {
   useEffect(() => {
     if (stage !== "details") setPhotoView(null);
   }, [stage]);
-  // Wide screens can hide the map so the itinerary reads full width (kept for the session)
-  const [mapHidden, setMapHidden] = useState(false);
+  // Right-hand pane on wide screens (map, or a stop's photos). Closed by default.
+  //  - choosing a day opens it
+  //  - opening a stop opens it, and closing that stop closes it again
+  //  - once the traveller closes it with the icon, opening stops won't reopen it
+  //    (choosing a day or the icon will)
+  type PaneOrigin = "intro" | "stop" | "user" | null;
+  const [paneOpen, setPaneOpenState] = useState(false);
+  const pane = useRef<{ open: boolean; origin: PaneOrigin; userClosed: boolean }>({ open: false, origin: null, userClosed: false });
+  const setPane = (open: boolean, origin: PaneOrigin = null) => {
+    pane.current.open = open;
+    pane.current.origin = open ? origin : null;
+    setPaneOpenState(open);
+  };
+  const isWide = () => typeof window !== "undefined" && window.matchMedia("(min-width: 768px)").matches;
+
+  // Opening a route: show the map for a moment, then tuck it away and say how to get it back
+  const [mapHint, setMapHint] = useState(false);
+  const mapTimers = useRef<number[]>([]);
+  const stopMapIntro = () => {
+    mapTimers.current.forEach((t) => window.clearTimeout(t));
+    mapTimers.current = [];
+    setMapHint(false);
+  };
   useEffect(() => {
-    try { setMapHidden(sessionStorage.getItem("gaia:map-hidden") === "1"); } catch {}
-  }, []);
-  const toggleMap = () => {
-    setMapHidden((h) => {
-      try { sessionStorage.setItem("gaia:map-hidden", h ? "0" : "1"); } catch {}
-      return !h;
-    });
+    if (stage !== "details" || !selectedRouteId) return;
+    pane.current.userClosed = false;
+    if (!isWide()) { setPane(false); return; }
+    setPane(true, "intro");
+    mapTimers.current = [
+      window.setTimeout(() => {
+        if (pane.current.origin === "intro") { setPane(false); setMapHint(true); }
+      }, 2200),
+      window.setTimeout(() => setMapHint(false), 7500),
+    ];
+    return () => stopMapIntro();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stage, selectedRouteId]);
+
+  // A day chosen (day tabs or a day's heading): show it on the map
+  const openPaneForDay = () => {
+    stopMapIntro();
+    pane.current.userClosed = false;
+    setPane(true, "user");
+  };
+
+  // A stop opened or closed in the list
+  const handleStopOpenChange = (open: boolean) => {
+    stopMapIntro();
     setPhotoView(null);
+    const p = pane.current;
+    if (open) {
+      if (p.open) {
+        if (p.origin === "intro") p.origin = "stop";
+      } else if (!p.userClosed && isWide()) {
+        setPane(true, "stop");
+      }
+    } else if (p.open && p.origin === "stop") {
+      setPane(false);
+    }
+  };
+
+  // The icon beside the day tabs
+  const togglePane = () => {
+    stopMapIntro();
+    setPhotoView(null);
+    if (pane.current.open) {
+      pane.current.userClosed = true;
+      setPane(false);
+    } else {
+      pane.current.userClosed = false;
+      setPane(true, "user");
+    }
   };
 
   // A marker clicked on the map: open that stop's row in the list
   const [focusStop, setFocusStop] = useState<{ name: string; latitude: number; longitude: number; nonce: number } | null>(null);
   const handleMarkerClick = useCallback((location: Location) => {
+    stopMapIntro(); // they're using the map: keep it open
+    if (pane.current.origin === "intro") pane.current.origin = "user";
     setHighlightedLocation(location);
     setFocusStop({ name: location.name, latitude: location.latitude, longitude: location.longitude, nonce: Date.now() });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const openPhotosInPane = (view: PhotoViewState) => {
-    // Phones have no side pane, and a hidden map leaves none: use the fullscreen viewer
-    if (mapHidden || typeof window === "undefined" || !window.matchMedia("(min-width: 768px)").matches) return false;
+    // Phones have no side pane: use the fullscreen viewer
+    if (!isWide()) return false;
+    stopMapIntro();
+    if (!pane.current.open) setPane(true, "stop");
+    else if (pane.current.origin === "intro") pane.current.origin = "stop";
     setPhotoView(view);
     return true;
   };
@@ -797,18 +890,9 @@ const App: React.FC = () => {
 
       {stage === "details" && (
         <div className="relative flex flex-col md:flex-row gap-10 h-full min-h-0">
-          {/* Same corner in both states: over the map, or above the empty right margin */}
-          <button
-            type="button"
-            onClick={toggleMap}
-            aria-pressed={mapHidden}
-            className="hidden md:block absolute top-0 right-0 z-20 bg-white px-3 py-2 text-[11px] tracking-[0.08em] uppercase text-ink-soft hover:text-ink transition-colors duration-300 active:scale-[0.97]"
-          >
-            {mapHidden ? "Show map" : "Hide map"}
-          </button>
           <div className="flex-1 min-h-0 min-w-0 bg-white overflow-hidden flex flex-col">
             <div className="flex-1 overflow-y-auto pr-3 pb-6 custom-scrollbar">
-              <div className={mapHidden ? "md:max-w-[760px] md:mx-auto md:pr-24 lg:pr-0" : undefined}>
+              <div className={paneOpen ? undefined : "md:max-w-[760px] md:mx-auto"}>
               {error && (
                 <p className="text-red-500 text-center py-8">Error: {error}</p>
               )}
@@ -832,13 +916,17 @@ const App: React.FC = () => {
                   routeTitle={selectedRoute?.title}
                   routeSubtitle={routeSubtitle}
                   focusStop={focusStop}
+                  paneOpen={paneOpen}
+                  onTogglePane={togglePane}
+                  paneHint={mapHint}
+                  onStopOpenChange={handleStopOpenChange}
                 />
               )}
               </div>
             </div>
           </div>
 
-          <div className={`h-64 md:h-auto md:flex-1 min-h-0 min-w-0 bg-white overflow-hidden flex flex-col pb-6 ${mapHidden ? "md:hidden" : ""}`}>
+          <div className={`h-64 md:h-auto md:flex-1 min-h-0 min-w-0 bg-white overflow-hidden flex flex-col pb-6 md:transition-[flex-grow,opacity,margin] md:duration-700 md:ease-editorial ${paneOpen ? "" : "md:!grow-0 md:opacity-0 md:-ml-10 md:pointer-events-none"}`}>
             <div className="relative flex-1 min-h-0">
               {/* The map stays mounted underneath so it keeps its position */}
               <div

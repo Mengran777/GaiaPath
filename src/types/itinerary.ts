@@ -18,6 +18,7 @@ export interface Activity {
   imageAttribution?: { photographerName: string; photographerUrl: string } | null; // set only when imageUrl is from Unsplash
   latitude?: number; // latitude of the activity location
   longitude?: number; // longitude of the activity location
+  note?: string; // the traveller's own note for this stop
 }
 
 export interface DayItinerary {

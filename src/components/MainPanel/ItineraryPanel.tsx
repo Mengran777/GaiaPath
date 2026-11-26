@@ -42,7 +42,23 @@ interface ItineraryPanelProps {
   routeSubtitle?: string;
   /** A stop picked on the map: open its row (nonce makes repeat clicks count) */
   focusStop?: { name: string; latitude: number; longitude: number; nonce: number } | null;
+  /** Wide screens: whether the side pane (map / photos) is open, and its icon */
+  paneOpen?: boolean;
+  onTogglePane?: () => void;
+  /** Show the one-line hint under the icon (after the map tucks itself away) */
+  paneHint?: boolean;
+  /** A stop was opened (true) or closed (false) by clicking its row */
+  onStopOpenChange?: (open: boolean) => void;
 }
+
+/** Side-pane icon: a frame with its right column, filled while the pane is open */
+const PaneIcon: React.FC<{ open: boolean }> = ({ open }) => (
+  <svg viewBox="0 0 20 20" className="w-[19px] h-[19px]" fill="none" stroke="currentColor" strokeWidth="1.2" aria-hidden="true">
+    <rect x="2.5" y="3.5" width="15" height="13" />
+    <line x1="12.5" y1="3.5" x2="12.5" y2="16.5" />
+    <rect x="12.5" y="3.5" width="5" height="13" fill="currentColor" stroke="none" className={`transition-opacity duration-300 ${open ? "opacity-100" : "opacity-0"}`} />
+  </svg>
+);
 
 const ROMAN = ["I","II","III","IV","V","VI","VII","VIII","IX","X","XI","XII","XIII","XIV","XV"];
 const toRoman = (n: number) => ROMAN[n - 1] ?? String(n);
@@ -81,7 +97,69 @@ interface DraggableCardProps {
   aiBadgeText?: string;
   aiWasLine?: string;
   onUndoAiChange?: () => void;
+  /** Save the traveller's own note for this stop ("" clears it) */
+  onNoteChange?: (note: string) => void;
 }
+
+/**
+ * The traveller's note for one stop: a quiet underlined field that grows with
+ * the text. Saves after a short pause and on leaving the field.
+ */
+const StopNote: React.FC<{ value: string; title: string; onSave: (note: string) => void }> = ({ value, title, onSave }) => {
+  const [draft, setDraft] = useState(value);
+  const [focused, setFocused] = useState(false);
+  const ref = useRef<HTMLTextAreaElement>(null);
+  const timer = useRef<number | null>(null);
+
+  // Follow outside changes (undo, another tab of the drawer) while not typing
+  useEffect(() => {
+    if (!focused) setDraft(value);
+  }, [value, focused]);
+
+  // Grow with the text
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }, [draft]);
+
+  const commit = (text: string) => {
+    if (timer.current) window.clearTimeout(timer.current);
+    timer.current = null;
+    if (text.trim() !== value.trim()) onSave(text.trim());
+  };
+
+  return (
+    <div className="mt-5 max-w-[560px]" onClick={(e) => e.stopPropagation()}>
+      <label htmlFor={`note-${title}`} className="eyebrow">Your note</label>
+      <textarea
+        id={`note-${title}`}
+        ref={ref}
+        rows={1}
+        value={draft}
+        maxLength={1000}
+        placeholder="Tickets, what to order, who you're meeting…"
+        onFocus={() => setFocused(true)}
+        onChange={(e) => {
+          const text = e.target.value;
+          setDraft(text);
+          if (timer.current) window.clearTimeout(timer.current);
+          timer.current = window.setTimeout(() => commit(text), 600);
+        }}
+        onBlur={(e) => {
+          setFocused(false);
+          commit(e.target.value);
+        }}
+        onKeyDown={(e) => {
+          e.stopPropagation();
+          if (e.key === "Escape") (e.target as HTMLTextAreaElement).blur();
+        }}
+        className="field-line select-text resize-none overflow-hidden text-[15px] leading-relaxed text-ink placeholder:text-ink-muted/70"
+      />
+    </div>
+  );
+};
 
 // Returned by POST /api/modify-itinerary — matches the ItineraryPanel-side
 // application logic in handleAiSubmit below.
@@ -270,6 +348,7 @@ const DraggableCard: React.FC<DraggableCardProps> = ({
   aiBadgeText,
   aiWasLine,
   onUndoAiChange,
+  onNoteChange,
 }) => {
   const [hovered, setHovered] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -395,6 +474,11 @@ const DraggableCard: React.FC<DraggableCardProps> = ({
               {[activity.rating != null ? `Rated ${activity.rating}` : null, activity.price || null].filter(Boolean).join(" · ")}
             </p>
           )}
+          {activity.note && !isSelected && (
+            <p className="mt-1.5 font-display italic text-[15px] text-ink-soft line-clamp-1">
+              <span className="sr-only">Your note: </span>{activity.note}
+            </p>
+          )}
         </div>
 
         {/* Edit-mode actions slide in; otherwise a small photo */}
@@ -427,7 +511,7 @@ const DraggableCard: React.FC<DraggableCardProps> = ({
       {/* ── Inline drawer ── */}
       <div
         style={{
-          maxHeight: isSelected && !isDragging ? 640 : 0,
+          maxHeight: isSelected && !isDragging ? 900 : 0,
           transition: "max-height 0.45s cubic-bezier(0.25,1,0.5,1)",
           overflow: "hidden",
         }}
@@ -510,10 +594,14 @@ const DraggableCard: React.FC<DraggableCardProps> = ({
             </p>
           )}
 
+          {onNoteChange && (
+            <StopNote value={activity.note ?? ""} title={activity.title} onSave={onNoteChange} />
+          )}
+
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); onCardClick(); }}
-            className="link-quiet mt-3 text-[13px]"
+            className="link-quiet mt-4 text-[13px]"
           >
             Close
           </button>
@@ -816,6 +904,10 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
   onDraftChange,
   onOpenPhotos,
   focusStop,
+  paneOpen = false,
+  onTogglePane,
+  paneHint = false,
+  onStopOpenChange,
 }) => {
   const showTransitLinks = transportationModes.includes("public_transport");
   const [localItinerary, setLocalItinerary] = useState<DayItinerary[]>(itinerary);
@@ -945,6 +1037,7 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
 
       if (isSame) {
         setSelectedActivity(null);
+        onStopOpenChange?.(false);
         // Toggle map popup off
         if (activity.latitude && activity.longitude) {
           onActivityClick({
@@ -957,6 +1050,7 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
         }
       } else {
         setSelectedActivity(activity);
+        onStopOpenChange?.(true);
         if (
           typeof activity.latitude === "number" &&
           typeof activity.longitude === "number" &&
@@ -973,8 +1067,14 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
         }
       }
     },
-    [selectedActivity, onActivityClick]
+    [selectedActivity, onActivityClick, onStopOpenChange]
   );
+
+  // A day chosen (tabs or a day's heading): close any open stop, show the day
+  const pickDay = (dayNumber: number) => {
+    setSelectedActivity(null);
+    onDayClick?.(dayNumber);
+  };
 
   // Day route button
   const handleDayRoute = useCallback(
@@ -1399,6 +1499,26 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [localItinerary]);
 
+  // The traveller's note on one stop
+  const handleNoteChange = (dayNumber: number, activityIndex: number, note: string) => {
+    setLocalItinerary((prev) =>
+      prev.map((d) =>
+        d.day === dayNumber
+          ? {
+              ...d,
+              activities: d.activities.map((a, i) => {
+                if (i !== activityIndex) return a;
+                const next = { ...a };
+                if (note) next.note = note;
+                else delete next.note;
+                return next;
+              }),
+            }
+          : d
+      )
+    );
+  };
+
   // Remove activity
   const handleRemoveActivity = (dayNumber: number, activityIndex: number) => {
     const day = localItinerary.find((d) => d.day === dayNumber);
@@ -1460,14 +1580,15 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
 
       {/* Day index: jump to a day and show it on the map */}
       {localItinerary.length > 0 && (
-        <nav aria-label="Days" className="mt-9 flex flex-wrap gap-x-7 gap-y-1">
+        <div className="mt-9 flex items-start justify-between gap-6">
+        <nav aria-label="Days" className="flex flex-wrap gap-x-7 gap-y-1">
           {localItinerary.map((d) => (
             <button
               key={d.day}
               type="button"
               aria-current={highlightedDay === d.day ? "true" : undefined}
               onClick={() => {
-                onDayClick?.(d.day);
+                pickDay(d.day);
                 document.getElementById(`day-section-${d.day}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
               }}
               className="loz-opt text-lg py-1"
@@ -1479,13 +1600,34 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
           <button
             type="button"
             aria-current={highlightedDay === null || highlightedDay === 0 ? "true" : undefined}
-            onClick={() => onDayClick?.(0)}
+            onClick={() => pickDay(0)}
             className="loz-opt text-lg py-1"
           >
             <span className="loz-mk"><Lozenge /></span>
             <span className="loz-tx">Whole trip</span>
           </button>
         </nav>
+        {onTogglePane && (
+          <div className="relative hidden md:block flex-shrink-0 pt-1.5">
+            <button
+              type="button"
+              onClick={onTogglePane}
+              aria-pressed={paneOpen}
+              aria-label={paneOpen ? "Hide map" : "Show map"}
+              title={paneOpen ? "Hide map" : "Show map"}
+              className={`block p-1 -m-1 transition-colors duration-300 active:scale-[0.97] ${paneHint ? "text-ink" : "text-ink-muted hover:text-ink"}`}
+            >
+              <PaneIcon open={paneOpen} />
+            </button>
+            <p
+              role="status"
+              className={`absolute right-0 top-full mt-2 w-[220px] text-right text-xs leading-snug text-ink-soft transition-opacity duration-500 ease-editorial ${paneHint ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+            >
+              {paneHint ? "The map opens when you choose a day or a stop." : ""}
+            </p>
+          </div>
+        )}
+        </div>
       )}
 
       {/* Edit mode bar */}
@@ -1531,7 +1673,7 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
                   <h2 className="font-display text-[22px] text-ink">
                     <button
                       type="button"
-                      onClick={() => onDayClick && onDayClick(dayItem.day)}
+                      onClick={() => pickDay(dayItem.day)}
                       aria-pressed={highlightedDay === dayItem.day}
                       title="Show this day on the map"
                       className="flex items-center gap-2.5 text-left"
@@ -1641,6 +1783,7 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
                                           : undefined
                                       }
                                       onUndoAiChange={() => handleUndoTouch(touchKey, dayItem.day)}
+                                      onNoteChange={(note) => handleNoteChange(dayItem.day, index, note)}
                                     />
                                   </div>
                                 )}
