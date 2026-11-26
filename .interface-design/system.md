@@ -108,9 +108,11 @@ Fonts: `--font-display` Newsreader (weight 400 only, tracking -0.01em);
 - **Modal**: white panel, 40% black scrim, no radius, eyebrow + serif uppercase title.
 
 ## Itinerary context pane
-- Right half of the itinerary page is the map by default. Opening a stop's photo swaps it for `PhotoViewer` (map stays mounted underneath at opacity 0). "Back to map", Esc, clicking any itinerary row, or choosing a day returns to the map. Phones (< 768px) use the fullscreen Lightbox instead.
-- PhotoViewer: eyebrow "Title · i of n", large photo with left/right thirds as prev/next, credit + thumbnail tabs below, stop note in serif. Arrow keys switch photos.
-- Single day selected: terracotta route line (#a65a3a, 2px), stop numbers beside lozenges, travel-time labels at leg midpoints, white summary strip at the bottom ("Day II · 3 stops" / "5.4 km · 20 min moving").
+- Right half of the itinerary page (wide screens) is a pane showing the map or one stop's photos. It is closed by default; phones keep the map under the list and use the fullscreen Lightbox for photos.
+- Opening rules: choosing a day (day tabs or a day's heading) opens it. Opening a stop opens it, and closing that same stop closes it again; if the pane was already open (a day, the icon), closing a stop leaves it open. Switching from one stop to another keeps it open and moves the map. After the traveller closes the pane with the icon, opening stops won't reopen it; choosing a day or the icon will.
+- Pane icon: a framed right column (filled while open) at the end of the day tabs row, ink-muted, no border. It never sits over the map or photos.
+- Route intro: the pane shows ~2s on entry, then folds away (flex-grow + opacity, 700ms editorial ease) with a one-line status under the icon: "The map opens when you choose a day or a stop." Any interaction cancels the intro.
+- Photos: clicking a photo swaps the pane to PhotoViewer (opens the pane if closed). A "Map view" text link (11px uppercase, before the credit) under the photo, or Esc, returns to the map. No mini map over the photo. Header: eyebrow "Title · i of n"; credit and thumbnails below; note in serif.
+- Single day selected: terracotta route line (#a65a3a, 2px), stop numbers beside lozenges, travel-time labels at leg midpoints, white summary strip ("Day II · 3 stops" / "5.4 km · 20 min moving"). Clicking a marker opens and scrolls to that stop's row.
 - Travel times (`lib/travelTimes.ts`, Mapbox Directions): walk ≤ 20 min → "N min walk"; self-drive → "N min drive"; else "about N min by transit" (drive × 1.3 + 8, rounded to 5). Transit is an estimate; Mapbox has no transit routing.
-- "Hide map" / "Show map" toggle sits in the same top-right corner in both states (wide screens only, remembered for the session in `gaia:map-hidden`). Hidden: list centers at max 760px and photos open fullscreen. Map zoom controls moved to top-left.
-- Clicking a map marker opens and scrolls to that stop's row in the list.
+- Pane closed: the list centers at max 760px.

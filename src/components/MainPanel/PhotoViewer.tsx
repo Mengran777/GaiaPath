@@ -24,7 +24,7 @@ const large = (url: string) =>
 /**
  * Photos of one stop, shown in the right-hand pane in place of the map:
  * white page, large photo, credit and thumbnails below, the stop's note in serif.
- * Arrow keys move between photos; Esc goes back to the map.
+ * "Map view" under the photo (or Esc) goes back to the map; arrow keys move between photos.
  */
 const PhotoViewer: React.FC<PhotoViewerProps> = ({ view, onIndexChange, onBack }) => {
   const { images, attributions, index, title, description } = view;
@@ -56,9 +56,6 @@ const PhotoViewer: React.FC<PhotoViewerProps> = ({ view, onIndexChange, onBack }
           {title}
           {count > 1 && <span className="tabular-nums"> · {index + 1} of {count}</span>}
         </p>
-        <button ref={backRef} type="button" onClick={onBack} className="link-quiet text-[11px] tracking-[0.08em] uppercase flex-shrink-0">
-          Back to map
-        </button>
       </div>
 
       <div className="relative flex-1 min-h-0 bg-surface-dim">
@@ -88,7 +85,15 @@ const PhotoViewer: React.FC<PhotoViewerProps> = ({ view, onIndexChange, onBack }
       </div>
 
       <div className="flex items-center justify-between gap-4 pt-3">
-        <div className="min-w-0">
+        <div className="min-w-0 flex items-baseline gap-4">
+          <button
+            ref={backRef}
+            type="button"
+            onClick={onBack}
+            className="link-quiet flex-shrink-0 text-[11px] tracking-[0.08em] uppercase text-ink"
+          >
+            Map view
+          </button>
           {credit && (
             <UnsplashCredit
               photographerName={credit.photographerName}

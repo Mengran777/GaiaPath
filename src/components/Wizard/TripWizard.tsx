@@ -6,7 +6,7 @@ import { LocationAutocomplete } from "../UI";
 import Lozenge from "../UI/Lozenge";
 import UnsplashCredit from "../UI/UnsplashCredit";
 import InlineCalendar from "./InlineCalendar";
-import { GALLERY_DESTINATIONS, galleryImageUrl } from "@/data/galleryDestinations";
+import { GALLERY_DESTINATIONS, galleryImageUrl, type GalleryPhoto } from "@/data/galleryDestinations";
 import { INTEREST_TILES } from "@/data/interestPhotos";
 import { withUtm } from "@/lib/unsplash";
 import { formatShortDate } from "@/lib/format";
@@ -130,6 +130,7 @@ const TripWizard: React.FC<TripWizardProps> = ({
   // A different set of places, and a random photo of each, on every visit.
   // Picked after mount: a random pick during render would differ between the
   // server render and the browser and break hydration.
+  const [interestPick, setInterestPick] = useState<Record<string, GalleryPhoto>>({});
   const [gallery, setGallery] = useState<
     { place: (typeof GALLERY_DESTINATIONS)[number]; photo: (typeof GALLERY_DESTINATIONS)[number]["photos"][number] }[]
   >([]);
@@ -139,11 +140,16 @@ const TripWizard: React.FC<TripWizardProps> = ({
         .slice(0, GALLERY_SIZE)
         .map((place) => ({ place, photo: place.photos[Math.floor(Math.random() * place.photos.length)] }))
     );
+    setInterestPick(
+      Object.fromEntries(
+        INTEREST_TILES.filter((t) => t.photos.length).map((t) => [t.value, t.photos[Math.floor(Math.random() * t.photos.length)]])
+      )
+    );
   }, []);
 
   // Unsplash requires a download ping for photos we display
   useEffect(() => {
-    const interestPhotos = INTEREST_TILES.flatMap((t) => (t.photo ? [{ photo: t.photo }] : []));
+    const interestPhotos = Object.values(interestPick).map((photo) => ({ photo }));
     [...gallery, ...(gallery.length ? interestPhotos : [])].forEach(({ photo }) => {
       fetch("/api/unsplash/track", {
         method: "POST",
@@ -419,6 +425,7 @@ const TripWizard: React.FC<TripWizardProps> = ({
             <div className="max-w-[720px] mx-auto mt-6 grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-4">
               {INTEREST_TILES.map((t) => {
                 const selected = p.travelType.includes(t.value);
+                const photo = interestPick[t.value];
                 return (
                   <button
                     key={t.value}
@@ -428,9 +435,9 @@ const TripWizard: React.FC<TripWizardProps> = ({
                     className="loz-opt group/tile flex-col !items-stretch text-left"
                   >
                     <span className="block relative aspect-[4/3] overflow-hidden bg-surface-dim">
-                      {t.photo ? (
+                      {photo ? (
                         <img
-                          src={galleryImageUrl(t.photo, 480, 360)}
+                          src={galleryImageUrl(photo, 480, 360)}
                           alt=""
                           width={480}
                           height={360}
