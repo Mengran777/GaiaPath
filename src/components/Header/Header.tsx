@@ -39,8 +39,8 @@ const Header: React.FC<HeaderProps> = ({
     >
       <Logo />
     </button>
-    <div className="flex items-center gap-7 min-w-0">
-      <nav className="flex items-center gap-7" aria-label="Main">
+    <div className="flex items-center gap-4 sm:gap-7 min-w-0 whitespace-nowrap">
+      <nav className="flex items-center gap-4 sm:gap-7" aria-label="Main">
         {TABS.map((tab) => (
           <NavItem
             key={tab.id}
@@ -56,10 +56,11 @@ const Header: React.FC<HeaderProps> = ({
           <button type="button" onClick={() => onAuthNavigate?.("/auth/login")} className="link-quiet text-[13px]">
             Log in
           </button>
+          {/* Phones: Log in only (the log-in page links to sign up) */}
           <button
             type="button"
             onClick={() => onAuthNavigate?.("/auth/register")}
-            className="text-[13px] text-ink underline underline-offset-4 decoration-ink/30 hover:decoration-ink transition-colors"
+            className="hidden sm:block text-[13px] text-ink underline underline-offset-4 decoration-ink/30 hover:decoration-ink transition-colors"
           >
             Create account
           </button>

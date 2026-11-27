@@ -21,6 +21,9 @@ interface RouteListProps {
   isGuest?: boolean;
   onCreateAccount?: () => void;
   onLogIn?: () => void;
+  /** Phones (no sidebar there): "Paris, Dec 10 — Dec 11" with a link back to the planner */
+  tripLine?: string;
+  onChangeTrip?: () => void;
 }
 
 // Stagger delays for first 3 cards, rest get the last value
@@ -39,6 +42,8 @@ const RouteList: React.FC<RouteListProps> = ({
   isGuest = false,
   onCreateAccount,
   onLogIn,
+  tripLine,
+  onChangeTrip,
 }) => {
   const scrollRef = useScrollFade<HTMLDivElement>();
   if (!routes || routes.length === 0) {
@@ -131,6 +136,14 @@ const RouteList: React.FC<RouteListProps> = ({
         </h2>
         <p className="eyebrow pb-1">{description}</p>
       </div>
+      {tripLine && onChangeTrip && activeTab !== "Favorites" && (
+        <div className="md:hidden -mt-5 mb-8 flex items-baseline justify-between gap-4">
+          <span className="font-display text-[17px] text-ink-soft truncate">{tripLine}</span>
+          <button type="button" onClick={onChangeTrip} className="link-quiet text-xs tracking-[0.06em] uppercase flex-shrink-0">
+            Change trip
+          </button>
+        </div>
+      )}
 
       <div className={`pb-10 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-x-6 gap-y-12 ${activeTab === "Favorites" ? "2xl:grid-cols-4" : ""}`}>
         {(() => {

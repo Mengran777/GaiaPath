@@ -68,7 +68,9 @@ const PageContainer: React.FC<PageContainerProps> = ({
         )}
 
         {showSidebar && stage !== "initial" && (
-          <aside className="flex-shrink-0 overflow-hidden w-full md:w-[300px] lg:w-[320px]">
+          // Phones show the route list alone (Plan in the header changes the trip);
+          // side by side, the sidebar would leave the list no width at all
+          <aside className="hidden md:block flex-shrink-0 overflow-hidden md:w-[300px] lg:w-[320px]">
             <div className="h-full flex flex-col overflow-hidden bg-white">{sidebar}</div>
           </aside>
         )}
