@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import { createPortal } from "react-dom";
 import {
   DragDropContext,
   Droppable,
@@ -45,10 +46,12 @@ interface ItineraryPanelProps {
   /** Wide screens: whether the side pane (map / photos) is open, and its icon */
   paneOpen?: boolean;
   onTogglePane?: () => void;
-  /** Show the one-line hint under the icon (after the map tucks itself away) */
-  paneHint?: boolean;
   /** A stop was opened (true) or closed (false) by clicking its row */
   onStopOpenChange?: (open: boolean) => void;
+  /** Phones: the trip's opening (cover, title, highlights), shown above the overview */
+  opening?: React.ReactNode;
+  /** Wide screens: the section in view while the page scrolls (0 = the overview) */
+  onVisibleDayChange?: (day: number) => void;
 }
 
 /** Side-pane icon: a frame with its right column, filled while the pane is open */
@@ -69,6 +72,14 @@ const formatDayDate = (date: string) => {
   if (!m) return date;
   const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
   return d.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+};
+
+// "2027-05-14" -> "Fri 14"
+const shortDay = (date: string) => {
+  const m = date?.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return date;
+  const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  return `${d.toLocaleDateString("en-US", { weekday: "short" })} ${d.getDate()}`;
 };
 
 interface DraggableCardProps {
@@ -275,12 +286,6 @@ const Lightbox: React.FC<LightboxProps> = ({ images, fallbackImages, attribution
 type DrawerPhoto = { url: string; photographerName: string; photographerUrl: string };
 const drawerPhotoCache = new Map<string, DrawerPhoto[]>();
 
-// Two letters for the no-photo tile: "Hoto Fudo Kawaguchiko" → "HF"
-function monogram(title: string): string {
-  const words = title.replace(/[^\p{L}\s]/gu, " ").trim().split(/\s+/).filter(Boolean);
-  return (words.slice(0, 2).map((w) => w[0]).join("") || "·").toUpperCase();
-}
-
 // Asks Unsplash for a wider rendition (search results come back at 400px)
 function sizedPhoto(url: string, width: number): string {
   return url.includes("images.unsplash.com") ? url.replace(/([?&]w=)\d+/, `$1${width}`) : url;
@@ -322,8 +327,8 @@ function transitDirectionsUrl(from: Activity, to: Activity): string {
 // Quick-start prompts for the AI composer — each is a complete, directly
 // submittable request (the model picks which day/activity fits best).
 const AI_SUGGESTIONS = [
-  { label: "Less walking", prompt: "Too much walking — swap something for a relaxed spot" },
-  { label: "More local food", prompt: "Add more local food stops" },
+  { label: "Fewer steps", prompt: "Too much walking — swap something for a relaxed spot" },
+  { label: "More local tables", prompt: "Add more local food stops" },
   { label: "Somewhere quieter", prompt: "Feels too crowded — find quieter alternatives" },
 ];
 
@@ -424,7 +429,7 @@ const DraggableCard: React.FC<DraggableCardProps> = ({
   return (
     <div
       ref={containerRef}
-      className={`group/stop select-none border-b border-line transition-[opacity,transform,background-color,outline-color] duration-300 ease-editorial
+      className={`group/stop select-none scroll-mt-4 md:scroll-mt-16 border-b border-line transition-[opacity,transform,background-color,outline-color] duration-300 ease-editorial
         ${isRemoving ? "opacity-0 -translate-x-6" : "opacity-100"}
         ${isDragging ? "bg-white outline outline-1 outline-ink -rotate-[0.6deg]" : isSelected ? "bg-brand-50" : "hover:bg-brand-50/60"}`}
       onMouseEnter={() => setHovered(true)}
@@ -467,13 +472,8 @@ const DraggableCard: React.FC<DraggableCardProps> = ({
           {isAiTouched && (
             <p className="eyebrow !text-gold-500 mb-1">{(aiBadgeText ?? "AI updated").replace(/^AI/, "Gaia")}</p>
           )}
-          <h3 className="font-display text-[19px] leading-snug text-ink">{activity.title}</h3>
+          <h3 className="font-display text-[22px] leading-snug text-ink">{activity.title}</h3>
           {aiWasLine && <p className="mt-0.5 text-[13px] text-ink-muted line-through">Was: {aiWasLine}</p>}
-          {(activity.rating != null || activity.price) && (
-            <p className="mt-1 text-xs text-ink-muted">
-              {[activity.rating != null ? `Rated ${activity.rating}` : null, activity.price || null].filter(Boolean).join(" · ")}
-            </p>
-          )}
           {activity.note && !isSelected && (
             <p className="mt-1.5 font-display italic text-[15px] text-ink-soft line-clamp-1">
               <span className="sr-only">Your note: </span>{activity.note}
@@ -481,7 +481,7 @@ const DraggableCard: React.FC<DraggableCardProps> = ({
           )}
         </div>
 
-        {/* Edit-mode actions slide in; otherwise a small photo */}
+        {/* Edit-mode actions slide in */}
         {removeMode ? (
           <div className="flex items-center gap-4 pt-1 flex-shrink-0 text-[13px]">
             {isAiTouched && (
@@ -496,16 +496,9 @@ const DraggableCard: React.FC<DraggableCardProps> = ({
               Remove
             </button>
           </div>
-        ) : isSelected ? null : activity.imageUrl ? (
-          <img src={activity.imageUrl} alt="" width={56} height={56} loading="lazy" className="w-14 h-14 object-cover flex-shrink-0" />
         ) : isEnriching ? (
-          <div className="w-14 h-14 bg-surface-dim animate-pulse flex-shrink-0" />
-        ) : (
-          // No photo found anywhere: a quiet monogram tile, by design
-          <div className="w-14 h-14 flex-shrink-0 bg-brand-100 flex items-center justify-center font-display text-[17px] text-ink-soft" aria-hidden="true">
-            {monogram(activity.title)}
-          </div>
-        )}
+          <Loader2 className="w-4 h-4 mt-2 animate-spin text-ink-muted flex-shrink-0" aria-label="Finding details" />
+        ) : null}
       </div>
 
       {/* ── Inline drawer ── */}
@@ -533,11 +526,11 @@ const DraggableCard: React.FC<DraggableCardProps> = ({
               <div className={photos.length > 1 || photosPending ? "grid grid-cols-[2fr_1fr] gap-1.5" : ""}>
                 <button
                   type="button"
-                  className={`block w-full overflow-hidden cursor-zoom-in transition-opacity duration-500 hover:opacity-85 ${photos.length > 1 || photosPending ? "aspect-[4/3]" : "aspect-[16/9]"}`}
+                  className={`group/lead relative block w-full overflow-hidden cursor-pointer ${photos.length > 1 || photosPending ? "aspect-[4/3]" : "aspect-[16/9]"}`}
                   onClick={(e) => { e.stopPropagation(); onOpenLightbox?.(galleryImages, 0, galleryAttributions, { title: activity.title, description: drawerDescription ?? activity.description }); }}
                   aria-label={`Open photo of ${activity.title}`}
                 >
-                  <img src={sizedPhoto(photos[0].url, 900)} alt={activity.title} className="w-full h-full object-cover" />
+                  <img src={sizedPhoto(photos[0].url, 900)} alt={activity.title} className="w-full h-full object-cover transition-transform duration-[1100ms] ease-editorial group-hover/lead:scale-[1.04]" />
                 </button>
                 {(photos.length > 1 || photosPending) && (
                   <div className={`grid gap-1.5 min-h-0 ${photos.length === 2 && !photosPending ? "grid-rows-1" : "grid-rows-2"}`}>
@@ -546,16 +539,11 @@ const DraggableCard: React.FC<DraggableCardProps> = ({
                         <button
                           key={photos[i].url}
                           type="button"
-                          className="group/thumb relative block overflow-hidden cursor-zoom-in min-h-0"
+                          className="group/thumb relative block overflow-hidden cursor-pointer min-h-0"
                           onClick={(e) => { e.stopPropagation(); onOpenLightbox?.(galleryImages, i, galleryAttributions, { title: activity.title, description: drawerDescription ?? activity.description }); }}
                           aria-label={`Open photo ${i + 1} of ${photos.length}`}
                         >
-                          <img src={photos[i].url} alt="" className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-editorial group-hover/thumb:scale-[1.04]" />
-                          {photos[i].credit && (
-                            <span className="absolute inset-x-0 bottom-0 px-2 pb-1.5 pt-5 bg-gradient-to-t from-black/55 to-transparent text-[10px] leading-tight text-white text-left opacity-0 transition-opacity duration-500 group-hover/thumb:opacity-100 group-focus-visible/thumb:opacity-100">
-                              {photos[i].credit!.photographerName}
-                            </span>
-                          )}
+                          <img src={photos[i].url} alt="" className="absolute inset-0 w-full h-full object-cover transition-transform duration-[1100ms] ease-editorial group-hover/thumb:scale-[1.04]" />
                         </button>
                       ) : (
                         <div key={i} className={`bg-surface-dim ${photosPending ? "animate-pulse" : ""}`} aria-hidden="true" />
@@ -577,7 +565,7 @@ const DraggableCard: React.FC<DraggableCardProps> = ({
           ) : !isEnriching ? (
             <div className="max-w-[560px] aspect-[16/9] bg-brand-100 flex flex-col items-center justify-center px-8 text-center" aria-hidden="true">
               <span className="font-display text-[26px] leading-tight text-ink line-clamp-2">{activity.title}</span>
-              <span className="eyebrow mt-3">No photo found</span>
+              <span className="eyebrow mt-3">No photo yet</span>
             </div>
           ) : null}
 
@@ -591,6 +579,11 @@ const DraggableCard: React.FC<DraggableCardProps> = ({
           ) : (
             <p className="mt-4 text-[15px] leading-relaxed text-ink-soft max-w-[560px]">
               {drawerDescription ?? activity.description}
+            </p>
+          )}
+          {(activity.rating != null || activity.price) && (
+            <p className="mt-3 text-xs text-ink-muted">
+              {[activity.rating != null ? `Rated ${activity.rating}` : null, activity.price || null].filter(Boolean).join(" · ")}
             </p>
           )}
 
@@ -890,24 +883,19 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
   itinerary,
   onActivityClick,
   onDayClick,
-  highlightedDay = null,
-  isFavorite = false,
-  onToggleFavorite,
-  onBackToRoutes,
   destination = "",
   transportationModes = [],
   userId,
   onSave,
   isSaving = false,
-  routeTitle,
-  routeSubtitle,
   onDraftChange,
   onOpenPhotos,
   focusStop,
   paneOpen = false,
   onTogglePane,
-  paneHint = false,
   onStopOpenChange,
+  opening,
+  onVisibleDayChange,
 }) => {
   const showTransitLinks = transportationModes.includes("public_transport");
   const [localItinerary, setLocalItinerary] = useState<DayItinerary[]>(itinerary);
@@ -936,6 +924,13 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
   const [aiStatusText, setAiStatusText] = useState("");
   const [aiError, setAiError] = useState<string | null>(null);
 
+  // Wide screens: which section is in view (overview = 0, else the day), for the
+  // map and the header index. The page scrolls there; phones scroll the list.
+  const [visibleSection, setVisibleSection] = useState(0);
+  const [pastOpening, setPastOpening] = useState(false);
+  const [portalReady, setPortalReady] = useState(false);
+  useEffect(() => setPortalReady(true), []);
+
   // Drawer state (shared across all cards)
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
   const [descriptionCache, setDescriptionCache] = useState<Map<string, string>>(new Map());
@@ -963,6 +958,41 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
     setAiInput("");
     setAiError(null);
   }, [itinerary]);
+
+  useEffect(() => {
+    if (!window.matchMedia("(min-width: 768px)").matches) return;
+    let frame = 0;
+    const measure = () => {
+      frame = 0;
+      const glance = document.getElementById("trip-glance");
+      if (!glance) return;
+      setPastOpening(glance.getBoundingClientRect().top < window.innerHeight * 0.6);
+      let current = 0;
+      for (const d of localItinerary) {
+        const el = document.getElementById(`day-section-${d.day}`);
+        if (el && el.getBoundingClientRect().top < window.innerHeight * 0.45) current = d.day;
+      }
+      setVisibleSection((prev) => (prev === current ? prev : current));
+    };
+    const onScroll = () => { if (!frame) frame = window.requestAnimationFrame(measure); };
+    measure();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      if (frame) window.cancelAnimationFrame(frame);
+    };
+  }, [localItinerary]);
+
+  // Tell the page when the section in view changes (not on first render)
+  const lastReported = useRef(0);
+  useEffect(() => {
+    if (lastReported.current === visibleSection) return;
+    lastReported.current = visibleSection;
+    onVisibleDayChange?.(visibleSection);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visibleSection]);
 
   // Fade-in animation for day sections
   useEffect(() => {
@@ -1546,96 +1576,136 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
     }, 300);
   };
 
-  return (
-    <div className="relative">
-      {/* Top line: back on the left, actions on the right */}
-      <div className="flex items-center justify-between gap-4">
-        {onBackToRoutes ? (
-          <button type="button" onClick={onBackToRoutes} className="link-quiet text-[13px]">
-            All routes
+  const stopCount = localItinerary.reduce((n, d) => n + d.activities.length, 0);
+
+  // The day's photo for its opener: its first stop with one
+  const dayPhoto = (d: DayItinerary) => {
+    const url = d.activities.find((a) => a.imageUrl)?.imageUrl;
+    return url ? sizedPhoto(url, 1400) : null;
+  };
+
+  const jumpToDay = (day: number) => {
+    pickDay(day);
+    document.getElementById(`day-section-${day}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+  const jumpToStop = (day: number, index: number, activity: Activity) => {
+    if (!(selectedActivity?.title === activity.title && selectedActivity?.time === activity.time)) handleCardClick(activity);
+    window.setTimeout(() => {
+      document.getElementById(`stop-${day}-${index}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 480); // after another open stop has folded away (450ms) and the row's own scroll, so this lands right
+  };
+
+  // A slim bar of its own at the top once past the opening (the header has scrolled
+  // away). Rendered into <body>: the list column is transformed, which would break fixed.
+  const indexBar = portalReady && localItinerary.length > 0
+    ? createPortal(
+        <nav
+          aria-label="Trip sections"
+          className={`hidden md:flex fixed top-0 inset-x-0 h-12 z-40 bg-white items-center justify-between px-5 lg:px-12 font-display text-[16px] transition-[transform,opacity] duration-500 ease-editorial ${pastOpening ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0 pointer-events-none"}`}
+        >
+          <div className="flex items-center gap-7">
+          <button
+            type="button"
+            onClick={() => { pickDay(0); document.getElementById("trip-glance")?.scrollIntoView({ behavior: "smooth", block: "start" }); }}
+            aria-current={visibleSection === 0 ? "true" : undefined}
+            className={`inline-flex items-center transition-colors duration-300 ${visibleSection === 0 ? "text-ink" : "text-ink-muted hover:text-ink"}`}
+          >
+            {visibleSection === 0 && <Lozenge className="w-[7px] h-[7px] mr-2 flex-shrink-0" />}
+            At a glance
           </button>
-        ) : <span />}
-        <div className="flex items-center gap-6">
-          {!removeMode && (
-            <button type="button" onClick={enterEditMode} className="link-quiet text-xs tracking-[0.06em] uppercase">
-              Edit
-            </button>
-          )}
-          {onToggleFavorite && (
-            <button
-              type="button"
-              onClick={onToggleFavorite}
-              aria-pressed={isFavorite}
-              className={`inline-flex items-center gap-2 text-xs tracking-[0.06em] uppercase text-ink transition-opacity duration-500 ${isFavorite ? "opacity-100" : "opacity-60 hover:opacity-100"}`}
-            >
-              <Lozenge outline={!isFavorite} className="w-[9px] h-[9px]" />
-              {isFavorite ? "Saved" : "Save"}
-            </button>
-          )}
-        </div>
-      </div>
-
-      <h1 className="mt-10 font-display text-[44px] leading-[1.04] uppercase text-ink">{routeTitle ?? "Your itinerary"}</h1>
-      {routeSubtitle && <p className="mt-2.5 font-display text-[19px] text-ink-muted">{routeSubtitle}</p>}
-
-      {/* Day index: jump to a day and show it on the map */}
-      {localItinerary.length > 0 && (
-        <div className="mt-9 flex items-start justify-between gap-6">
-        <nav aria-label="Days" className="flex flex-wrap gap-x-7 gap-y-1">
           {localItinerary.map((d) => (
             <button
               key={d.day}
               type="button"
-              aria-current={highlightedDay === d.day ? "true" : undefined}
-              onClick={() => {
-                pickDay(d.day);
-                document.getElementById(`day-section-${d.day}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
-              }}
-              className="loz-opt text-lg py-1"
+              onClick={() => jumpToDay(d.day)}
+              aria-current={visibleSection === d.day ? "true" : undefined}
+              className={`inline-flex items-center transition-colors duration-300 ${visibleSection === d.day ? "text-ink" : "text-ink-muted hover:text-ink"}`}
             >
-              <span className="loz-mk"><Lozenge /></span>
-              <span className="loz-tx">Day {toRoman(d.day)}</span>
+              {visibleSection === d.day && <Lozenge className="w-[7px] h-[7px] mr-2 flex-shrink-0" />}
+              {toRoman(d.day)} · {shortDay(d.date)}
             </button>
           ))}
-          <button
-            type="button"
-            aria-current={highlightedDay === null || highlightedDay === 0 ? "true" : undefined}
-            onClick={() => pickDay(0)}
-            className="loz-opt text-lg py-1"
-          >
-            <span className="loz-mk"><Lozenge /></span>
-            <span className="loz-tx">Whole trip</span>
-          </button>
-        </nav>
-        {onTogglePane && (
-          <div className="relative hidden md:block flex-shrink-0 pt-1.5">
+          </div>
+          {onTogglePane && (
             <button
               type="button"
               onClick={onTogglePane}
               aria-pressed={paneOpen}
               aria-label={paneOpen ? "Hide map" : "Show map"}
               title={paneOpen ? "Hide map" : "Show map"}
-              className={`block p-1 -m-1 transition-colors duration-300 active:scale-[0.97] ${paneHint ? "text-ink" : "text-ink-muted hover:text-ink"}`}
+              className="p-1 -m-1 text-ink-muted hover:text-ink transition-colors duration-300 active:scale-[0.97]"
             >
               <PaneIcon open={paneOpen} />
             </button>
-            <p
-              role="status"
-              className={`absolute right-0 top-full mt-2 w-[220px] text-right text-xs leading-snug text-ink-soft transition-opacity duration-500 ease-editorial ${paneHint ? "opacity-100" : "opacity-0 pointer-events-none"}`}
-            >
-              {paneHint ? "The map opens when you choose a day or a stop." : ""}
-            </p>
-          </div>
-        )}
+          )}
+        </nav>,
+        document.body
+      )
+    : null;
+
+  return (
+    <div className="relative">
+      {/* Phones: the opening sits at the top of the list (wide screens show it full width above) */}
+      {opening && <div className="md:hidden -mr-3 mb-10">{opening}</div>}
+
+      {/* Wide screens: a day index in the header once past the opening */}
+      {indexBar}
+
+      {/* At a glance: the whole trip on one spread (the map beside it shows every stop) */}
+      <section id="trip-glance" aria-labelledby="glance-title" className="md:pt-16 scroll-mt-4 md:scroll-mt-12">
+        <div className="flex items-baseline justify-between gap-6">
+          <h2 id="glance-title" className="font-display text-[40px] md:text-[48px] leading-none tracking-[-0.015em] text-ink">At a glance</h2>
+          {!removeMode && (
+            <button type="button" onClick={enterEditMode} className="link-quiet text-xs tracking-[0.06em] uppercase flex-shrink-0">
+              Edit
+            </button>
+          )}
         </div>
-      )}
+        <p className="mt-3 font-display text-[19px] text-ink-soft">
+          {localItinerary.length} {localItinerary.length === 1 ? "day" : "days"} · {stopCount} {stopCount === 1 ? "stop" : "stops"}
+        </p>
+        {localItinerary.map((d) => {
+          const located = d.activities.some((a) => a.latitude && a.longitude && a.latitude !== 0 && a.longitude !== 0);
+          return (
+            <div key={d.day} className="mt-11">
+              <button
+                type="button"
+                onClick={() => jumpToDay(d.day)}
+                className="w-full flex items-baseline gap-4 pt-2 pb-3 px-2 -mx-2 border-b border-ink text-left transition-colors duration-300 hover:bg-brand-50"
+              >
+                <span className="font-display text-[36px] leading-none text-ink">{toRoman(d.day)}</span>
+                <span className="font-display text-[19px] text-ink">{formatDayDate(d.date)}</span>
+              </button>
+              {d.activities.map((a, i) => (
+                <button
+                  key={`${a.title}-${i}`}
+                  type="button"
+                  onClick={() => jumpToStop(d.day, i, a)}
+                  className="w-full grid grid-cols-[96px_1fr] items-baseline py-3 px-2 -mx-2 border-b border-line text-left transition-colors duration-300 hover:bg-brand-50"
+                >
+                  <span className="text-xs text-ink-muted tabular-nums">{a.time ? a.time.replace("-", "–") : ""}</span>
+                  <span className="font-display text-[19px] text-ink">{a.title}</span>
+                </button>
+              ))}
+              <p className="pt-2.5 text-xs text-ink-muted flex gap-4">
+                <span>{d.activities.length} {d.activities.length === 1 ? "stop" : "stops"}</span>
+                {located && (
+                  <button type="button" onClick={(e) => handleDayRoute(e, d.activities)} className="link-quiet" title="Open this day's route in Google Maps">
+                    Directions
+                  </button>
+                )}
+              </p>
+            </div>
+          );
+        })}
+      </section>
 
       {/* Edit mode bar */}
       {removeMode && (
         <div className="mt-6 flex flex-wrap items-center justify-between gap-4 px-5 py-3.5 bg-brand-100">
           <p className="text-[13px]">
             <span className="eyebrow !text-ink">Editing</span>
-            <span className="text-ink-soft"> · Drag stops to reorder, across days too</span>
+            <span className="text-ink-soft"> · Drag a stop to move it, even into another day</span>
           </p>
           <div className="flex items-center gap-5">
             {undoStack.length > 0 && (
@@ -1663,43 +1733,32 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
 
       {/* Itinerary days */}
       {localItinerary.length === 0 ? (
-        <p className="text-ink-muted py-8">No itinerary available.</p>
+        <p className="text-ink-muted py-8">Nothing planned here yet.</p>
       ) : (
         <DragDropContext onDragEnd={handleDragEnd}>
           <div ref={panelRef}>
             {localItinerary.map((dayItem) => (
-              <section key={dayItem.day} id={`day-section-${dayItem.day}`} className="itinerary-day-animated mt-10 scroll-mt-4">
-                <div className="flex items-baseline justify-between gap-4 border-b border-ink pb-2.5">
-                  <h2 className="font-display text-[22px] text-ink">
-                    <button
-                      type="button"
-                      onClick={() => pickDay(dayItem.day)}
-                      aria-pressed={highlightedDay === dayItem.day}
-                      title="Show this day on the map"
-                      className="flex items-center gap-2.5 text-left"
-                    >
-                      {highlightedDay === dayItem.day && <Lozenge className="w-[8px] h-[8px] text-ink" />}
-                      {formatDayDate(dayItem.date)}
-                    </button>
-                  </h2>
-                  <div className="flex items-center gap-5 flex-shrink-0">
-                    {dayItem.activities.some(
-                      (a) => a.latitude && a.longitude && a.latitude !== 0 && a.longitude !== 0
-                    ) && (
-                      <button
-                        type="button"
-                        onClick={(e) => handleDayRoute(e, dayItem.activities)}
-                        className="link-quiet text-xs"
-                        title="Open this day's route in Google Maps"
-                      >
-                        Directions
-                      </button>
-                    )}
-                    {retimedDay === dayItem.day && (
-                      <span className="text-xs text-ink animate-card-enter" role="status">Times adjusted</span>
-                    )}
-                    <span className="text-xs text-ink-muted">Day {toRoman(dayItem.day)}</span>
+              <section key={dayItem.day} id={`day-section-${dayItem.day}`} className="itinerary-day-animated mt-20 scroll-mt-4 md:scroll-mt-12">
+                {/* Day opener: the day's photo scrolls under its numeral and date */}
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => pickDay(dayItem.day)}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pickDay(dayItem.day); } }}
+                  aria-label={`Day ${toRoman(dayItem.day)}, ${formatDayDate(dayItem.date)}. Show this day on the map`}
+                  className="group/opener relative h-56 md:h-[78vh] mb-4 overflow-clip bg-surface-dim cursor-pointer"
+                >
+                  {dayPhoto(dayItem) && (
+                    <img src={dayPhoto(dayItem)!} alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-[1400ms] ease-editorial group-hover/opener:scale-[1.03]" />
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-tr md:bg-gradient-to-br from-black/50 via-black/15 to-transparent" aria-hidden="true" />
+                  <div className="absolute left-0 bottom-0 md:sticky md:top-12 md:bottom-auto p-6 md:p-8 text-white">
+                    <p className="font-display text-[64px] md:text-[112px] leading-[0.8]">{toRoman(dayItem.day)}</p>
+                    <p className="mt-3 font-display text-[19px] md:text-[24px]">{formatDayDate(dayItem.date)}</p>
                   </div>
+                  {retimedDay === dayItem.day && (
+                    <span className="absolute right-5 bottom-4 text-xs text-white animate-card-enter" role="status">Times adjusted</span>
+                  )}
                 </div>
 
                 <Droppable droppableId={`day-${dayItem.day}`}>
@@ -1753,6 +1812,8 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
                               >
                                 {(provided, snapshot) => (
                                   <div
+                                    id={`stop-${dayItem.day}-${index}`}
+                                    className="scroll-mt-4 md:scroll-mt-16"
                                     ref={provided.innerRef}
                                     {...provided.draggableProps}
                                     onClick={(e) => e.stopPropagation()}
@@ -1831,8 +1892,8 @@ const ItineraryPanel: React.FC<ItineraryPanelProps> = ({
 
       {/* Ask Gaia — always available, not gated behind Edit */}
       <section aria-labelledby="ask-gaia" className="mt-14 border-t border-ink pt-4">
-        <h2 id="ask-gaia" className="font-display text-[22px] text-ink">Ask Gaia to adjust this trip</h2>
-        <p className="mt-1 text-[13px] text-ink-muted">Describe a change, or start from one of these.</p>
+        <h2 id="ask-gaia" className="font-display text-[22px] text-ink">Ask Gaia to reshape this trip</h2>
+        <p className="mt-1 text-[13px] text-ink-muted">Say what you’d change, or begin with one of these.</p>
 
         {/* Suggestions fill the box (they don't send), so they can be edited first */}
         <div className="mt-3 flex flex-wrap gap-1.5">

@@ -233,7 +233,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
         <div className="bg-white rounded-xl shadow-2xl border border-gray-200 px-4 py-3">
           <div className="text-center text-gray-500">
             <Search size={20} className="mx-auto mb-1 text-ink-faint" aria-hidden="true" />
-            No locations found
+            No place by that name
           </div>
         </div>
       ) : null}

@@ -4,6 +4,7 @@ import React from "react";
 import { RouteOption } from "@/types/routes";
 import RouteCard from "./RouteCard";
 import EmptyItineraryState from "./EmptyItineraryState";
+import { useScrollFade } from "@/lib/useScrollFade";
 
 
 interface RouteListProps {
@@ -39,6 +40,7 @@ const RouteList: React.FC<RouteListProps> = ({
   onCreateAccount,
   onLogIn,
 }) => {
+  const scrollRef = useScrollFade<HTMLDivElement>();
   if (!routes || routes.length === 0) {
     if (activeTab === "My Itineraries") {
       return (
@@ -55,9 +57,9 @@ const RouteList: React.FC<RouteListProps> = ({
         <div className="flex items-center justify-center h-full p-6">
           <div className="w-full max-w-md text-center">
             <p className="eyebrow">Saved</p>
-            <h3 className="mt-3 font-display text-[44px] leading-[1.04] uppercase text-ink">Keep the trips you like</h3>
+            <h3 className="mt-3 font-display text-[44px] leading-[1.04] uppercase text-ink">Keep the trips you love</h3>
             <p className="mt-4 text-sm text-ink-muted leading-relaxed">
-              Create a free account to save routes and find them here on any device.
+              A free account keeps your routes here, on any device.
             </p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-x-7 gap-y-4">
               <button type="button" onClick={onCreateAccount} className="btn-ink">
@@ -76,7 +78,7 @@ const RouteList: React.FC<RouteListProps> = ({
         <div className="flex items-center justify-center h-full p-6">
           <div className="w-full max-w-md text-center">
             <p className="eyebrow">Saved</p>
-            <h3 className="mt-3 font-display text-[44px] leading-[1.04] uppercase text-ink">Nothing saved yet</h3>
+            <h3 className="mt-3 font-display text-[44px] leading-[1.04] uppercase text-ink">Nothing kept yet</h3>
             <p className="mt-4 text-sm text-ink-muted leading-relaxed">
               Save a route and it will wait for you here.
             </p>
@@ -93,7 +95,7 @@ const RouteList: React.FC<RouteListProps> = ({
       <div className="flex items-center justify-center h-full">
         <div className="text-center">
           <p className="text-ink-muted text-base">
-            No routes available. Please try generating again.
+            No routes this time. Try once more.
           </p>
         </div>
       </div>
@@ -114,7 +116,7 @@ const RouteList: React.FC<RouteListProps> = ({
       };
     }
     return {
-      title: "Choose your route",
+      title: "Choose your way",
       description: `${routes.length} ${routes.length === 1 ? "option" : "options"}`,
     };
   };
@@ -122,7 +124,7 @@ const RouteList: React.FC<RouteListProps> = ({
   const { title, description } = getHeaderContent();
 
   return (
-    <div className="h-full overflow-y-auto custom-scrollbar pr-1">
+    <div ref={scrollRef} className="h-full overflow-y-auto scroll-fade pr-1">
       <div className="flex items-end justify-between gap-4 border-b border-ink pb-3 mb-8">
         <h2 className={`font-display uppercase text-ink leading-[1.04] ${activeTab === "Favorites" ? "text-[44px]" : "text-[30px]"}`}>
           {title}

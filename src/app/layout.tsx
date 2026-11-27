@@ -16,7 +16,7 @@ const newsreader = Newsreader({
 });
 
 export const metadata: Metadata = {
-  title: "Gaia – Plan your journey, effortlessly",
+  title: "Gaia — Journeys, gently planned",
 };
 
 export const viewport: Viewport = {
