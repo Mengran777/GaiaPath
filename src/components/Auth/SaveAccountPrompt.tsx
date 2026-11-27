@@ -39,11 +39,11 @@ const SaveAccountPrompt: React.FC<SaveAccountPromptProps> = ({ open, onClose, on
       >
         <p className="eyebrow">Save this trip</p>
         <h2 id="save-prompt-title" className="mt-3 font-display text-[34px] leading-[1.06] uppercase text-ink">
-          Keep your routes
+          Keep this journey
         </h2>
         <p className="mt-4 text-[15px] leading-relaxed text-ink-soft">
-          Create a free account to save trips and come back to them on any device.
-          Your routes stay right here while you sign up, and this one is saved as soon as you&apos;re in.
+          A free account keeps your trips close, on any device.
+          Your routes wait here while you sign up, and this one is kept the moment you&apos;re in.
         </p>
         <div className="mt-8 flex flex-wrap items-center gap-x-7 gap-y-4">
           <button ref={primaryRef} type="button" onClick={onCreateAccount} className="btn-ink">

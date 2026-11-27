@@ -31,10 +31,10 @@ export default function EmptyItineraryState({
     <div className="h-full overflow-y-auto flex items-center justify-center px-6 py-12">
       <div className="w-full max-w-lg text-center">
         <p className="eyebrow">Itineraries</p>
-        <h2 className="mt-3 font-display text-[44px] leading-[1.04] uppercase text-ink">No routes yet</h2>
+        <h2 className="mt-3 font-display text-[44px] leading-[1.04] uppercase text-ink">No journeys yet</h2>
         <p className="mt-4 text-sm text-ink-muted leading-relaxed">
-          Tell us where and when, and you&apos;ll get three route options to
-          compare, each mapped out day by day.
+          Tell us where and when, and three routes will unfold,
+          each mapped day by day.
         </p>
 
         {onBackToInitial && (
@@ -44,7 +44,7 @@ export default function EmptyItineraryState({
         )}
 
         <div className="mt-14">
-          <p className="eyebrow mb-4">Or start with a popular destination</p>
+          <p className="eyebrow mb-4">Or begin somewhere well loved</p>
           <div className="flex flex-wrap justify-center gap-1">
             {DESTINATIONS.map(({ city }) => (
               <button key={city} type="button" onClick={() => handleSelectDestination(city)} className="pill-sand text-lg">

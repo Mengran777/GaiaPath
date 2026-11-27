@@ -237,7 +237,7 @@ const PreferenceForm: React.FC<PreferenceFormProps> = ({ preferences, onPreferen
 
       {/* Group 2 */}
       <div className="flex items-baseline justify-between border-b border-ink pb-1.5 mt-8">
-        <h3 className="font-display text-[17px] text-ink">What you&apos;re into</h3>
+        <h3 className="font-display text-[17px] text-ink">What draws you</h3>
         <span className="text-[11px] text-ink-muted">up to 3</span>
       </div>
       <div className="flex flex-wrap gap-0.5 pt-3">

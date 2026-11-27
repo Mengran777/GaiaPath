@@ -207,7 +207,7 @@ const MapView: React.FC<MapViewProps> = ({
         >
           <NavigationControl position="top-left" />
           <FullscreenControl position="top-left" />
-          <ScaleControl />
+          <ScaleControl position="top-right" />
 
           {/* Day route: terracotta line under the markers */}
           {dayRoute && dayRoute.line.length > 1 && (
@@ -307,8 +307,9 @@ const MapView: React.FC<MapViewProps> = ({
             </Popup>
           )}
         </Map>
+        {/* Sits above the Mapbox logo and attribution, which must stay visible */}
         {summary && (
-          <div className="absolute left-4 right-4 bottom-4 bg-white px-4 py-3 flex items-baseline justify-between gap-4 pointer-events-none">
+          <div className="absolute left-4 right-4 bottom-11 bg-white px-4 py-3 flex items-baseline justify-between gap-4 pointer-events-none">
             <span className="font-display text-[16px] text-ink">{summary.title}</span>
             {summary.detail && <span className="text-xs text-ink-muted">{summary.detail}</span>}
           </div>
@@ -323,7 +324,7 @@ const MapView: React.FC<MapViewProps> = ({
         <div className="absolute inset-0 flex items-center justify-center bg-surface-dim">
           <div className="text-center">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-b border-ink mb-4"></div>
-            <p className="eyebrow">Loading map</p>
+            <p className="eyebrow">Unfolding the map</p>
           </div>
         </div>
       )}

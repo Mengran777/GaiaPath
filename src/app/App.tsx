@@ -12,6 +12,9 @@ import { RouteList } from "../components/RouteSelection";
 import ItineraryPanel from "../components/MainPanel/ItineraryPanel";
 import MapView from "../components/MainPanel/MapView";
 import PhotoViewer, { type PhotoViewState } from "../components/MainPanel/PhotoViewer";
+import RouteOpening, { type OpeningHighlight } from "../components/MainPanel/RouteOpening";
+import { usePhotoTone } from "@/lib/photoTone";
+import { useScrollFade } from "@/lib/useScrollFade";
 import { useDayRoute } from "@/lib/travelTimes";
 import { DayItinerary, Location } from "../types/itinerary";
 import { RouteOption } from "@/types/routes";
@@ -171,9 +174,9 @@ const App: React.FC = () => {
         .then((res) => {
           if (!res.ok) throw new Error(res.statusText);
           setFavoriteRoutes((prev) => new Set(prev).add(pending.id));
-          showToast("Saved to your trips.", "success");
+          showToast("Kept with your trips.", "success");
         })
-        .catch(() => showToast("Couldn't save that trip. Try saving it again.", "error"));
+        .catch(() => showToast("That trip slipped away. Try saving it again.", "error"));
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUserId]);
@@ -287,7 +290,7 @@ const App: React.FC = () => {
           // Restore route to list on rollback (refetch to get correct order)
           handleTabChange("Favorites");
         }
-        showToast("Failed to update favorites. Please try again.", "error");
+        showToast("Couldn’t update your saved trips. Try again.", "error");
       }
     } catch (error) {
       console.error("Error saving favorite:", error);
@@ -295,7 +298,7 @@ const App: React.FC = () => {
       if (isFavorited && activeTab === "Favorites") {
         handleTabChange("Favorites");
       }
-      showToast("Failed to update favorites. Please try again.", "error");
+      showToast("Couldn’t update your saved trips. Try again.", "error");
     }
   };
 
@@ -444,11 +447,11 @@ const App: React.FC = () => {
   const handleGenerateItinerary = async (prefOverride?: typeof preferences) => {
     const prefs = prefOverride ?? preferences;
     if (!prefs.destination.trim()) {
-      showToast("Please enter a destination before generating.", "error");
+      showToast("First, tell us where you’re headed.", "error");
       return;
     }
     if (!prefs.travelStartDate || !prefs.travelEndDate) {
-      showToast("Please select your travel dates before generating.", "error");
+      showToast("First, choose when you’ll set out.", "error");
       return;
     }
 
@@ -620,6 +623,11 @@ const App: React.FC = () => {
 
   // Title and one-line subtitle for the itinerary page
   const selectedRoute = routeOptions.find((r) => r.id === selectedRouteId);
+  // Colour field behind the itinerary title: a pale tone of the route's cover photo
+  const heroTone = usePhotoTone(selectedRoute?.coverImageUrl ?? destinationPhoto?.url ?? null);
+  // Inner scroll areas fade at the edge where there's more (scrollbars are hidden)
+  const sidebarScrollRef = useScrollFade<HTMLDivElement>();
+  const listScrollRef = useScrollFade<HTMLDivElement>();
   const routeSubtitle = (() => {
     const fmt = (s: string) =>
       new Date(s).toLocaleDateString("en-US", { month: "short", day: "numeric" });
@@ -633,6 +641,49 @@ const App: React.FC = () => {
   // The map follows the edited trip (drags, removals, AI changes), not the
   // itinerary as first opened
   const liveItinerary = routeOptions.find((r) => r.id === selectedRouteId)?.itinerary ?? itinerary;
+
+  // The opening spread: up to four of the trip's own photos, one per stop
+  const openingHighlights: OpeningHighlight[] = useMemo(() => {
+    const seen = new Set<string>();
+    const out: OpeningHighlight[] = [];
+    for (const d of liveItinerary ?? []) {
+      for (const [index, a] of d.activities.entries()) {
+        const key = a.imageUrl?.split("?")[0];
+        if (!a.imageUrl || !key || seen.has(key)) continue;
+        seen.add(key);
+        out.push({ title: a.title, url: a.imageUrl, credit: a.imageAttribution ?? null, day: d.day, index });
+        if (out.length === 4) return out;
+      }
+    }
+    return out;
+  }, [liveItinerary]);
+  // A highlight in the opening: open that stop in the list and bring it into view
+  const openHighlightStop = (h: OpeningHighlight) => {
+    if (h.day == null || h.index == null) return;
+    const el = document.getElementById(`stop-${h.day}-${h.index}`);
+    const row = el?.querySelector<HTMLElement>("[aria-expanded]");
+    if (row?.getAttribute("aria-expanded") === "false") row.click();
+    window.setTimeout(() => el?.scrollIntoView({ behavior: "smooth", block: "start" }), 480);
+  };
+  const openingProps = selectedRoute
+    ? {
+        title: selectedRoute.title,
+        subtitle: routeSubtitle,
+        lede: selectedRoute.description,
+        coverUrl: selectedRoute.coverImageUrl ?? destinationPhoto?.url ?? null,
+        coverCredit: selectedRoute.coverImageUrl
+          ? selectedRoute.coverImageAttribution ?? null
+          : destinationPhoto
+          ? { photographerName: destinationPhoto.photographerName, photographerUrl: destinationPhoto.photographerUrl }
+          : null,
+        tone: heroTone,
+        highlights: openingHighlights,
+        onHighlightClick: openHighlightStop,
+        onBack: handleBackToRoutes,
+        isFavorite: favoriteRoutes.has(selectedRoute.id),
+        onToggleFavorite: () => toggleFavorite(selectedRoute.id),
+      }
+    : null;
 
   // ⭐ Currently displayed locations (based on selected day) ⭐
   const displayedLocations = useMemo(() => {
@@ -704,25 +755,17 @@ const App: React.FC = () => {
   };
   const isWide = () => typeof window !== "undefined" && window.matchMedia("(min-width: 768px)").matches;
 
-  // Opening a route: show the map for a moment, then tuck it away and say how to get it back
-  const [mapHint, setMapHint] = useState(false);
+  // Opening a route: the map pane starts open on wide screens, beside the overview
+  // and the days. (mapTimers is kept for any future timed behaviour.)
   const mapTimers = useRef<number[]>([]);
   const stopMapIntro = () => {
     mapTimers.current.forEach((t) => window.clearTimeout(t));
     mapTimers.current = [];
-    setMapHint(false);
   };
   useEffect(() => {
     if (stage !== "details" || !selectedRouteId) return;
     pane.current.userClosed = false;
-    if (!isWide()) { setPane(false); return; }
-    setPane(true, "intro");
-    mapTimers.current = [
-      window.setTimeout(() => {
-        if (pane.current.origin === "intro") { setPane(false); setMapHint(true); }
-      }, 2200),
-      window.setTimeout(() => setMapHint(false), 7500),
-    ];
+    setPane(isWide(), "user");
     return () => stopMapIntro();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stage, selectedRouteId]);
@@ -750,7 +793,13 @@ const App: React.FC = () => {
     }
   };
 
-  // The icon beside the day tabs
+  // Scrolling: the overview shows the whole trip, a day's section shows that day
+  const handleVisibleDay = useCallback((day: number) => {
+    setHighlightedLocation(null);
+    setHighlightedDay(day === 0 ? null : day);
+  }, []);
+
+  // The icon in the header's day index
   const togglePane = () => {
     stopMapIntro();
     setPhotoView(null);
@@ -801,7 +850,7 @@ const App: React.FC = () => {
   // Sidebar: the trip planning form (PageContainer hides it on Favorites and the details view)
   const sidebarContent = (
     <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto pr-2 pb-4 custom-scrollbar">
+      <div ref={sidebarScrollRef} className="flex-1 overflow-y-auto pr-2 pb-4 scroll-fade">
         <PreferenceForm
           preferences={preferences}
           onPreferenceChange={handlePreferenceChange}
@@ -858,8 +907,8 @@ const App: React.FC = () => {
           ) : error ? (
             <div className="flex items-center justify-center flex-1">
               <div className="text-center max-w-md">
-                <p className="eyebrow">Something went wrong</p>
-                <h3 className="mt-3 font-display text-[36px] leading-[1.06] uppercase text-ink">We couldn&apos;t build your routes</h3>
+                <p className="eyebrow">A small detour</p>
+                <h3 className="mt-3 font-display text-[36px] leading-[1.06] uppercase text-ink">Your routes didn&apos;t come together</h3>
                 <p className="mt-4 text-sm text-red-700">{error}</p>
                 <button type="button" onClick={handleBackToInitial} className="btn-ink mt-8">
                   Try again
@@ -889,10 +938,23 @@ const App: React.FC = () => {
       )}
 
       {stage === "details" && (
-        <div className="relative flex flex-col md:flex-row gap-10 h-full min-h-0">
-          <div className="flex-1 min-h-0 min-w-0 bg-white overflow-hidden flex flex-col">
-            <div className="flex-1 overflow-y-auto pr-3 pb-6 custom-scrollbar">
-              <div className={paneOpen ? undefined : "md:max-w-[760px] md:mx-auto"}>
+        <>
+        {/* Wide screens: the trip's opening spread, full width, above everything */}
+        {openingProps && (
+          <div className="hidden md:block md:-mx-5 lg:-mx-12">
+            <RouteOpening {...openingProps} layout="spread" />
+          </div>
+        )}
+        {/* Wide screens: the page itself scrolls; list and pane are both half width and
+            never resize. Opening slides the list from the centre to the left and the pane
+            in from the right (transform only, so the map isn't redrawn on every frame).
+            Phones keep a fixed layout: the list scrolls above a short map. */}
+        <div className="relative flex flex-col gap-10 h-full min-h-0 md:block md:h-auto">
+          <div
+            className={`flex-1 min-h-0 min-w-0 bg-white overflow-hidden flex flex-col md:block md:overflow-visible md:w-[calc(50%-20px)] md:transition-transform md:duration-700 md:ease-editorial ${paneOpen ? "md:translate-x-0" : "md:translate-x-[calc(50%+20px)]"}`}
+          >
+            <div ref={listScrollRef} className="flex-1 overflow-y-auto pr-3 pb-6 scroll-fade md:overflow-visible md:pr-0 md:pb-16 md:[mask-image:none] md:[-webkit-mask-image:none]">
+              <div>
               {error && (
                 <p className="text-red-500 text-center py-8">Error: {error}</p>
               )}
@@ -918,16 +980,20 @@ const App: React.FC = () => {
                   focusStop={focusStop}
                   paneOpen={paneOpen}
                   onTogglePane={togglePane}
-                  paneHint={mapHint}
                   onStopOpenChange={handleStopOpenChange}
+                  opening={openingProps ? <RouteOpening {...openingProps} layout="stack" /> : undefined}
+                  onVisibleDayChange={handleVisibleDay}
                 />
               )}
               </div>
             </div>
           </div>
 
-          <div className={`h-64 md:h-auto md:flex-1 min-h-0 min-w-0 bg-white overflow-hidden flex flex-col pb-6 md:transition-[flex-grow,opacity,margin] md:duration-700 md:ease-editorial ${paneOpen ? "" : "md:!grow-0 md:opacity-0 md:-ml-10 md:pointer-events-none"}`}>
-            <div className="relative flex-1 min-h-0">
+          <div
+            className={`h-64 md:absolute md:inset-y-0 md:right-0 md:h-auto md:w-[calc(50%-20px)] min-h-0 min-w-0 bg-white overflow-hidden flex flex-col pb-6 md:block md:overflow-visible md:pb-0 md:transition-[transform,opacity] md:duration-700 md:ease-editorial ${paneOpen ? "md:translate-x-0 md:opacity-100" : "md:translate-x-[calc(100%+40px)] md:opacity-0 md:pointer-events-none"}`}
+          >
+            {/* Stays in view under the slim index bar while the page scrolls */}
+            <div className="relative flex-1 min-h-0 md:sticky md:top-16 md:h-[calc(100vh-88px)]">
               {/* The map stays mounted underneath so it keeps its position */}
               <div
                 className={`absolute inset-0 bg-surface-dim transition-opacity duration-500 ease-editorial ${photoView ? "opacity-0 pointer-events-none" : "opacity-100"}`}
@@ -954,6 +1020,7 @@ const App: React.FC = () => {
             </div>
           </div>
         </div>
+        </>
       )}
     </div>
   );

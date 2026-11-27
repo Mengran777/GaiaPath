@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import { RouteOption } from "@/types/routes";
-import UnsplashCredit from "@/components/UI/UnsplashCredit";
 import Lozenge from "@/components/UI/Lozenge";
 
 interface RouteCardProps {
@@ -37,7 +36,8 @@ const intensityLabel = (intensity?: string) => {
 /**
  * Editorial route card: only what you need at a glance.
  * Photo, a small caps line ("I · Classic · 5 days") and a short serif title.
- * The description and photo credit appear on the photo on hover / focus;
+ * Hovering only lets the photo drift closer; nothing is written over it.
+ * (The description opens the route as its lede; the credit sits under its cover.)
  * Save is a lozenge on the photo's corner (outline = save, filled = saved).
  */
 const RouteCard: React.FC<RouteCardProps> = ({
@@ -47,7 +47,6 @@ const RouteCard: React.FC<RouteCardProps> = ({
   isFavorite = false,
   onToggleFavorite,
   coverImageUrl,
-  coverImageAttribution,
 }) => {
   const [imageLoaded, setImageLoaded] = useState(false);
   const meta = [
@@ -74,7 +73,7 @@ const RouteCard: React.FC<RouteCardProps> = ({
               alt=""
               width={800}
               height={1000}
-              className={`absolute inset-0 w-full h-full object-cover transition-[opacity,transform] duration-700 ease-editorial group-hover/card:scale-[1.03] ${
+              className={`absolute inset-0 w-full h-full object-cover transition-[opacity,transform] duration-[1100ms] ease-editorial group-hover/card:scale-[1.03] ${
                 imageLoaded ? "opacity-100" : "opacity-0"
               }`}
               onLoad={() => setImageLoaded(true)}
@@ -86,15 +85,6 @@ const RouteCard: React.FC<RouteCardProps> = ({
               <span className="eyebrow mt-3">{shortBadge(route.badge)}</span>
             </span>
           )}
-          {/* Description, shown over the photo on hover / keyboard focus */}
-          <span
-            aria-hidden="true"
-            className="absolute inset-x-0 bottom-0 px-4 pt-14 pb-4 bg-gradient-to-t from-black/60 to-transparent text-[13px] leading-snug text-white
-                       opacity-0 translate-y-1.5 transition-[opacity,transform] duration-500 ease-editorial
-                       group-hover/card:opacity-100 group-hover/card:translate-y-0 group-focus-within/card:opacity-100 group-focus-within/card:translate-y-0"
-          >
-            <span className="line-clamp-3">{route.description}</span>
-          </span>
         </button>
 
         {onToggleFavorite && (
@@ -110,13 +100,6 @@ const RouteCard: React.FC<RouteCardProps> = ({
           </button>
         )}
 
-        {coverImageAttribution && (
-          <UnsplashCredit
-            photographerName={coverImageAttribution.photographerName}
-            photographerUrl={coverImageAttribution.photographerUrl}
-            className="absolute right-3 top-3.5 z-10 opacity-0 transition-opacity duration-500 group-hover/card:opacity-100 focus-within:opacity-100"
-          />
-        )}
       </div>
 
       <button type="button" tabIndex={-1} onClick={() => onSelect(route.id)} className="block w-full text-left mt-3">

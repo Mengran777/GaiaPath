@@ -11,11 +11,15 @@ never competes with the photos.
 
 - Serif display for questions, titles and option labels; compact grotesk for UI text.
 - No UI colour except two warm tints: **sand** (selected backgrounds) and
-  **terracotta** (map route, AI changes, the one accent).
+  **terracotta** (map route, AI changes, the one accent), plus one
+  **destination field**: a pale tone taken from the route's cover photo behind
+  the itinerary title (see below).
 - States are expressed by **lightness**, not coloured borders: resting 60% →
   hover 100% → selected 100% plus a marker or sand fill.
 - No checkmarks, no text arrows (← › etc.), no emoji, no gradients (except a
-  dark scrim behind text on photos), no drop shadows.
+  dark scrim behind text on photos, and the edge fade on inner scroll areas), no drop shadows.
+- No visible scrollbars anywhere; inner scroll areas use `.scroll-fade` + `useScrollFade`
+  (top/bottom edge fades only while there's more content that way).
 - Square corners everywhere, pills and chips included. Nothing is round except loading spinners.
 
 ## Tokens
@@ -107,12 +111,31 @@ Fonts: `--font-display` Newsreader (weight 400 only, tracking -0.01em);
   row sand-50; edit mode swaps the photo for Edit / Remove text actions.
 - **Modal**: white panel, 40% black scrim, no radius, eyebrow + serif uppercase title.
 
+## Voice
+
+- A touch poetic, still plain: "Where will you wander?", "When do you set out?", "Unfolding the map", "Kept with your trips." One image per line at most; functional labels (Edit, Next, Email, Pace options) stay literal.
+
+## Itinerary page structure (editorial)
+
+Mockup: `.interface-design/mockups/itinerary-editorial.html`. One page scroll, three layers:
+
+1. **Opening spread** (`RouteOpening`, full width above everything on wide screens): cover photo left, sticky under the header while the right side scrolls; right side on the destination field: All routes / Save, title (76px uppercase), dates, the route description as lede, up to four of the trip's own photos (2×2, staggered, serif captions, nothing over the photo). Phones: cover on top, words below, inside the list.
+2. **At a glance** (top of the list column): "At a glance" 48px, "N days · N stops", Edit on the right; per day the numeral + date over an ink rule, every stop as time + name (click jumps to the stop and opens it), then "N stops · Directions". The map beside it shows the whole trip.
+3. **Days**: each starts with a day opener, the day's first stop photo (78vh, overflow-clip) under a sticky white numeral (112px) and date, with a top-left dark scrim; clicking it shows the day on the map. Then the stop rows.
+- **Header scrolls away** on the itinerary page (like Kinfolk). Once past the opening a slim white **index bar** (3rem, fixed, portalled to body) slides down from the top: "At a glance · I · Thu 10 · II · Fri 11" on the left, the pane icon on the right; the section in view is ink with a small lozenge (no underline). The opening cover sticks at top 0; the map pane at top-16 under the bar; day numerals at top-12.
+- **Hover** on overview rows: a quiet sand wash (`brand-50`), never an underline.
+- **Photo hovers**: normal hand cursor, never a label or magnifier. Highlights and day openers: the photo drifts ~4% closer inside its frame (1.1–1.4s, editorial ease). Opened stop: the lead photo and thumbnails drift closer. **Nothing is ever written over a photo on hover** (no description, credit or count); route cards show the description only as the opened route's lede. Photo viewer: the left/right thirds turn the page, with a faint dark edge shade on hover. Highlights in the opening are clickable and open their stop.
+- **Map follows the scroll**: overview in view shows the whole trip, a day's section shows that day (no pane opening, no scrolling).
+- **Stop rows are bare**: time + name (22px serif) only; rating and price live in the opened stop under the description; no thumbnail.
+- No small labels like "Day I" or "Directions" beside day headings.
+
 ## Itinerary context pane
-- Right half of the itinerary page (wide screens) is a pane showing the map or one stop's photos. It is closed by default; phones keep the map under the list and use the fullscreen Lightbox for photos.
+- Right half of the itinerary page (wide screens) is a pane showing the map or one stop's photos. It starts open on wide screens (beside the overview and the days); phones keep the map under the list and use the fullscreen Lightbox for photos.
 - Opening rules: choosing a day (day tabs or a day's heading) opens it. Opening a stop opens it, and closing that same stop closes it again; if the pane was already open (a day, the icon), closing a stop leaves it open. Switching from one stop to another keeps it open and moves the map. After the traveller closes the pane with the icon, opening stops won't reopen it; choosing a day or the icon will.
-- Pane icon: a framed right column (filled while open) at the end of the day tabs row, ink-muted, no border. It never sits over the map or photos.
-- Route intro: the pane shows ~2s on entry, then folds away (flex-grow + opacity, 700ms editorial ease) with a one-line status under the icon: "The map opens when you choose a day or a stop." Any interaction cancels the intro.
-- Photos: clicking a photo swaps the pane to PhotoViewer (opens the pane if closed). A "Map view" text link (11px uppercase, before the credit) under the photo, or Esc, returns to the map. No mini map over the photo. Header: eyebrow "Title · i of n"; credit and thumbnails below; note in serif.
-- Single day selected: terracotta route line (#a65a3a, 2px), stop numbers beside lozenges, travel-time labels at leg midpoints, white summary strip ("Day II · 3 stops" / "5.4 km · 20 min moving"). Clicking a marker opens and scrolls to that stop's row.
+- Pane icon: a framed right column (filled while open) at the end of the header index, ink-muted, no border. It never sits over the map or photos.
+- Motion: list and pane are both fixed at half width (minus the 40px gap) and never resize. Closed, the list sits centred (translateX(50% + 20px)); opening slides it left while the pane slides in from the right with opacity, 700ms editorial ease. Transform and opacity only, so the map is never redrawn mid-animation.
+- Destination field: the itinerary's opening block (back link, actions, title, dates) sits on a pale tone of the route's cover photo (`lib/photoTone.ts`: 12 hue families, strongest wins, lifted to L 88% / S 26–45%), sand `#f3eee4` when there's no photo or it can't be read. Fades in over 700ms.
+- Scrolling (wide screens): the itinerary page scrolls as a whole, like a magazine; no inner scroll box. The header scrolls away; the slim index bar takes its place. Jumps land just below the bar. Scrollbars are hidden everywhere (globals.css). Phones keep a fixed layout (list scrolls above a short map).
+- Photos: clicking a photo swaps the pane to PhotoViewer (opens the pane if closed). A "Map view" text link (11px uppercase, before the credit) under the photo, or Esc, returns to the map. No mini map over the photo. No line above the photo; credit and thumbnails below; note in serif.
+- Single day selected: terracotta route line (#a65a3a, 2px), stop numbers beside lozenges, travel-time labels at leg midpoints, white summary strip ("Day II · 3 stops" / "5.4 km · 20 min moving") placed bottom-11, above the Mapbox logo and attribution (which must stay visible). Scale bar sits top-right; zoom controls top-left. Clicking a marker opens and scrolls to that stop's row.
 - Travel times (`lib/travelTimes.ts`, Mapbox Directions): walk ≤ 20 min → "N min walk"; self-drive → "N min drive"; else "about N min by transit" (drive × 1.3 + 8, rounded to 5). Transit is an estimate; Mapbox has no transit routing.
-- Pane closed: the list centers at max 760px.

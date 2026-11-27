@@ -256,7 +256,7 @@ const TripWizard: React.FC<TripWizardProps> = ({
         >
           {/* 1 · Destination and photo gallery */}
           <section {...stepProps(0)}>
-            <Question title={<>Where are<br />you headed?</>} />
+            <Question title={<>Where will<br />you wander?</>} />
             <div
               className="max-w-[440px] mx-auto mt-6"
               onKeyDown={(e) => {
@@ -270,7 +270,7 @@ const TripWizard: React.FC<TripWizardProps> = ({
                 id="wizard-destination"
                 value={p.destination}
                 onChange={(v) => onPreferenceChange("destination", v)}
-                placeholder="Type a city, or choose one below…"
+                placeholder="Name a city, or choose one below…"
                 inputClassName="font-display text-[26px] text-center"
               />
             </div>
@@ -332,7 +332,7 @@ const TripWizard: React.FC<TripWizardProps> = ({
 
           {/* 2 · Dates */}
           <section {...stepProps(1)}>
-            <Question title={<>When are<br />you going?</>} />
+            <Question title={<>When do you<br />set out?</>} />
             <p className="text-center mt-4 font-display text-[22px] min-h-[33px]">
               {p.travelStartDate ? (
                 <>
@@ -340,7 +340,7 @@ const TripWizard: React.FC<TripWizardProps> = ({
                   {nights > 0 && <span className="eyebrow ml-3 align-middle">{nights} {nights === 1 ? "night" : "nights"}</span>}
                 </>
               ) : (
-                <span className="text-ink-muted">Pick a start date</span>
+                <span className="text-ink-muted">Choose the day you set out</span>
               )}
             </p>
             <div className="max-w-[760px] mx-auto mt-6">
@@ -382,7 +382,7 @@ const TripWizard: React.FC<TripWizardProps> = ({
           {/* 3 · Travellers (single choice, advances on click) */}
           <section {...stepProps(2)}>
             <div className="flex flex-col items-center justify-center py-6">
-              <Question title={<>Who&apos;s coming<br />along?</>} />
+              <Question title={<>Who travels<br />with you?</>} />
               <div
                 role="radiogroup"
                 aria-label="Travellers"
@@ -420,7 +420,7 @@ const TripWizard: React.FC<TripWizardProps> = ({
 
           {/* 4 · Interests, pace, getting around, note */}
           <section {...stepProps(3)}>
-            <Question title="What are you into?" hint="Choose up to three, or skip and we'll keep it balanced." />
+            <Question title="What draws you?" hint="Choose up to three, or skip and we'll keep it balanced." />
             {/* Photo tiles: greyscale at rest, colour returns on hover, full colour when chosen */}
             <div className="max-w-[720px] mx-auto mt-6 grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-4">
               {INTEREST_TILES.map((t) => {

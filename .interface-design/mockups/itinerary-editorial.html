@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Itinerary, editorial mockup</title>
+<!-- Design mockup only (not used by the app). Real route data and Unsplash photos from a generated Lisbon trip. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;1,6..72,400&display=swap" rel="stylesheet">
+<style>
+  :root{--ink:#111;--soft:#333;--muted:#6b6b6b;--line:#e8e8e8;--sand:#f3eee4;--field:#ebe1d2;--terra:#a65a3a}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scrollbar-width:none}
+  ::-webkit-scrollbar{display:none}
+  body{background:#fff;color:var(--ink);font-family:"Inter Tight",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  .serif{font-family:"Newsreader",Georgia,serif;letter-spacing:-.01em}
+  img{display:block;width:100%;height:100%;object-fit:cover}
+  a{color:inherit;text-decoration:none}
+
+  /* header */
+  header{position:sticky;top:0;z-index:20;height:72px;background:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 48px}
+  header .logo{font-family:"Newsreader",serif;font-size:22px;letter-spacing:.02em}
+  header nav{display:flex;gap:28px;font-size:13px;color:var(--muted)}
+  header nav b{font-weight:400;color:var(--ink)}
+
+  /* 1 · opening spread: photo fixed, words scroll */
+  .opening{display:grid;grid-template-columns:1fr 1fr}
+  .cover{position:sticky;top:72px;height:calc(100vh - 72px);overflow:hidden}
+  .credit{position:absolute;left:20px;bottom:16px;font-size:11px;color:rgba(255,255,255,.85)}
+  .words{background:var(--field);padding:28px 64px 120px}
+  .topline{display:flex;justify-content:space-between;font-size:13px;color:var(--soft)}
+  .topline span:last-child{display:flex;gap:8px;align-items:center;font-size:11px;letter-spacing:.08em}
+  .loz{display:inline-block;width:8px;height:8px;transform:rotate(45deg);border:1px solid currentColor}
+  h1{font-family:"Newsreader",serif;font-weight:400;font-size:76px;line-height:.98;letter-spacing:-.015em;text-transform:uppercase;margin-top:22vh}
+  .dates{font-family:"Newsreader",serif;font-size:22px;color:var(--soft);margin-top:18px}
+  .lede{font-family:"Newsreader",serif;font-size:24px;line-height:1.45;color:var(--ink);margin-top:56px;max-width:440px}
+  .highlights{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:96px}
+  .highlights figure:nth-child(2){margin-top:72px}
+  .highlights figure:nth-child(4){margin-top:72px}
+  .highlights .ph{aspect-ratio:3/4;overflow:hidden}
+  figcaption{font-family:"Newsreader",serif;font-size:16px;margin-top:10px}
+
+  /* 2 · day opener: photo scrolls, day title fixed */
+  .opener{position:relative;height:150vh}
+  .opener .bg{position:absolute;inset:0}
+  .opener .bg::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(0,0,0,.42),rgba(0,0,0,0) 55%)}
+  .opener .title{position:sticky;top:72px;height:calc(100vh - 72px);display:flex;flex-direction:column;justify-content:flex-end;padding:0 48px 56px;color:#fff;z-index:1}
+  .roman{font-family:"Newsreader",serif;font-size:168px;line-height:.8}
+  .dname{font-family:"Newsreader",serif;font-size:28px;margin-top:18px}
+
+  /* 3 · stops: list scrolls, map fixed */
+  .day{display:grid;grid-template-columns:1fr 1fr;gap:40px;padding:72px 48px 120px}
+  .row{display:grid;grid-template-columns:96px 1fr;align-items:baseline;padding:30px 0;border-bottom:1px solid var(--line);cursor:pointer}
+  .row:first-child{border-top:1px solid var(--ink)}
+  .row .t{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .row .n{font-family:"Newsreader",serif;font-size:32px;line-height:1.1}
+  .drawer{display:none;padding:4px 0 36px 96px;border-bottom:1px solid var(--line)}
+  .row.open{background:transparent}
+  .row.open+.drawer{display:block}
+  .spread{display:grid;grid-template-columns:2fr 1fr;gap:6px;height:300px}
+  .spread .side{display:grid;grid-template-rows:1fr 1fr;gap:6px}
+  .desc{font-family:"Newsreader",serif;font-size:19px;line-height:1.5;color:var(--soft);margin-top:20px;max-width:520px}
+  .facts{font-size:13px;color:var(--muted);margin-top:14px}
+  .note{margin-top:24px;max-width:520px;border-bottom:1px solid rgba(17,17,17,.2);padding:10px 0;font-family:"Newsreader",serif;font-style:italic;font-size:17px;color:var(--muted)}
+  .mono{display:flex;align-items:center;justify-content:center;background:var(--sand);font-family:"Newsreader",serif;font-size:56px;color:var(--soft)}
+  .pane{position:sticky;top:96px;height:calc(100vh - 120px)}
+  .map{position:relative;height:100%;background:#eeece7;overflow:hidden}
+  .map svg{position:absolute;inset:0;width:100%;height:100%}
+  .sum{position:absolute;left:16px;right:16px;bottom:44px;background:#fff;padding:14px 18px;display:flex;justify-content:space-between;align-items:baseline}
+  .sum .serif{font-size:18px}
+  .sum span:last-child{font-size:12px;color:var(--muted)}
+  .paneicon{position:absolute;right:0;top:-34px;color:var(--muted)}
+
+  /* end */
+  .ask{padding:40px 48px 140px;display:grid;grid-template-columns:1fr 1fr;gap:40px}
+  .ask .field{border-bottom:1px solid rgba(17,17,17,.2);padding:14px 0;font-family:"Newsreader",serif;font-size:22px;color:var(--muted)}
+  .chips{display:flex;gap:18px;margin-top:16px;font-size:13px;color:var(--soft)}
+  .chips span{border-bottom:1px solid rgba(17,17,17,.25);padding-bottom:2px}
+
+  /* overview: the whole trip on one spread */
+  .glance{display:grid;grid-template-columns:1fr 1fr;gap:40px;padding:120px 48px 140px;scroll-margin-top:72px}
+  .glance h2{font-family:"Newsreader",serif;font-weight:400;font-size:52px;line-height:1;letter-spacing:-.015em}
+  .totals{font-family:"Newsreader",serif;font-size:20px;color:var(--soft);margin-top:14px}
+  .gday{margin-top:56px}
+  .ghead{display:flex;align-items:baseline;gap:18px;padding-bottom:12px;border-bottom:1px solid var(--ink)}
+  .ghead .r{font-family:"Newsreader",serif;font-size:40px;line-height:1}
+  .ghead .d{font-family:"Newsreader",serif;font-size:20px}
+  .gstop{display:grid;grid-template-columns:96px 1fr auto;align-items:baseline;padding:14px 0;border-bottom:1px solid var(--line);cursor:pointer}
+  .gstop:hover .n{text-decoration:underline;text-underline-offset:5px;text-decoration-thickness:1px}
+  .gstop .t{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .gstop .n{font-family:"Newsreader",serif;font-size:21px}
+  .gstop .w{font-size:12px;color:var(--muted)}
+  .gfoot{font-size:12px;color:var(--muted);padding-top:10px}
+  .gmap{position:sticky;top:96px;height:calc(100vh - 168px);background:#eeece7;overflow:hidden}
+  .gmap svg{position:absolute;inset:0;width:100%;height:100%}
+  .pin{position:absolute;width:11px;height:11px;margin:-5.5px;transform:rotate(45deg);background:#111;outline:2px solid #fff}
+  .plab{position:absolute;font-size:12px;transform:translate(10px,-18px)}
+  .area{position:absolute;font-family:"Newsreader",serif;font-size:30px;color:var(--terra)}
+
+  /* compact day index in the header once past the opening */
+  .index{position:absolute;left:150px;display:flex;gap:26px;font-family:"Newsreader",serif;font-size:16px;color:var(--muted);opacity:0;pointer-events:none;transition:opacity .5s cubic-bezier(.25,1,.5,1)}
+  .index.show{opacity:1;pointer-events:auto}
+  .index a{cursor:pointer;transition:color .3s}
+  .index a:hover,.index a.on{color:var(--ink)}
+  .index a.on{text-decoration:underline;text-underline-offset:6px;text-decoration-thickness:1px}
+  .opener,.day{scroll-margin-top:72px}
+
+  /* review aid: which layer you're in (not part of the design) */
+  .aid{position:fixed;right:16px;bottom:16px;z-index:50;background:#111;color:#fff;font-size:12px;padding:8px 12px;letter-spacing:.02em}
+</style>
+</head>
+<body>
+<header>
+  <span class="logo">GAIA</span>
+  <div class="index" id="index">
+    <a data-to="glance">At a glance</a>
+    <a data-to="day1">I · Belém</a>
+    <a data-to="day2">II · Alfama</a>
+  </div>
+  <nav><span>Plan</span><b>Itineraries</b><span>Saved</span><span>·</span><span>Log in</span><b>Create account</b></nav>
+</header>
+
+<!-- 1 · Opening spread -->
+<section class="opening" data-aid="Opening · photo fixed, words scroll">
+  <div>
+    <div class="cover">
+      <img src="https://images.unsplash.com/photo-1608208291890-dcaf52dc98e1?w=1600&q=80&fit=crop" alt="">
+      <span class="credit">Photo by Fabio Vilhena on Unsplash</span>
+    </div>
+  </div>
+  <div class="words">
+    <div class="topline"><span>All routes</span><span><i class="loz"></i>SAVE</span></div>
+    <h1>Historic charm<br>and flavours</h1>
+    <p class="dates">Lisbon · 10 — 11 December</p>
+    <p class="lede">Two slow days of river light, tiled lanes and the city's oldest custard tarts.</p>
+    <div class="highlights">
+      <figure><div class="ph"><img src="https://images.unsplash.com/photo-1578859651203-c7126a106b59?w=700&q=80&fit=crop" alt=""></div><figcaption>Pastéis de Belém</figcaption></figure>
+      <figure><div class="ph"><img src="https://images.unsplash.com/photo-1694398793731-8c618cae06c1?w=700&q=80&fit=crop" alt=""></div><figcaption>Castelo de São Jorge</figcaption></figure>
+      <figure><div class="ph"><img src="https://images.unsplash.com/photo-1501927023255-9063be98970c?w=700&q=80&fit=crop" alt=""></div><figcaption>Alfama</figcaption></figure>
+      <figure><div class="ph"><img src="https://images.unsplash.com/photo-1653580978823-2f087049fa04?w=700&q=80&fit=crop" alt=""></div><figcaption>The yellow trams</figcaption></figure>
+    </div>
+  </div>
+</section>
+
+<!-- At a glance: the whole trip -->
+<section class="glance" id="glance" data-aid="At a glance · the whole trip, map fixed">
+  <div>
+    <h2>At a glance</h2>
+    <p class="totals">2 days · 4 stops · 2.7 km on foot</p>
+
+    <div class="gday">
+      <div class="ghead"><span class="r">I</span><span class="d">Thursday, 10 December · Belém</span></div>
+      <div class="gstop" data-to="day1"><span class="t">14:00–16:00</span><span class="n">Belém Tower</span><span class="w">25 min walk</span></div>
+      <div class="gstop" data-to="day1"><span class="t">16:30–17:30</span><span class="n">Pastéis de Belém</span><span class="w"></span></div>
+      <p class="gfoot">2 stops · 2.1 km</p>
+    </div>
+
+    <div class="gday">
+      <div class="ghead"><span class="r">II</span><span class="d">Friday, 11 December · Alfama</span></div>
+      <div class="gstop" data-to="day2"><span class="t">09:30–12:00</span><span class="n">Castelo de São Jorge</span><span class="w">6 min walk</span></div>
+      <div class="gstop" data-to="day2"><span class="t">14:00–17:00</span><span class="n">Alfama walking tour</span><span class="w"></span></div>
+      <p class="gfoot">2 stops · 0.6 km</p>
+    </div>
+  </div>
+  <div>
+    <div class="gmap">
+      <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+        <path d="M0 74 C 20 66, 45 72, 65 64 S 92 56, 100 58 L100 100 L0 100Z" fill="#d9dee0"/>
+        <path d="M0 34 L100 28 M14 0 L20 100 M48 0 L44 100 M76 0 L80 100 M0 52 L100 46" stroke="#fff" stroke-width=".8" fill="none" vector-effect="non-scaling-stroke"/>
+        <path d="M14 62 L22 58" stroke="#a65a3a" stroke-width="2" fill="none" vector-effect="non-scaling-stroke"/>
+        <path d="M76 38 L80 44" stroke="#a65a3a" stroke-width="2" fill="none" vector-effect="non-scaling-stroke"/>
+      </svg>
+      <span class="area" style="left:9%;top:44%">I</span>
+      <span class="pin" style="left:14%;top:62%"></span><span class="plab" style="left:14%;top:62%;transform:translate(-50%,10px)">Belém Tower</span>
+      <span class="pin" style="left:22%;top:58%"></span><span class="plab" style="left:22%;top:58%;transform:translate(10px,-20px)">Pastéis de Belém</span>
+      <span class="area" style="left:70%;top:22%">II</span>
+      <span class="pin" style="left:76%;top:38%"></span><span class="plab" style="left:76%;top:38%">Castelo</span>
+      <span class="pin" style="left:80%;top:44%"></span><span class="plab" style="left:80%;top:44%;transform:translate(10px,8px)">Alfama</span>
+      <div class="sum"><span class="serif">Whole trip · 4 stops</span><span>Belém and Alfama, 7 km apart</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- 2 · Day I opener -->
+<section class="opener" id="day1" data-aid="Day opener · photo scrolls, day title fixed">
+  <div class="bg"><img src="https://images.unsplash.com/photo-1702560030824-02cf6c4761ef?w=2000&q=80&fit=crop" alt=""></div>
+  <div class="title"><div class="roman">I</div><div class="dname">Thursday, 10 December · Belém</div></div>
+</section>
+
+<!-- 3 · Day I stops -->
+<section class="day" data-aid="Stops · list scrolls, map fixed">
+  <div>
+    <div class="row open"><span class="t">14:00</span><span class="n">Belém Tower</span></div>
+    <div class="drawer">
+      <div class="spread"><img src="https://images.unsplash.com/photo-1702560030824-02cf6c4761ef?w=900&q=80&fit=crop" alt=""><div class="side"><img src="https://images.unsplash.com/photo-1608208291890-dcaf52dc98e1?w=500&q=80&fit=crop" alt=""><img src="https://images.unsplash.com/photo-1543487625-1787c76cac1f?w=500&q=80&fit=crop" alt=""></div></div>
+      <p class="desc">Visit this iconic 16th-century fortification that served as a gateway to the city during the Age of Discovery.</p>
+      <p class="facts">Rated 4.5 · €6 · 25 min walk to the next stop</p>
+      <p class="note">Your note</p>
+    </div>
+    <div class="row"><span class="t">16:30</span><span class="n">Pastéis de Belém</span></div>
+    <div class="drawer">
+      <div class="spread"><img src="https://images.unsplash.com/photo-1578859651203-c7126a106b59?w=900&q=80&fit=crop" alt=""><div class="side"><img src="https://images.unsplash.com/photo-1585334954347-e50fe83cc6ce?w=500&q=80&fit=crop" alt=""><img src="https://images.unsplash.com/photo-1653580978823-2f087049fa04?w=500&q=80&fit=crop" alt=""></div></div>
+      <p class="desc">Taste the original Portuguese custard tart at this legendary bakery that has been operating since 1837.</p>
+      <p class="facts">Rated 4.9 · €5</p>
+      <p class="note">Your note</p>
+    </div>
+  </div>
+  <div>
+    <div class="pane">
+      <svg class="paneicon" width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="2.5" y="3.5" width="15" height="13"/><line x1="12.5" y1="3.5" x2="12.5" y2="16.5"/><rect x="12.5" y="3.5" width="5" height="13" fill="currentColor" stroke="none"/></svg>
+      <div class="map">
+        <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+          <path d="M0 78 C 20 70, 40 74, 60 68 S 90 60, 100 62 L100 100 L0 100Z" fill="#d9dee0"/>
+          <path d="M0 40 L100 34 M10 0 L18 100 M45 0 L40 100 M70 0 L76 100 M0 58 L100 52" stroke="#fff" stroke-width=".8" fill="none" vector-effect="non-scaling-stroke"/>
+          <path d="M28 62 L36 58 L48 55 L60 50" stroke="#a65a3a" stroke-width="2" fill="none" vector-effect="non-scaling-stroke"/>
+        </svg>
+        <span style="position:absolute;left:28%;top:62%;width:16px;height:16px;margin:-8px;transform:rotate(45deg);background:#a65a3a;outline:2px solid #fff"></span>
+        <span style="position:absolute;left:calc(28% + 14px);top:calc(62% - 9px);font-size:13px">1</span>
+        <span style="position:absolute;left:60%;top:50%;width:11px;height:11px;margin:-5.5px;transform:rotate(45deg);background:#111;outline:2px solid #fff"></span>
+        <span style="position:absolute;left:calc(60% + 12px);top:calc(50% - 9px);font-size:13px">2</span>
+        <span style="position:absolute;left:40%;top:51%;background:rgba(255,255,255,.9);padding:2px 6px;font-size:11px;color:var(--soft)">25 min walk</span>
+        <div class="sum"><span class="serif">Day I · 2 stops</span><span>2.1 km · 25 min moving</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 2 · Day II opener -->
+<section class="opener" id="day2" data-aid="Day opener · photo scrolls, day title fixed">
+  <div class="bg"><img src="https://images.unsplash.com/photo-1616862890964-fd20e9dd106d?w=2000&q=80&fit=crop" alt=""></div>
+  <div class="title"><div class="roman">II</div><div class="dname">Friday, 11 December · Alfama</div></div>
+</section>
+
+<!-- 3 · Day II stops -->
+<section class="day" data-aid="Stops · list scrolls, map fixed">
+  <div>
+    <div class="row"><span class="t">09:30</span><span class="n">Castelo de São Jorge</span></div>
+    <div class="drawer">
+      <div class="spread"><img src="https://images.unsplash.com/photo-1694398793731-8c618cae06c1?w=900&q=80&fit=crop" alt=""><div class="side"><img src="https://images.unsplash.com/photo-1682616789020-d01641d162da?w=500&q=80&fit=crop" alt=""><img src="https://images.unsplash.com/photo-1692695012945-b4c2fbb3df92?w=500&q=80&fit=crop" alt=""></div></div>
+      <p class="desc">Explore the medieval Moorish castle walls offering panoramic views over the historic city centre.</p>
+      <p class="facts">Rated 4.7 · €15 · 6 min walk to the next stop</p>
+      <p class="note">Your note</p>
+    </div>
+    <div class="row"><span class="t">14:00</span><span class="n">Alfama walking tour</span></div>
+    <div class="drawer">
+      <div class="spread"><img src="https://images.unsplash.com/photo-1501927023255-9063be98970c?w=900&q=80&fit=crop" alt=""><div class="side"><img src="https://images.unsplash.com/photo-1543487625-1787c76cac1f?w=500&q=80&fit=crop" alt=""><img src="https://images.unsplash.com/photo-1653580978823-2f087049fa04?w=500&q=80&fit=crop" alt=""></div></div>
+      <p class="desc">Wander through the narrow, winding streets of the city's oldest district, famous for its fado and its quiet squares.</p>
+      <p class="facts">Rated 4.8 · Free</p>
+      <p class="note">Your note</p>
+    </div>
+  </div>
+  <div>
+    <div class="pane">
+      <div class="map">
+        <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+          <path d="M0 82 C 25 76, 50 80, 70 72 S 92 66, 100 68 L100 100 L0 100Z" fill="#d9dee0"/>
+          <path d="M0 30 L100 26 M22 0 L26 100 M55 0 L50 100 M80 0 L84 100 M0 55 L100 50" stroke="#fff" stroke-width=".8" fill="none" vector-effect="non-scaling-stroke"/>
+          <path d="M42 40 L50 46 L56 52" stroke="#a65a3a" stroke-width="2" fill="none" vector-effect="non-scaling-stroke"/>
+        </svg>
+        <span style="position:absolute;left:42%;top:40%;width:11px;height:11px;margin:-5.5px;transform:rotate(45deg);background:#111;outline:2px solid #fff"></span>
+        <span style="position:absolute;left:calc(42% + 12px);top:calc(40% - 9px);font-size:13px">1</span>
+        <span style="position:absolute;left:56%;top:52%;width:11px;height:11px;margin:-5.5px;transform:rotate(45deg);background:#111;outline:2px solid #fff"></span>
+        <span style="position:absolute;left:calc(56% + 12px);top:calc(52% - 9px);font-size:13px">2</span>
+        <div class="sum"><span class="serif">Day II · 2 stops</span><span>0.6 km · 6 min moving</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Ask Gaia, at the end -->
+<section class="ask">
+  <div>
+    <p class="field">Ask Gaia to change something</p>
+    <div class="chips"><span>Slower mornings</span><span>Add a dinner</span><span>Swap a museum</span></div>
+  </div>
+  <div></div>
+</section>
+
+<div class="aid" id="aid">Opening · photo fixed, words scroll</div>
+<script>
+  // Click a stop to open or close it
+  document.querySelectorAll('.row').forEach(r => r.addEventListener('click', () => r.classList.toggle('open')));
+  // Overview rows and the header index jump to their section
+  document.querySelectorAll('[data-to]').forEach(el => el.addEventListener('click', () => {
+    document.getElementById(el.dataset.to).scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }));
+  // Header index: appears once past the opening, marks the section in view
+  const index = document.getElementById('index');
+  const marks = ['glance', 'day1', 'day2'].map(id => document.getElementById(id));
+  addEventListener('scroll', () => {
+    index.classList.toggle('show', marks[0].getBoundingClientRect().top < innerHeight * 0.6);
+    let on = 0;
+    marks.forEach((m, i) => { if (m.getBoundingClientRect().top < innerHeight * 0.5) on = i; });
+    index.querySelectorAll('a').forEach((a, i) => a.classList.toggle('on', i === on));
+  }, { passive: true });
+  // Review aid: name the scroll layer in view
+  const secs = [...document.querySelectorAll('[data-aid]')], aid = document.getElementById('aid');
+  addEventListener('scroll', () => {
+    let cur = secs[0];
+    secs.forEach(s => { if (s.getBoundingClientRect().top < innerHeight * 0.5) cur = s; });
+    aid.textContent = cur.dataset.aid;
+  }, { passive: true });
+</script>
+</body>
+</html>

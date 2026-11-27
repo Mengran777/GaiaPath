@@ -51,13 +51,6 @@ const PhotoViewer: React.FC<PhotoViewerProps> = ({ view, onIndexChange, onBack }
 
   return (
     <section aria-label={`Photos of ${title}`} className="h-full flex flex-col bg-white">
-      <div className="flex items-center justify-between gap-4 pb-3">
-        <p className="eyebrow truncate">
-          {title}
-          {count > 1 && <span className="tabular-nums"> · {index + 1} of {count}</span>}
-        </p>
-      </div>
-
       <div className="relative flex-1 min-h-0 bg-surface-dim">
         {/* key forces a fresh fade-in per photo */}
         <img
@@ -68,18 +61,23 @@ const PhotoViewer: React.FC<PhotoViewerProps> = ({ view, onIndexChange, onBack }
         />
         {count > 1 && (
           <>
+            {/* Left and right thirds turn the page; a faint shade on that edge shows which way */}
             <button
               type="button"
               onClick={() => onIndexChange((index - 1 + count) % count)}
-              className="absolute inset-y-0 left-0 w-1/3 cursor-w-resize"
+              className="group/prev absolute inset-y-0 left-0 w-1/3 cursor-pointer"
               aria-label="Previous photo"
-            />
+            >
+              <span className="absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-black/25 to-transparent opacity-0 transition-opacity duration-500 ease-editorial group-hover/prev:opacity-100" aria-hidden="true" />
+            </button>
             <button
               type="button"
               onClick={() => onIndexChange((index + 1) % count)}
-              className="absolute inset-y-0 right-0 w-1/3 cursor-e-resize"
+              className="group/next absolute inset-y-0 right-0 w-1/3 cursor-pointer"
               aria-label="Next photo"
-            />
+            >
+              <span className="absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-black/25 to-transparent opacity-0 transition-opacity duration-500 ease-editorial group-hover/next:opacity-100" aria-hidden="true" />
+            </button>
           </>
         )}
       </div>

@@ -5,11 +5,11 @@ import Lozenge from "../UI/Lozenge";
 
 // What the wait is "doing", shown one at a time so the screen visibly moves on
 const STEPS = [
-  "Reading the map",
+  "Unfolding the map",
   "Choosing the stops",
-  "Checking opening hours",
-  "Balancing each day",
-  "Writing it up",
+  "Checking when doors open",
+  "Finding each day’s rhythm",
+  "Writing it all down",
 ];
 const STEP_MS = 3200;
 
@@ -48,7 +48,7 @@ const RoutesLoading: React.FC = () => {
           {STEPS[step]}…
         </p>
       </div>
-      <p className="mt-1 text-xs text-ink-muted">Three options, usually ready in 10 to 20 seconds.</p>
+      <p className="mt-1 text-xs text-ink-muted">Three routes, ready in 10 to 20 seconds.</p>
 
       <div className="w-full max-w-[1040px] mt-12 grid grid-cols-1 sm:grid-cols-3 gap-6" aria-hidden="true">
         {[0, 1, 2].map((i) => (
