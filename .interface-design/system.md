@@ -139,3 +139,9 @@ Mockup: `.interface-design/mockups/itinerary-editorial.html`. One page scroll, t
 - Photos: clicking a photo swaps the pane to PhotoViewer (opens the pane if closed). A "Map view" text link (11px uppercase, before the credit) under the photo, or Esc, returns to the map. No mini map over the photo. No line above the photo; credit and thumbnails below; note in serif.
 - Single day selected: terracotta route line (#a65a3a, 2px), stop numbers beside lozenges, travel-time labels at leg midpoints, white summary strip ("Day II · 3 stops" / "5.4 km · 20 min moving") placed bottom-11, above the Mapbox logo and attribution (which must stay visible). Scale bar sits top-right; zoom controls top-left. Clicking a marker opens and scrolls to that stop's row.
 - Travel times (`lib/travelTimes.ts`, Mapbox Directions): walk ≤ 20 min → "N min walk"; self-drive → "N min drive"; else "about N min by transit" (drive × 1.3 + 8, rounded to 5). Transit is an estimate; Mapbox has no transit routing.
+
+## Phones
+
+- Route list fills the screen (no preferences sidebar); under the title, "Paris, Dec 10 — Dec 11" with a Change trip link back to the planner.
+- Itinerary: the list fills the screen; the map folds into a slim bar under it (map summary + Open map / Fold map). Tapping it or choosing a day opens the map to 46vh; a new route starts folded.
+- Header: Log in only for guests (the log-in page links to sign up); tighter gaps, never wraps.

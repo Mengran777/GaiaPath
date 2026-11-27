@@ -771,7 +771,12 @@ const App: React.FC = () => {
   }, [stage, selectedRouteId]);
 
   // A day chosen (day tabs or a day's heading): show it on the map
+  // Phones: the map folds into a slim bar under the list; tap (or pick a day) to open it
+  const [phoneMapOpen, setPhoneMapOpen] = useState(false);
+  useEffect(() => { setPhoneMapOpen(false); }, [selectedRouteId]);
+
   const openPaneForDay = () => {
+    if (!isWide()) setPhoneMapOpen(true);
     stopMapIntro();
     pane.current.userClosed = false;
     setPane(true, "user");
@@ -928,6 +933,8 @@ const App: React.FC = () => {
               onCreateAccount={() => goToAuth("/auth/register")}
               onLogIn={() => goToAuth("/auth/login")}
               onBackToInitial={() => handleTabChange("Home")}
+              tripLine={routeSubtitle}
+              onChangeTrip={() => handleTabChange("Home")}
               onSelectDestination={(city) => {
                 handlePreferenceChange("destination", city);
                 handleTabChange("Home");
@@ -949,7 +956,7 @@ const App: React.FC = () => {
             never resize. Opening slides the list from the centre to the left and the pane
             in from the right (transform only, so the map isn't redrawn on every frame).
             Phones keep a fixed layout: the list scrolls above a short map. */}
-        <div className="relative flex flex-col gap-10 h-full min-h-0 md:block md:h-auto">
+        <div className="relative flex flex-col gap-3 h-full min-h-0 md:block md:h-auto">
           <div
             className={`flex-1 min-h-0 min-w-0 bg-white overflow-hidden flex flex-col md:block md:overflow-visible md:w-[calc(50%-20px)] md:transition-transform md:duration-700 md:ease-editorial ${paneOpen ? "md:translate-x-0" : "md:translate-x-[calc(50%+20px)]"}`}
           >
@@ -990,8 +997,18 @@ const App: React.FC = () => {
           </div>
 
           <div
-            className={`h-64 md:absolute md:inset-y-0 md:right-0 md:h-auto md:w-[calc(50%-20px)] min-h-0 min-w-0 bg-white overflow-hidden flex flex-col pb-6 md:block md:overflow-visible md:pb-0 md:transition-[transform,opacity] md:duration-700 md:ease-editorial ${paneOpen ? "md:translate-x-0 md:opacity-100" : "md:translate-x-[calc(100%+40px)] md:opacity-0 md:pointer-events-none"}`}
+            className={`${phoneMapOpen ? "h-[46vh] pb-4" : "h-11 pb-0"} transition-[height] duration-500 ease-editorial md:absolute md:inset-y-0 md:right-0 md:h-auto md:w-[calc(50%-20px)] min-h-0 min-w-0 bg-white overflow-hidden flex flex-col md:block md:overflow-visible md:pb-0 md:transition-[transform,opacity] md:duration-700 md:ease-editorial ${paneOpen ? "md:translate-x-0 md:opacity-100" : "md:translate-x-[calc(100%+40px)] md:opacity-0 md:pointer-events-none"}`}
           >
+            {/* Phones: the folded map is a slim bar; tap to open or close it */}
+            <button
+              type="button"
+              onClick={() => setPhoneMapOpen((o) => !o)}
+              aria-expanded={phoneMapOpen}
+              className="md:hidden flex-shrink-0 h-11 flex items-center justify-between gap-4 border-t border-ink text-left"
+            >
+              <span className="font-display text-[17px] text-ink truncate">{mapSummary?.title ?? "Map"}</span>
+              <span className="text-xs tracking-[0.06em] uppercase text-ink-muted flex-shrink-0">{phoneMapOpen ? "Fold map" : "Open map"}</span>
+            </button>
             {/* Stays in view under the slim index bar while the page scrolls */}
             <div className="relative flex-1 min-h-0 md:sticky md:top-16 md:h-[calc(100vh-88px)]">
               {/* The map stays mounted underneath so it keeps its position */}
